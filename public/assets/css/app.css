@@ -237,6 +237,14 @@ p { margin: 0; }
 }
 .stock-value-amount { font-size: 1.15rem; }
 
+/* ---------- Filter tabs ---------- */
+.filter-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.filter-tab {
+    padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--surface); font-size: .82rem; font-weight: 700; color: var(--muted);
+}
+.filter-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+
 /* ---------- Page head / cards with actions ---------- */
 .page-head-row {
     display: flex; align-items: flex-start; justify-content: space-between;

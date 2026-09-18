@@ -1,13 +1,14 @@
 <?php
 
 use App\Core\Auth;
+use App\Models\DebtTransaction;
 use App\Models\Product;
 use App\Models\Sale;
 
 $cards = [
     ['icon' => '🧾', 'title' => t('sales'), 'href' => '/sales', 'implemented' => true],
     ['icon' => '📦', 'title' => t('products'), 'href' => '/products', 'implemented' => true],
-    ['icon' => '👥', 'title' => t('customers'), 'href' => '#', 'implemented' => false],
+    ['icon' => '👥', 'title' => t('customers'), 'href' => '/customers', 'implemented' => true],
     ['icon' => '💸', 'title' => t('expenses'), 'href' => '#', 'implemented' => false],
     ['icon' => '📊', 'title' => t('reports'), 'href' => '#', 'implemented' => false],
     ['icon' => '🧑‍🤝‍🧑', 'title' => t('employees'), 'href' => '#', 'implemented' => false],
@@ -16,6 +17,7 @@ $cards = [
 $shopId = Auth::shopId();
 $productCounts = $shopId ? Product::counts((int) $shopId) : null;
 $todaySales = $shopId ? Sale::todaysSummary((int) $shopId) : null;
+$totalDebt = $shopId ? DebtTransaction::totalDebtByShop((int) $shopId) : 0.0;
 ?>
 <section class="page-head page-head-row">
     <div>
@@ -48,6 +50,13 @@ $todaySales = $shopId ? Sale::todaysSummary((int) $shopId) : null;
         <div class="stat-value" style="font-size:1.15rem;"><?= money((float) $productCounts['stock_value']) ?></div>
         <div class="stat-label"><?= e(t('stock_value')) ?></div>
     </div>
+</section>
+<?php endif; ?>
+
+<?php if ($totalDebt > 0): ?>
+<section class="stat-tile stock-value-tile" style="border-left:3px solid var(--danger);">
+    <span class="stat-label"><?= e(t('total_debt_label')) ?></span>
+    <a href="/customers" class="stat-value stock-value-amount" style="color:var(--danger);"><?= money($totalDebt) ?></a>
 </section>
 <?php endif; ?>
 

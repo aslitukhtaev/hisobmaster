@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Controllers\AuthController;
+use App\Controllers\CustomerController;
 use App\Controllers\DashboardController;
 use App\Controllers\LocaleController;
 use App\Controllers\ProductController;
@@ -42,3 +43,11 @@ $router->get('/sales', [SaleController::class, 'index'], ['auth', 'permission:sa
 $router->get('/sales/new', [SaleController::class, 'newForm'], ['auth', 'permission:sales']);
 $router->post('/sales', [SaleController::class, 'store'], ['auth', 'permission:sales', 'csrf']);
 $router->get('/sales/{id}', [SaleController::class, 'receipt'], ['auth', 'permission:sales']);
+
+$router->get('/customers', [CustomerController::class, 'index'], ['auth', 'permission:customers']);
+$router->get('/customers/create', [CustomerController::class, 'createForm'], ['auth', 'permission:customers']);
+$router->post('/customers', [CustomerController::class, 'store'], ['auth', 'permission:customers', 'csrf']);
+$router->get('/customers/{id}/edit', [CustomerController::class, 'editForm'], ['auth', 'permission:customers']);
+$router->post('/customers/{id}', [CustomerController::class, 'update'], ['auth', 'permission:customers', 'csrf']);
+$router->post('/customers/{id}/payment', [CustomerController::class, 'recordPayment'], ['auth', 'permission:customers', 'csrf']);
+$router->get('/customers/{id}', [CustomerController::class, 'show'], ['auth', 'permission:customers']);
