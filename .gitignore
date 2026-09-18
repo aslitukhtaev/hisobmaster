@@ -1,0 +1,8 @@
+/database/*.db
+/database/*.db-journal
+/database/*.db-wal
+/database/*.db-shm
+/.env
+/telegram/bot_config.php
+.DS_Store
+*.log
