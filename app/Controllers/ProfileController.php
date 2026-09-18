@@ -1,0 +1,78 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controllers;
+
+use App\Core\Auth;
+use App\Core\Request;
+use App\Core\View;
+use App\Models\User;
+
+class ProfileController
+{
+    public function show(Request $request): void
+    {
+        View::render('profile/show');
+    }
+
+    public function update(Request $request): void
+    {
+        $user = Auth::user();
+        $userId = (int) $user['id'];
+
+        $fullName = trim((string) $request->input('full_name', ''));
+        $phone = trim((string) $request->input('phone', ''));
+        $login = trim((string) $request->input('login', ''));
+
+        $old = ['full_name' => $fullName, 'phone' => $phone, 'login' => $login];
+
+        if ($fullName === '' || $login === '') {
+            flash('error', t('fill_required_fields'));
+            keep_old($old);
+            redirect('/profile');
+        }
+
+        if (User::loginExists($login, $userId)) {
+            flash('error', t('login_taken'));
+            keep_old($old);
+            redirect('/profile');
+        }
+
+        $newPassword = (string) $request->input('new_password', '');
+
+        if ($newPassword !== '') {
+            $currentPassword = (string) $request->input('current_password', '');
+            $confirmPassword = (string) $request->input('confirm_password', '');
+
+            if (!password_verify($currentPassword, $user['password_hash'])) {
+                flash('error', t('current_password_wrong'));
+                keep_old($old);
+                redirect('/profile');
+            }
+
+            if (strlen($newPassword) < 6) {
+                flash('error', t('password_too_short'));
+                keep_old($old);
+                redirect('/profile');
+            }
+
+            if ($newPassword !== $confirmPassword) {
+                flash('error', t('passwords_not_match'));
+                keep_old($old);
+                redirect('/profile');
+            }
+
+            User::updatePassword($userId, $newPassword);
+        }
+
+        User::updateProfile($userId, [
+            'full_name' => $fullName,
+            'phone' => $phone !== '' ? $phone : null,
+            'login' => $login,
+        ]);
+
+        flash('success', t('profile_updated'));
+        redirect('/profile');
+    }
+}

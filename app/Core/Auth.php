@@ -19,6 +19,10 @@ class Auth
             return false;
         }
 
+        if (!self::isShopActive($user['shop_id'])) {
+            return false;
+        }
+
         session_regenerate_id(true);
         $_SESSION['user_id'] = (int) $user['id'];
         self::$user = $user;
@@ -54,9 +58,25 @@ class Auth
 
         $stmt = Database::connect()->prepare('SELECT * FROM users WHERE id = ? AND status = ?');
         $stmt->execute([$_SESSION['user_id'], 'active']);
-        $user = $stmt->fetch();
+        $user = $stmt->fetch() ?: null;
 
-        return self::$user = ($user ?: null);
+        if ($user && !self::isShopActive($user['shop_id'])) {
+            $user = null;
+        }
+
+        return self::$user = $user;
+    }
+
+    private static function isShopActive(?int $shopId): bool
+    {
+        if ($shopId === null) {
+            return true;
+        }
+
+        $stmt = Database::connect()->prepare('SELECT status FROM shops WHERE id = ?');
+        $stmt->execute([$shopId]);
+
+        return $stmt->fetchColumn() === 'active';
     }
 
     public static function id(): ?int

@@ -1,13 +1,37 @@
 <?php
-$navItems = [
-    ['href' => '/', 'label' => t('dashboard'), 'icon' => 'home', 'active' => true],
-    ['href' => '#', 'label' => t('sales'), 'icon' => 'cart', 'active' => false],
-    ['href' => '#', 'label' => t('products'), 'icon' => 'box', 'active' => false],
-    ['href' => '#', 'label' => t('customers'), 'icon' => 'users', 'active' => false],
-    ['href' => '#', 'label' => t('expenses'), 'icon' => 'wallet', 'active' => false],
-    ['href' => '#', 'label' => t('reports'), 'icon' => 'chart', 'active' => false],
-    ['href' => '#', 'label' => t('employees'), 'icon' => 'userplus', 'active' => false],
-];
+
+use App\Core\Auth;
+use App\Models\Shop;
+
+$currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+$isActive = static function (string $href) use ($currentPath): bool {
+    if ($href === '#') {
+        return false;
+    }
+    if ($href === '/') {
+        return $currentPath === '/';
+    }
+    return str_starts_with($currentPath, $href);
+};
+
+if (Auth::isSuperAdmin()) {
+    $navItems = [
+        ['href' => '/', 'label' => t('dashboard'), 'icon' => 'home', 'implemented' => true],
+        ['href' => '/superadmin/shops', 'label' => t('shops'), 'icon' => 'shop', 'implemented' => true],
+        ['href' => '/profile', 'label' => t('profile'), 'icon' => 'user', 'implemented' => true],
+    ];
+} else {
+    $navItems = [
+        ['href' => '/', 'label' => t('dashboard'), 'icon' => 'home', 'implemented' => true],
+        ['href' => '#', 'label' => t('sales'), 'icon' => 'cart', 'implemented' => false],
+        ['href' => '#', 'label' => t('products'), 'icon' => 'box', 'implemented' => false],
+        ['href' => '#', 'label' => t('customers'), 'icon' => 'users', 'implemented' => false],
+        ['href' => '#', 'label' => t('expenses'), 'icon' => 'wallet', 'implemented' => false],
+        ['href' => '#', 'label' => t('reports'), 'icon' => 'chart', 'implemented' => false],
+        ['href' => '#', 'label' => t('employees'), 'icon' => 'userplus', 'implemented' => false],
+        ['href' => '/profile', 'label' => t('profile'), 'icon' => 'user', 'implemented' => true],
+    ];
+}
 
 $icon = static function (string $name): string {
     $paths = [
@@ -18,6 +42,8 @@ $icon = static function (string $name): string {
         'wallet' => '<rect x="2.5" y="6" width="19" height="13" rx="2"/><path d="M2.5 10h19"/><circle cx="17" cy="14" r="1.2"/>',
         'chart' => '<path d="M4 20V10"/><path d="M11 20V4"/><path d="M18 20v-7"/>',
         'userplus' => '<circle cx="9" cy="8" r="3.2"/><path d="M2.5 19c0-3.3 2.9-6 6.5-6s6.5 2.7 6.5 6"/><path d="M18.5 8v5"/><path d="M16 10.5h5"/>',
+        'shop' => '<path d="M3 9.5 4 4h16l1 5.5"/><path d="M4 9.5v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-10"/><path d="M9 20.5v-6h6v6"/>',
+        'user' => '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/>',
         'gear' => '<circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1h-.2a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.5v-.2a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/>',
     ];
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' . ($paths[$name] ?? '') . '</svg>';
@@ -29,6 +55,12 @@ $roleLabel = match ($user['role'] ?? '') {
     'employee' => t('role_employee'),
     default => '',
 };
+
+$shopName = '';
+if (!Auth::isSuperAdmin() && Auth::shopId()) {
+    $shop = Shop::find((int) Auth::shopId());
+    $shopName = $shop['name'] ?? '';
+}
 ?>
 <!doctype html>
 <html lang="<?= e(current_lang()) ?>">
@@ -46,11 +78,11 @@ $roleLabel = match ($user['role'] ?? '') {
                 <span class="brand-name"><?= e(t('app_name')) ?></span>
             </div>
             <nav class="side-nav">
-                <?php foreach ($navItems as $item): ?>
-                    <a href="<?= e($item['href']) ?>" class="side-link <?= $item['active'] ? 'active' : 'disabled' ?>">
+                <?php foreach ($navItems as $item): $active = $isActive($item['href']); ?>
+                    <a href="<?= e($item['href']) ?>" class="side-link <?= $active ? 'active' : ($item['implemented'] ? '' : 'disabled') ?>">
                         <span class="side-icon"><?= $icon($item['icon']) ?></span>
                         <span><?= e($item['label']) ?></span>
-                        <?php if (!$item['active']): ?><span class="badge"><?= e(t('coming_soon')) ?></span><?php endif; ?>
+                        <?php if (!$item['implemented']): ?><span class="badge"><?= e(t('coming_soon')) ?></span><?php endif; ?>
                     </a>
                 <?php endforeach; ?>
             </nav>
@@ -60,13 +92,14 @@ $roleLabel = match ($user['role'] ?? '') {
             <header class="topbar">
                 <div class="topbar-title">
                     <span class="role-badge"><?= e($roleLabel) ?></span>
+                    <?php if ($shopName !== ''): ?><span class="shop-name-label"><?= e($shopName) ?></span><?php endif; ?>
                 </div>
                 <div class="topbar-actions">
                     <?php require BASE_PATH . '/app/views/partials/lang-switcher.php'; ?>
-                    <div class="user-chip">
+                    <a href="/profile" class="user-chip">
                         <span class="user-avatar"><?= e(mb_substr((string) ($user['full_name'] ?? '?'), 0, 1)) ?></span>
                         <span class="user-name"><?= e($user['full_name'] ?? '') ?></span>
-                    </div>
+                    </a>
                     <form method="post" action="/logout">
                         <?= csrf_field() ?>
                         <button type="submit" class="btn btn-ghost btn-sm"><?= e(t('logout')) ?></button>
@@ -80,8 +113,8 @@ $roleLabel = match ($user['role'] ?? '') {
             </main>
 
             <nav class="bottom-nav">
-                <?php foreach (array_slice($navItems, 0, 5) as $item): ?>
-                    <a href="<?= e($item['href']) ?>" class="bottom-link <?= $item['active'] ? 'active' : 'disabled' ?>">
+                <?php foreach (array_slice($navItems, 0, 5) as $item): $active = $isActive($item['href']); ?>
+                    <a href="<?= e($item['href']) ?>" class="bottom-link <?= $active ? 'active' : ($item['implemented'] ? '' : 'disabled') ?>">
                         <span class="bottom-icon"><?= $icon($item['icon']) ?></span>
                         <span class="bottom-label"><?= e($item['label']) ?></span>
                     </a>

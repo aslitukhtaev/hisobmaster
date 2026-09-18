@@ -8,6 +8,7 @@ class View
 {
     public static function render(string $view, array $data = [], ?string $layout = 'layouts/app'): void
     {
+        $data = array_merge(['user' => Auth::user()], $data);
         extract($data, EXTR_SKIP);
 
         $viewFile = BASE_PATH . '/app/views/' . $view . '.php';

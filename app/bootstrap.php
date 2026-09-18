@@ -43,6 +43,7 @@ $router->setMiddlewareMap([
     'guest' => App\Middleware\GuestMiddleware::class,
     'csrf' => App\Middleware\CsrfMiddleware::class,
     'permission' => App\Middleware\PermissionMiddleware::class,
+    'role' => App\Middleware\RoleMiddleware::class,
 ]);
 
 require BASE_PATH . '/routes.php';

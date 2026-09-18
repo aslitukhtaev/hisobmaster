@@ -71,9 +71,21 @@ function flash(string $key, ?string $message = null): ?string
     return $value;
 }
 
+function keep_old(array $data): void
+{
+    $_SESSION['old'] = $data;
+}
+
 function old(string $key, string $default = ''): string
 {
-    return $_SESSION['old'][$key] ?? $default;
+    static $data = null;
+
+    if ($data === null) {
+        $data = $_SESSION['old'] ?? [];
+        unset($_SESSION['old']);
+    }
+
+    return (string) ($data[$key] ?? $default);
 }
 
 function money(float $amount, string $currency = "so'm"): string

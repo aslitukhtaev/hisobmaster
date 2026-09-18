@@ -22,6 +22,7 @@ class AuthController
 
         if ($login === '' || $password === '') {
             flash('error', t('login_required'));
+            keep_old(['login' => $login]);
             redirect('/login');
         }
 
@@ -32,6 +33,7 @@ class AuthController
         }
 
         flash('error', t('login_failed'));
+        keep_old(['login' => $login]);
         redirect('/login');
     }
 

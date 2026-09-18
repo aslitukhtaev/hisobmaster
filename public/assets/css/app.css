@@ -131,10 +131,18 @@ p { margin: 0; }
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     position: sticky; top: 0; z-index: 10;
+    gap: 10px;
 }
+.topbar-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .role-badge {
     background: var(--primary-light); color: var(--primary-dark);
     font-size: .78rem; font-weight: 700; padding: 5px 10px; border-radius: 999px;
+    white-space: nowrap;
+}
+.shop-name-label {
+    font-size: .85rem; font-weight: 700; color: var(--text);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    display: none;
 }
 .topbar-actions { display: flex; align-items: center; gap: 10px; }
 .user-chip { display: none; align-items: center; gap: 8px; font-size: .88rem; font-weight: 600; }
@@ -206,6 +214,52 @@ p { margin: 0; }
     background: var(--bg); padding: 2px 8px; border-radius: 999px;
 }
 
+/* ---------- Page head / cards with actions ---------- */
+.page-head-row {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+}
+.card-header-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; margin-bottom: 12px;
+}
+.form-card { max-width: 480px; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+
+/* ---------- Stat tiles ---------- */
+.stat-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px;
+}
+.stat-tile {
+    background: var(--surface); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 16px; text-align: center;
+}
+.stat-value { font-size: 1.5rem; font-weight: 800; color: var(--primary-dark); }
+.stat-label { font-size: .78rem; color: var(--muted); font-weight: 600; margin-top: 2px; }
+
+/* ---------- Tables ---------- */
+.table-card { padding: 8px; }
+.table-wrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: .88rem; min-width: 560px; }
+.table th, .table td { text-align: left; padding: 12px; white-space: nowrap; }
+.table thead th { color: var(--muted); font-weight: 700; font-size: .75rem; text-transform: uppercase; letter-spacing: .02em; }
+.table tbody tr { border-top: 1px solid var(--border); }
+.row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.row-actions form { margin: 0; }
+
+.status-pill { font-size: .74rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+.status-active { background: var(--success-bg); color: var(--success); }
+.status-blocked { background: var(--danger-bg); color: var(--danger); }
+
+/* ---------- Credentials display ---------- */
+.cred-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+}
+.cred-row:last-of-type { border-bottom: none; }
+.cred-label { font-weight: 600; color: var(--muted); font-size: .85rem; }
+.cred-value { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 1.05rem; font-weight: 700; color: var(--primary-dark); }
+
 /* ---------- Desktop breakpoint ---------- */
 @media (min-width: 900px) {
     .sidebar {
@@ -216,7 +270,14 @@ p { margin: 0; }
     .bottom-nav { display: none; }
     .content { padding: 24px 32px 32px; }
     .user-chip { display: flex; }
+    .shop-name-label { display: block; max-width: 220px; }
     .card-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 520px) {
+    .stat-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .stat-tile { padding: 12px 8px; }
+    .stat-value { font-size: 1.2rem; }
 }
 
 @media (min-width: 1200px) {

@@ -11,7 +11,7 @@
         <?= csrf_field() ?>
         <label class="field">
             <span><?= e(t('login')) ?></span>
-            <input type="text" name="login" autocomplete="username" required autofocus>
+            <input type="text" name="login" autocomplete="username" required autofocus value="<?= e(old('login')) ?>">
         </label>
         <label class="field">
             <span><?= e(t('password')) ?></span>
