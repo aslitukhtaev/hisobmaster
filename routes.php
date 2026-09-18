@@ -5,9 +5,11 @@ declare(strict_types=1);
 use App\Controllers\AuthController;
 use App\Controllers\CustomerController;
 use App\Controllers\DashboardController;
+use App\Controllers\ExpenseController;
 use App\Controllers\LocaleController;
 use App\Controllers\ProductController;
 use App\Controllers\ProfileController;
+use App\Controllers\ReportController;
 use App\Controllers\SaleController;
 use App\Controllers\SuperAdminController;
 
@@ -51,3 +53,12 @@ $router->get('/customers/{id}/edit', [CustomerController::class, 'editForm'], ['
 $router->post('/customers/{id}', [CustomerController::class, 'update'], ['auth', 'permission:customers', 'csrf']);
 $router->post('/customers/{id}/payment', [CustomerController::class, 'recordPayment'], ['auth', 'permission:customers', 'csrf']);
 $router->get('/customers/{id}', [CustomerController::class, 'show'], ['auth', 'permission:customers']);
+
+$router->get('/expenses', [ExpenseController::class, 'index'], ['auth', 'permission:expenses']);
+$router->get('/expenses/create', [ExpenseController::class, 'createForm'], ['auth', 'permission:expenses']);
+$router->post('/expenses', [ExpenseController::class, 'store'], ['auth', 'permission:expenses', 'csrf']);
+$router->get('/expenses/{id}/edit', [ExpenseController::class, 'editForm'], ['auth', 'permission:expenses']);
+$router->post('/expenses/{id}', [ExpenseController::class, 'update'], ['auth', 'permission:expenses', 'csrf']);
+$router->post('/expenses/{id}/delete', [ExpenseController::class, 'delete'], ['auth', 'permission:expenses', 'csrf']);
+
+$router->get('/reports', [ReportController::class, 'index'], ['auth', 'permission:reports']);

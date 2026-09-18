@@ -9,8 +9,8 @@ $cards = [
     ['icon' => '🧾', 'title' => t('sales'), 'href' => '/sales', 'implemented' => true],
     ['icon' => '📦', 'title' => t('products'), 'href' => '/products', 'implemented' => true],
     ['icon' => '👥', 'title' => t('customers'), 'href' => '/customers', 'implemented' => true],
-    ['icon' => '💸', 'title' => t('expenses'), 'href' => '#', 'implemented' => false],
-    ['icon' => '📊', 'title' => t('reports'), 'href' => '#', 'implemented' => false],
+    ['icon' => '💸', 'title' => t('expenses'), 'href' => '/expenses', 'implemented' => true],
+    ['icon' => '📊', 'title' => t('reports'), 'href' => '/reports', 'implemented' => true],
     ['icon' => '🧑‍🤝‍🧑', 'title' => t('employees'), 'href' => '#', 'implemented' => false],
 ];
 

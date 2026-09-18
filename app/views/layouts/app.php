@@ -26,8 +26,8 @@ if (Auth::isSuperAdmin()) {
         ['href' => '/sales', 'label' => t('sales'), 'icon' => 'cart', 'implemented' => true],
         ['href' => '/products', 'label' => t('products'), 'icon' => 'box', 'implemented' => true],
         ['href' => '/customers', 'label' => t('customers'), 'icon' => 'users', 'implemented' => true],
-        ['href' => '#', 'label' => t('expenses'), 'icon' => 'wallet', 'implemented' => false],
-        ['href' => '#', 'label' => t('reports'), 'icon' => 'chart', 'implemented' => false],
+        ['href' => '/expenses', 'label' => t('expenses'), 'icon' => 'wallet', 'implemented' => true],
+        ['href' => '/reports', 'label' => t('reports'), 'icon' => 'chart', 'implemented' => true],
         ['href' => '#', 'label' => t('employees'), 'icon' => 'userplus', 'implemented' => false],
         ['href' => '/profile', 'label' => t('profile'), 'icon' => 'user', 'implemented' => true],
     ];
