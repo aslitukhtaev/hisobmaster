@@ -26,15 +26,15 @@
                 <?php foreach ($shops as $shop): ?>
                     <tr>
                         <td><?= e($shop['name']) ?></td>
-                        <td><?= e($shop['owner_full_name']) ?></td>
-                        <td><?= e($shop['phone']) ?></td>
-                        <td>
+                        <td data-label="<?= e(t('owner_full_name')) ?>"><?= e($shop['owner_full_name']) ?></td>
+                        <td data-label="<?= e(t('phone')) ?>"><?= e($shop['phone']) ?></td>
+                        <td data-label="<?= e(t('status')) ?>">
                             <span class="status-pill <?= $shop['status'] === 'active' ? 'status-active' : 'status-blocked' ?>">
                                 <?= e($shop['status'] === 'active' ? t('active_status') : t('blocked_status')) ?>
                             </span>
                         </td>
-                        <td class="muted"><?= e(substr((string) $shop['created_at'], 0, 10)) ?></td>
-                        <td>
+                        <td class="muted" data-label="<?= e(t('created_at_label')) ?>"><?= e(substr((string) $shop['created_at'], 0, 10)) ?></td>
+                        <td data-label="<?= e(t('actions')) ?>">
                             <div class="row-actions">
                                 <form method="post" action="/superadmin/shops/<?= (int) $shop['id'] ?>/reset-password"
                                       onsubmit="return confirm('<?= e(t('confirm_reset_password')) ?>');">

@@ -118,7 +118,7 @@ class Auth
             return false;
         }
 
-        if ($user['role'] === 'super_admin' || $user['role'] === 'owner') {
+        if ($user['role'] === 'owner') {
             return true;
         }
 

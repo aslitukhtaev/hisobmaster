@@ -93,6 +93,15 @@ function money(float $amount, string $currency = "so'm"): string
     return number_format($amount, 0, '.', ' ') . ' ' . $currency;
 }
 
+function format_qty(float $value): string
+{
+    if (floor($value) == $value) {
+        return number_format($value, 0, '.', ' ');
+    }
+
+    return rtrim(rtrim(number_format($value, 2, '.', ' '), '0'), '.');
+}
+
 function can(string $permission): bool
 {
     return Auth::can($permission);

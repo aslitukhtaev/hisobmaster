@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
 use App\Controllers\LocaleController;
+use App\Controllers\ProductController;
 use App\Controllers\ProfileController;
 use App\Controllers\SuperAdminController;
 
@@ -27,3 +28,10 @@ $router->post('/superadmin/shops', [SuperAdminController::class, 'store'], ['aut
 $router->get('/superadmin/shops/{id}/created', [SuperAdminController::class, 'created'], ['auth', 'role:super_admin']);
 $router->post('/superadmin/shops/{id}/toggle-status', [SuperAdminController::class, 'toggleStatus'], ['auth', 'role:super_admin', 'csrf']);
 $router->post('/superadmin/shops/{id}/reset-password', [SuperAdminController::class, 'resetPassword'], ['auth', 'role:super_admin', 'csrf']);
+
+$router->get('/products', [ProductController::class, 'index'], ['auth', 'permission:products']);
+$router->get('/products/create', [ProductController::class, 'createForm'], ['auth', 'permission:products']);
+$router->post('/products', [ProductController::class, 'store'], ['auth', 'permission:products', 'csrf']);
+$router->get('/products/{id}/edit', [ProductController::class, 'editForm'], ['auth', 'permission:products']);
+$router->post('/products/{id}', [ProductController::class, 'update'], ['auth', 'permission:products', 'csrf']);
+$router->post('/products/{id}/toggle-status', [ProductController::class, 'toggleStatus'], ['auth', 'permission:products', 'csrf']);

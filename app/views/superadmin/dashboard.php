@@ -44,9 +44,9 @@
                 <?php foreach ($recentShops as $shop): ?>
                     <tr>
                         <td><?= e($shop['name']) ?></td>
-                        <td><?= e($shop['owner_full_name']) ?></td>
-                        <td><?= e($shop['phone']) ?></td>
-                        <td>
+                        <td data-label="<?= e(t('owner_full_name')) ?>"><?= e($shop['owner_full_name']) ?></td>
+                        <td data-label="<?= e(t('phone')) ?>"><?= e($shop['phone']) ?></td>
+                        <td data-label="<?= e(t('status')) ?>">
                             <span class="status-pill <?= $shop['status'] === 'active' ? 'status-active' : 'status-blocked' ?>">
                                 <?= e($shop['status'] === 'active' ? t('active_status') : t('blocked_status')) ?>
                             </span>

@@ -24,7 +24,7 @@ if (Auth::isSuperAdmin()) {
     $navItems = [
         ['href' => '/', 'label' => t('dashboard'), 'icon' => 'home', 'implemented' => true],
         ['href' => '#', 'label' => t('sales'), 'icon' => 'cart', 'implemented' => false],
-        ['href' => '#', 'label' => t('products'), 'icon' => 'box', 'implemented' => false],
+        ['href' => '/products', 'label' => t('products'), 'icon' => 'box', 'implemented' => true],
         ['href' => '#', 'label' => t('customers'), 'icon' => 'users', 'implemented' => false],
         ['href' => '#', 'label' => t('expenses'), 'icon' => 'wallet', 'implemented' => false],
         ['href' => '#', 'label' => t('reports'), 'icon' => 'chart', 'implemented' => false],
