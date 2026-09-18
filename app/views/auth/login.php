@@ -1,3 +1,4 @@
+<?php $pageTitle = t('login_button'); ?>
 <div class="auth-card">
     <div class="auth-brand">
         <div class="auth-logo">HM</div>

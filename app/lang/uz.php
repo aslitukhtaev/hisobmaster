@@ -263,4 +263,20 @@ return [
     // Telegram
     'telegram_welcome_message' => "Assalomu alaykum! HisobMaster tizimiga kirish uchun quyidagi tugmani bosing.",
     'telegram_open_app_button' => "🛍 Ilovani ochish",
+
+    // Activity log
+    'activity_log' => "Faoliyat tarixi",
+    'activity_log_hint' => "Do'koningizda kim nima qilganini shu yerdan kuzatib boring.",
+    'no_activity_yet' => "Hali hech qanday faoliyat qayd etilmagan.",
+    'activity_description' => "Amal",
+    'activity_sale_created' => "Yangi sotuv amalga oshirildi: :total (chek #:sale_id)",
+    'activity_debt_payment_recorded' => "Qarz to'lovi qabul qilindi: :amount (mijoz: :customer_name)",
+    'activity_expense_created' => "Xarajat qo'shildi: :amount (:category)",
+    'activity_expense_deleted' => "Xarajat o'chirildi: :amount",
+    'activity_employee_permissions_updated' => "Xodim ruxsatlari o'zgartirildi: :employee_name",
+    'activity_employee_status_changed' => "Xodim holati o'zgartirildi: :employee_name → :status",
+    'no_category' => "Kategoriyasiz",
+    'more_menu' => "Ko'proq",
+    'download_backup' => "Zaxira nusxa (.db)",
+    'backup_not_found' => "Baza fayli topilmadi",
 ];

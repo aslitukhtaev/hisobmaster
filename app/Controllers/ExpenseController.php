@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Request;
 use App\Core\View;
+use App\Models\ActivityLog;
 use App\Models\Category;
 use App\Models\Expense;
 
@@ -55,6 +56,11 @@ class ExpenseController
             'description' => $data['description'],
             'expense_date' => $data['expense_date'],
             'created_by' => (int) Auth::id(),
+        ]);
+
+        ActivityLog::record($shopId, (int) Auth::id(), 'expense_created', [
+            'amount' => money($data['amount']),
+            'category' => $data['category'] !== '' ? $data['category'] : t('no_category'),
         ]);
 
         flash('success', t('expense_created'));
@@ -115,6 +121,9 @@ class ExpenseController
 
         if ($expense) {
             Expense::delete((int) $id, $shopId);
+            ActivityLog::record($shopId, (int) Auth::id(), 'expense_deleted', [
+                'amount' => money((float) $expense['amount']),
+            ]);
             flash('success', t('expense_deleted'));
         }
 

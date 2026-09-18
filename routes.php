@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Controllers\ActivityLogController;
 use App\Controllers\AuthController;
 use App\Controllers\CustomerController;
 use App\Controllers\DashboardController;
@@ -31,6 +32,7 @@ $router->post('/profile', [ProfileController::class, 'update'], ['auth', 'csrf']
 $router->post('/profile/shop', [ProfileController::class, 'updateShop'], ['auth', 'role:owner', 'csrf']);
 
 $router->get('/superadmin/shops', [SuperAdminController::class, 'shops'], ['auth', 'role:super_admin']);
+$router->get('/superadmin/backup', [SuperAdminController::class, 'downloadBackup'], ['auth', 'role:super_admin']);
 $router->get('/superadmin/shops/create', [SuperAdminController::class, 'createForm'], ['auth', 'role:super_admin']);
 $router->post('/superadmin/shops', [SuperAdminController::class, 'store'], ['auth', 'role:super_admin', 'csrf']);
 $router->get('/superadmin/shops/{id}/created', [SuperAdminController::class, 'created'], ['auth', 'role:super_admin']);
@@ -78,3 +80,5 @@ $router->get('/join/{token}', [JoinController::class, 'show'], ['guest']);
 $router->post('/join/{token}', [JoinController::class, 'register'], ['guest', 'csrf']);
 
 $router->post('/telegram/webhook', [TelegramController::class, 'webhook'], []);
+
+$router->get('/activity', [ActivityLogController::class, 'index'], ['auth', 'role:owner']);

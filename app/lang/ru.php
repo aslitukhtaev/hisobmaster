@@ -263,4 +263,20 @@ return [
     // Telegram
     'telegram_welcome_message' => 'Здравствуйте! Нажмите кнопку ниже, чтобы войти в HisobMaster.',
     'telegram_open_app_button' => '🛍 Открыть приложение',
+
+    // Activity log
+    'activity_log' => 'История действий',
+    'activity_log_hint' => 'Здесь видно, кто и что делал в вашем магазине.',
+    'no_activity_yet' => 'Пока нет ни одной записи.',
+    'activity_description' => 'Действие',
+    'activity_sale_created' => 'Новая продажа: :total (чек #:sale_id)',
+    'activity_debt_payment_recorded' => 'Принята оплата долга: :amount (клиент: :customer_name)',
+    'activity_expense_created' => 'Добавлен расход: :amount (:category)',
+    'activity_expense_deleted' => 'Расход удалён: :amount',
+    'activity_employee_permissions_updated' => 'Изменены права сотрудника: :employee_name',
+    'activity_employee_status_changed' => 'Изменён статус сотрудника: :employee_name → :status',
+    'no_category' => 'Без категории',
+    'more_menu' => 'Ещё',
+    'download_backup' => 'Резервная копия (.db)',
+    'backup_not_found' => 'Файл базы данных не найден',
 ];

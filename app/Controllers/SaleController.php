@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Request;
 use App\Core\View;
+use App\Models\ActivityLog;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Sale;
@@ -111,6 +112,12 @@ class SaleController
             flash('error', t($e->getMessage()));
             redirect('/sales/new');
         }
+
+        $sale = Sale::find($saleId, $shopId);
+        ActivityLog::record($shopId, $cashierId, 'sale_created', [
+            'sale_id' => $saleId,
+            'total' => money((float) ($sale['total'] ?? 0)),
+        ]);
 
         flash('success', t('sale_completed'));
         redirect("/sales/{$saleId}");

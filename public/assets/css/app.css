@@ -149,7 +149,8 @@ p { margin: 0; }
     display: none;
 }
 .topbar-actions { display: flex; align-items: center; gap: 10px; }
-.user-chip { display: none; align-items: center; gap: 8px; font-size: .88rem; font-weight: 600; }
+.user-chip { display: flex; align-items: center; gap: 8px; font-size: .88rem; font-weight: 600; }
+.user-chip .user-name { display: none; }
 .user-avatar {
     width: 32px; height: 32px; border-radius: 50%;
     background: var(--primary); color: #fff;
@@ -194,10 +195,33 @@ p { margin: 0; }
 .bottom-link {
     flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 2px; font-size: .66rem; font-weight: 600; color: var(--muted);
+    border: none; background: none; font-family: inherit; cursor: pointer; padding: 0;
 }
 .bottom-link.active { color: var(--primary); }
 .bottom-link.disabled { opacity: .45; }
 .bottom-icon svg { width: 21px; height: 21px; }
+
+/* ---------- Mobile "more" drawer ---------- */
+.mobile-drawer {
+    display: none; position: fixed; inset: 0; background: rgba(15, 18, 30, .45); z-index: 40;
+}
+.mobile-drawer.open { display: flex; align-items: flex-end; }
+.mobile-drawer-sheet {
+    background: var(--surface); width: 100%; max-height: 75vh; overflow-y: auto;
+    border-radius: 18px 18px 0 0; padding: 14px 10px calc(env(safe-area-inset-bottom, 0px) + 14px);
+}
+.drawer-link {
+    display: flex; align-items: center; gap: 12px; padding: 14px 12px;
+    border-radius: var(--radius-sm); font-weight: 600; font-size: .95rem; color: var(--text);
+}
+.drawer-link.active { background: var(--primary-light); color: var(--primary-dark); }
+.drawer-link.disabled { color: var(--muted); }
+.drawer-link .side-icon svg { width: 20px; height: 20px; }
+.drawer-link .badge-locked { margin-left: auto; }
+
+@media (min-width: 900px) {
+    .mobile-drawer { display: none !important; }
+}
 
 /* ---------- Cards / grid ---------- */
 .card {
@@ -426,7 +450,7 @@ p { margin: 0; }
     }
     .bottom-nav { display: none; }
     .content { padding: 24px 32px 32px; }
-    .user-chip { display: flex; }
+    .user-chip .user-name { display: inline; }
     .shop-name-label { display: block; max-width: 220px; }
     .card-grid { grid-template-columns: repeat(3, 1fr); }
 }

@@ -32,6 +32,7 @@ if (Auth::isSuperAdmin()) {
 
     if (Auth::isOwner()) {
         $navItems[] = ['href' => '/employees', 'label' => t('employees'), 'icon' => 'userplus', 'implemented' => true, 'permission' => null];
+        $navItems[] = ['href' => '/activity', 'label' => t('activity_log'), 'icon' => 'clock', 'implemented' => true, 'permission' => null];
     }
 
     $navItems[] = ['href' => '/profile', 'label' => t('profile'), 'icon' => 'user', 'implemented' => true, 'permission' => null];
@@ -54,6 +55,8 @@ $icon = static function (string $name): string {
         'shop' => '<path d="M3 9.5 4 4h16l1 5.5"/><path d="M4 9.5v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-10"/><path d="M9 20.5v-6h6v6"/>',
         'user' => '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/>',
         'gear' => '<circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1h-.2a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.5v-.2a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/>',
+        'clock' => '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+        'more' => '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
     ];
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' . ($paths[$name] ?? '') . '</svg>';
 };
@@ -76,8 +79,12 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title><?= e(t('app_name')) ?></title>
+    <title><?= isset($pageTitle) ? e($pageTitle) . ' — ' . e(t('app_name')) : e(t('app_name')) ?></title>
     <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="<?= asset('img/icon-192.png') ?>" type="image/png">
+    <link rel="apple-touch-icon" href="<?= asset('img/icon-192.png') ?>">
+    <meta name="theme-color" content="#4f46e5">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -128,13 +135,33 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
             </main>
 
             <nav class="bottom-nav">
-                <?php foreach (array_slice($navItems, 0, 5) as $item): $active = $isActive($item['href']); ?>
+                <?php foreach (array_slice($navItems, 0, 4) as $item): $active = $isActive($item['href']); ?>
                     <a href="<?= e($item['accessible'] ? $item['href'] : '#') ?>" class="bottom-link <?= $active ? 'active' : ($item['accessible'] ? '' : 'disabled') ?>">
                         <span class="bottom-icon"><?= $icon($item['icon']) ?></span>
                         <span class="bottom-label"><?= e($item['label']) ?></span>
                     </a>
                 <?php endforeach; ?>
+                <?php if (count($navItems) > 4): ?>
+                    <button type="button" class="bottom-link" id="more-nav-toggle">
+                        <span class="bottom-icon"><?= $icon('more') ?></span>
+                        <span class="bottom-label"><?= e(t('more_menu')) ?></span>
+                    </button>
+                <?php endif; ?>
             </nav>
+
+            <div class="mobile-drawer" id="mobile-drawer">
+                <div class="mobile-drawer-sheet">
+                    <?php foreach ($navItems as $item): $active = $isActive($item['href']); ?>
+                        <a href="<?= e($item['accessible'] ? $item['href'] : '#') ?>" class="drawer-link <?= $active ? 'active' : ($item['accessible'] ? '' : 'disabled') ?>">
+                            <span class="side-icon"><?= $icon($item['icon']) ?></span>
+                            <span><?= e($item['label']) ?></span>
+                            <?php if (!$item['accessible']): ?>
+                                <span class="badge badge-locked"><?= e(t('no_access_badge')) ?></span>
+                            <?php endif; ?>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
         </div>
     </div>
 

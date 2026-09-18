@@ -1,4 +1,5 @@
 <?php
+$pageTitle = t('reports');
 $revenues = array_column($dailyRevenue, 'revenue');
 $maxRevenue = $revenues ? max(max($revenues), 1) : 1;
 $hasSales = array_sum($revenues) > 0;

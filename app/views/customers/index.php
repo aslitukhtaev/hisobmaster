@@ -1,3 +1,4 @@
+<?php $pageTitle = t('customers'); ?>
 <section class="page-head page-head-row">
     <div>
         <h1><?= e(t('customers')) ?></h1>

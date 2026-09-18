@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Request;
 use App\Core\View;
+use App\Models\ActivityLog;
 use App\Models\Customer;
 use App\Models\DebtTransaction;
 
@@ -129,6 +130,11 @@ class CustomerController
         }
 
         DebtTransaction::record($shopId, (int) $id, null, 'tolov', $amount, (int) Auth::id());
+
+        ActivityLog::record($shopId, (int) Auth::id(), 'debt_payment_recorded', [
+            'amount' => money($amount),
+            'customer_name' => $customer['full_name'],
+        ]);
 
         flash('success', t('payment_recorded'));
         redirect("/customers/{$id}");

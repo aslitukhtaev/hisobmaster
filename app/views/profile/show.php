@@ -1,3 +1,4 @@
+<?php $pageTitle = t('profile'); ?>
 <section class="page-head">
     <h1><?= e(t('profile')) ?></h1>
     <p class="muted"><?= e($user['full_name'] ?? '') ?></p>

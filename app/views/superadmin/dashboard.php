@@ -1,3 +1,4 @@
+<?php $pageTitle = t('dashboard'); ?>
 <section class="page-head page-head-row">
     <div>
         <h1><?= e(t('welcome', ['name' => $user['full_name'] ?? ''])) ?></h1>

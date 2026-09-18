@@ -5,6 +5,8 @@ use App\Models\DebtTransaction;
 use App\Models\Product;
 use App\Models\Sale;
 
+$pageTitle = t('dashboard');
+
 $cards = [
     ['icon' => '🧾', 'title' => t('sales'), 'href' => '/sales', 'permission' => 'sales'],
     ['icon' => '📦', 'title' => t('products'), 'href' => '/products', 'permission' => 'products'],

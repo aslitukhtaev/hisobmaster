@@ -1,3 +1,4 @@
+<?php $pageTitle = t('sales'); ?>
 <section class="page-head page-head-row">
     <div>
         <h1><?= e(t('sales')) ?></h1>

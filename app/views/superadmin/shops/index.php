@@ -1,9 +1,13 @@
+<?php $pageTitle = t('shops'); ?>
 <section class="page-head page-head-row">
     <div>
         <h1><?= e(t('shops')) ?></h1>
         <p class="muted"><?= count($shops) ?> <?= e(t('shops_count_label')) ?></p>
     </div>
-    <a href="/superadmin/shops/create" class="btn btn-primary"><?= e(t('create_shop')) ?></a>
+    <div class="row-actions">
+        <a href="/superadmin/backup" class="btn btn-ghost"><?= e(t('download_backup')) ?></a>
+        <a href="/superadmin/shops/create" class="btn btn-primary"><?= e(t('create_shop')) ?></a>
+    </div>
 </section>
 
 <?php if (empty($shops)): ?>

@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Request;
 use App\Core\View;
+use App\Models\ActivityLog;
 use App\Models\EmployeeInvite;
 use App\Models\User;
 
@@ -82,6 +83,10 @@ class EmployeeController
 
         User::updatePermissions((int) $id, $this->readPermissions($request));
 
+        ActivityLog::record($shopId, (int) Auth::id(), 'employee_permissions_updated', [
+            'employee_name' => $employee['full_name'],
+        ]);
+
         flash('success', t('employee_permissions_updated'));
         redirect('/employees');
     }
@@ -94,6 +99,10 @@ class EmployeeController
         if ($employee) {
             $newStatus = $employee['status'] === 'active' ? 'blocked' : 'active';
             User::setStatus((int) $id, $newStatus);
+            ActivityLog::record($shopId, (int) Auth::id(), 'employee_status_changed', [
+                'employee_name' => $employee['full_name'],
+                'status' => $newStatus === 'active' ? t('active_status') : t('blocked_status'),
+            ]);
             flash('success', t('employee_status_updated'));
         }
 
