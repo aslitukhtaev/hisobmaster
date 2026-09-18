@@ -175,6 +175,7 @@ p { margin: 0; }
     margin-left: auto; font-size: .68rem; font-weight: 700;
     background: var(--border); color: var(--muted); padding: 2px 7px; border-radius: 999px;
 }
+.side-link .badge-locked { background: var(--danger-bg); color: var(--danger); }
 .brand { display: flex; align-items: center; gap: 10px; padding: 16px; }
 .brand-logo {
     width: 34px; height: 34px; border-radius: 10px;
@@ -302,6 +303,39 @@ p { margin: 0; }
 @media (max-width: 520px) {
     .hbar-row { grid-template-columns: 56px 1fr; }
     .hbar-value { grid-column: 1 / -1; text-align: left; min-width: 0; }
+}
+
+/* ---------- Employees / permissions ---------- */
+.field-label-standalone { display: block; font-size: .88rem; font-weight: 600; color: var(--muted); }
+.permission-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 480px) {
+    .permission-grid { grid-template-columns: 1fr 1fr; }
+}
+.permission-check {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-size: .88rem; font-weight: 600; cursor: pointer;
+}
+.permission-check:has(input:checked) { border-color: var(--primary); background: var(--primary-light); }
+.permission-check input { accent-color: var(--primary); width: 18px; height: 18px; }
+
+.perm-badge {
+    display: inline-block; font-size: .72rem; font-weight: 700;
+    background: var(--primary-light); color: var(--primary-dark);
+    padding: 3px 9px; border-radius: 999px; margin: 2px 4px 2px 0;
+}
+
+.invite-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 0; border-top: 1px solid var(--border);
+}
+.invite-row:first-child { border-top: none; }
+.invite-row form { margin: 0; }
+
+.invite-link-box {
+    font-family: 'SFMono-Regular', Consolas, monospace; font-size: .84rem;
+    background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 12px 14px; word-break: break-all;
 }
 
 /* ---------- Page head / cards with actions ---------- */

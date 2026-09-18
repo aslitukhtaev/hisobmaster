@@ -9,10 +9,12 @@
     <a href="/products/create" class="btn btn-primary"><?= e(t('add_product')) ?></a>
 </section>
 
+<?php if (can('prices')): ?>
 <section class="stat-tile stock-value-tile">
     <span class="stat-label"><?= e(t('stock_value')) ?></span>
     <span class="stat-value stock-value-amount"><?= money((float) $counts['stock_value']) ?></span>
 </section>
+<?php endif; ?>
 
 <form method="get" action="/products" class="search-bar">
     <input type="text" name="q" placeholder="<?= e(t('search_products_placeholder')) ?>" value="<?= e($search) ?>">
@@ -31,7 +33,7 @@
                     <tr>
                         <th><?= e(t('product_name')) ?></th>
                         <th><?= e(t('category')) ?></th>
-                        <th><?= e(t('cost_price')) ?></th>
+                        <?php if (can('prices')): ?><th><?= e(t('cost_price')) ?></th><?php endif; ?>
                         <th><?= e(t('sell_price')) ?></th>
                         <th><?= e(t('stock_qty')) ?></th>
                         <th><?= e(t('status')) ?></th>
@@ -43,7 +45,9 @@
                     <tr>
                         <td><?= e($product['name']) ?></td>
                         <td class="muted" data-label="<?= e(t('category')) ?>"><?= e($product['category_name'] ?? '—') ?></td>
-                        <td data-label="<?= e(t('cost_price')) ?>"><?= money((float) $product['cost_price']) ?></td>
+                        <?php if (can('prices')): ?>
+                            <td data-label="<?= e(t('cost_price')) ?>"><?= money((float) $product['cost_price']) ?></td>
+                        <?php endif; ?>
                         <td data-label="<?= e(t('sell_price')) ?>"><?= money((float) $product['sell_price']) ?></td>
                         <td data-label="<?= e(t('stock_qty')) ?>"><?= e(format_qty((float) $product['stock_qty'])) ?> <?= e($product['unit']) ?></td>
                         <td data-label="<?= e(t('status')) ?>">

@@ -5,7 +5,9 @@ declare(strict_types=1);
 use App\Controllers\AuthController;
 use App\Controllers\CustomerController;
 use App\Controllers\DashboardController;
+use App\Controllers\EmployeeController;
 use App\Controllers\ExpenseController;
+use App\Controllers\JoinController;
 use App\Controllers\LocaleController;
 use App\Controllers\ProductController;
 use App\Controllers\ProfileController;
@@ -62,3 +64,14 @@ $router->post('/expenses/{id}', [ExpenseController::class, 'update'], ['auth', '
 $router->post('/expenses/{id}/delete', [ExpenseController::class, 'delete'], ['auth', 'permission:expenses', 'csrf']);
 
 $router->get('/reports', [ReportController::class, 'index'], ['auth', 'permission:reports']);
+
+$router->get('/employees', [EmployeeController::class, 'index'], ['auth', 'role:owner']);
+$router->get('/employees/invite', [EmployeeController::class, 'inviteForm'], ['auth', 'role:owner']);
+$router->post('/employees/invite', [EmployeeController::class, 'createInvite'], ['auth', 'role:owner', 'csrf']);
+$router->post('/employees/invites/{id}/revoke', [EmployeeController::class, 'revokeInvite'], ['auth', 'role:owner', 'csrf']);
+$router->get('/employees/{id}/edit', [EmployeeController::class, 'editPermissions'], ['auth', 'role:owner']);
+$router->post('/employees/{id}', [EmployeeController::class, 'updatePermissions'], ['auth', 'role:owner', 'csrf']);
+$router->post('/employees/{id}/toggle-status', [EmployeeController::class, 'toggleStatus'], ['auth', 'role:owner', 'csrf']);
+
+$router->get('/join/{token}', [JoinController::class, 'show'], ['guest']);
+$router->post('/join/{token}', [JoinController::class, 'register'], ['guest', 'csrf']);

@@ -16,22 +16,31 @@ $isActive = static function (string $href) use ($currentPath): bool {
 
 if (Auth::isSuperAdmin()) {
     $navItems = [
-        ['href' => '/', 'label' => t('dashboard'), 'icon' => 'home', 'implemented' => true],
-        ['href' => '/superadmin/shops', 'label' => t('shops'), 'icon' => 'shop', 'implemented' => true],
-        ['href' => '/profile', 'label' => t('profile'), 'icon' => 'user', 'implemented' => true],
+        ['href' => '/', 'label' => t('dashboard'), 'icon' => 'home', 'implemented' => true, 'permission' => null],
+        ['href' => '/superadmin/shops', 'label' => t('shops'), 'icon' => 'shop', 'implemented' => true, 'permission' => null],
+        ['href' => '/profile', 'label' => t('profile'), 'icon' => 'user', 'implemented' => true, 'permission' => null],
     ];
 } else {
     $navItems = [
-        ['href' => '/', 'label' => t('dashboard'), 'icon' => 'home', 'implemented' => true],
-        ['href' => '/sales', 'label' => t('sales'), 'icon' => 'cart', 'implemented' => true],
-        ['href' => '/products', 'label' => t('products'), 'icon' => 'box', 'implemented' => true],
-        ['href' => '/customers', 'label' => t('customers'), 'icon' => 'users', 'implemented' => true],
-        ['href' => '/expenses', 'label' => t('expenses'), 'icon' => 'wallet', 'implemented' => true],
-        ['href' => '/reports', 'label' => t('reports'), 'icon' => 'chart', 'implemented' => true],
-        ['href' => '#', 'label' => t('employees'), 'icon' => 'userplus', 'implemented' => false],
-        ['href' => '/profile', 'label' => t('profile'), 'icon' => 'user', 'implemented' => true],
+        ['href' => '/', 'label' => t('dashboard'), 'icon' => 'home', 'implemented' => true, 'permission' => null],
+        ['href' => '/sales', 'label' => t('sales'), 'icon' => 'cart', 'implemented' => true, 'permission' => 'sales'],
+        ['href' => '/products', 'label' => t('products'), 'icon' => 'box', 'implemented' => true, 'permission' => 'products'],
+        ['href' => '/customers', 'label' => t('customers'), 'icon' => 'users', 'implemented' => true, 'permission' => 'customers'],
+        ['href' => '/expenses', 'label' => t('expenses'), 'icon' => 'wallet', 'implemented' => true, 'permission' => 'expenses'],
+        ['href' => '/reports', 'label' => t('reports'), 'icon' => 'chart', 'implemented' => true, 'permission' => 'reports'],
     ];
+
+    if (Auth::isOwner()) {
+        $navItems[] = ['href' => '/employees', 'label' => t('employees'), 'icon' => 'userplus', 'implemented' => true, 'permission' => null];
+    }
+
+    $navItems[] = ['href' => '/profile', 'label' => t('profile'), 'icon' => 'user', 'implemented' => true, 'permission' => null];
 }
+
+foreach ($navItems as &$navItem) {
+    $navItem['accessible'] = $navItem['implemented'] && ($navItem['permission'] === null || can($navItem['permission']));
+}
+unset($navItem);
 
 $icon = static function (string $name): string {
     $paths = [
@@ -79,10 +88,14 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
             </div>
             <nav class="side-nav">
                 <?php foreach ($navItems as $item): $active = $isActive($item['href']); ?>
-                    <a href="<?= e($item['href']) ?>" class="side-link <?= $active ? 'active' : ($item['implemented'] ? '' : 'disabled') ?>">
+                    <a href="<?= e($item['accessible'] ? $item['href'] : '#') ?>" class="side-link <?= $active ? 'active' : ($item['accessible'] ? '' : 'disabled') ?>">
                         <span class="side-icon"><?= $icon($item['icon']) ?></span>
                         <span><?= e($item['label']) ?></span>
-                        <?php if (!$item['implemented']): ?><span class="badge"><?= e(t('coming_soon')) ?></span><?php endif; ?>
+                        <?php if (!$item['implemented']): ?>
+                            <span class="badge"><?= e(t('coming_soon')) ?></span>
+                        <?php elseif (!$item['accessible']): ?>
+                            <span class="badge badge-locked"><?= e(t('no_access_badge')) ?></span>
+                        <?php endif; ?>
                     </a>
                 <?php endforeach; ?>
             </nav>
@@ -114,7 +127,7 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
 
             <nav class="bottom-nav">
                 <?php foreach (array_slice($navItems, 0, 5) as $item): $active = $isActive($item['href']); ?>
-                    <a href="<?= e($item['href']) ?>" class="bottom-link <?= $active ? 'active' : ($item['implemented'] ? '' : 'disabled') ?>">
+                    <a href="<?= e($item['accessible'] ? $item['href'] : '#') ?>" class="bottom-link <?= $active ? 'active' : ($item['accessible'] ? '' : 'disabled') ?>">
                         <span class="bottom-icon"><?= $icon($item['icon']) ?></span>
                         <span class="bottom-label"><?= e($item['label']) ?></span>
                     </a>

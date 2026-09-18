@@ -31,11 +31,13 @@
         </div>
 
         <div class="field-row">
-            <label class="field">
-                <span><?= e(t('cost_price')) ?></span>
-                <input type="number" step="0.01" min="0" inputmode="decimal" name="cost_price" required
-                       value="<?= e(old('cost_price', isset($product['cost_price']) ? (string) $product['cost_price'] : '')) ?>">
-            </label>
+            <?php if (can('prices')): ?>
+                <label class="field">
+                    <span><?= e(t('cost_price')) ?></span>
+                    <input type="number" step="0.01" min="0" inputmode="decimal" name="cost_price" required
+                           value="<?= e(old('cost_price', isset($product['cost_price']) ? (string) $product['cost_price'] : '')) ?>">
+                </label>
+            <?php endif; ?>
             <label class="field">
                 <span><?= e(t('sell_price')) ?></span>
                 <input type="number" step="0.01" min="0" inputmode="decimal" name="sell_price" required

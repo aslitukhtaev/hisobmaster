@@ -6,25 +6,39 @@ use App\Models\Product;
 use App\Models\Sale;
 
 $cards = [
-    ['icon' => '🧾', 'title' => t('sales'), 'href' => '/sales', 'implemented' => true],
-    ['icon' => '📦', 'title' => t('products'), 'href' => '/products', 'implemented' => true],
-    ['icon' => '👥', 'title' => t('customers'), 'href' => '/customers', 'implemented' => true],
-    ['icon' => '💸', 'title' => t('expenses'), 'href' => '/expenses', 'implemented' => true],
-    ['icon' => '📊', 'title' => t('reports'), 'href' => '/reports', 'implemented' => true],
-    ['icon' => '🧑‍🤝‍🧑', 'title' => t('employees'), 'href' => '#', 'implemented' => false],
+    ['icon' => '🧾', 'title' => t('sales'), 'href' => '/sales', 'permission' => 'sales'],
+    ['icon' => '📦', 'title' => t('products'), 'href' => '/products', 'permission' => 'products'],
+    ['icon' => '👥', 'title' => t('customers'), 'href' => '/customers', 'permission' => 'customers'],
+    ['icon' => '💸', 'title' => t('expenses'), 'href' => '/expenses', 'permission' => 'expenses'],
+    ['icon' => '📊', 'title' => t('reports'), 'href' => '/reports', 'permission' => 'reports'],
 ];
 
+if (Auth::isOwner()) {
+    $cards[] = ['icon' => '🧑‍🤝‍🧑', 'title' => t('employees'), 'href' => '/employees', 'permission' => null];
+}
+
+foreach ($cards as &$card) {
+    $card['accessible'] = $card['permission'] === null || can($card['permission']);
+}
+unset($card);
+
 $shopId = Auth::shopId();
-$productCounts = $shopId ? Product::counts((int) $shopId) : null;
-$todaySales = $shopId ? Sale::todaysSummary((int) $shopId) : null;
-$totalDebt = $shopId ? DebtTransaction::totalDebtByShop((int) $shopId) : 0.0;
+$canSales = can('sales');
+$canProducts = can('products');
+$canCustomers = can('customers');
+
+$productCounts = ($shopId && $canProducts) ? Product::counts((int) $shopId) : null;
+$todaySales = ($shopId && $canSales) ? Sale::todaysSummary((int) $shopId) : null;
+$totalDebt = ($shopId && $canCustomers) ? DebtTransaction::totalDebtByShop((int) $shopId) : 0.0;
 ?>
 <section class="page-head page-head-row">
     <div>
         <h1><?= e(t('welcome', ['name' => $user['full_name'] ?? ''])) ?></h1>
         <p class="muted"><?= e(t('system_running')) ?> — HisobMaster</p>
     </div>
-    <a href="/sales/new" class="btn btn-primary"><?= e(t('new_sale')) ?></a>
+    <?php if ($canSales): ?>
+        <a href="/sales/new" class="btn btn-primary"><?= e(t('new_sale')) ?></a>
+    <?php endif; ?>
 </section>
 
 <?php if ($todaySales || ($productCounts && $productCounts['total'] > 0)): ?>
@@ -61,11 +75,11 @@ $totalDebt = $shopId ? DebtTransaction::totalDebtByShop((int) $shopId) : 0.0;
 <?php endif; ?>
 
 <section class="card-grid">
-    <?php foreach ($cards as $card): $tag = $card['implemented'] ? 'a' : 'div'; ?>
-        <<?= $tag ?> <?= $card['implemented'] ? 'href="' . e($card['href']) . '"' : '' ?> class="module-card <?= $card['implemented'] ? '' : 'module-card-disabled' ?>">
+    <?php foreach ($cards as $card): $tag = $card['accessible'] ? 'a' : 'div'; ?>
+        <<?= $tag ?> <?= $card['accessible'] ? 'href="' . e($card['href']) . '"' : '' ?> class="module-card <?= $card['accessible'] ? '' : 'module-card-disabled' ?>">
             <div class="module-icon"><?= $card['icon'] ?></div>
             <div class="module-title"><?= e($card['title']) ?></div>
-            <div class="module-badge"><?= $card['implemented'] ? e(t('open_module')) : e(t('coming_soon')) ?></div>
+            <div class="module-badge"><?= $card['accessible'] ? e(t('open_module')) : e(t('no_access_badge')) ?></div>
         </<?= $tag ?>>
     <?php endforeach; ?>
 </section>

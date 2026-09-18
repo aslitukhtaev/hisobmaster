@@ -73,4 +73,34 @@ class User
         $stmt->execute([$shopId]);
         return $stmt->fetch() ?: null;
     }
+
+    public static function employeesByShop(int $shopId): array
+    {
+        $stmt = Database::connect()->prepare(
+            "SELECT * FROM users WHERE shop_id = ? AND role = 'employee' ORDER BY full_name"
+        );
+        $stmt->execute([$shopId]);
+        return $stmt->fetchAll();
+    }
+
+    public static function findEmployee(int $id, int $shopId): ?array
+    {
+        $stmt = Database::connect()->prepare(
+            "SELECT * FROM users WHERE id = ? AND shop_id = ? AND role = 'employee'"
+        );
+        $stmt->execute([$id, $shopId]);
+        return $stmt->fetch() ?: null;
+    }
+
+    public static function updatePermissions(int $id, array $permissions): void
+    {
+        Database::connect()
+            ->prepare('UPDATE users SET permissions_json = ? WHERE id = ?')
+            ->execute([json_encode(array_values($permissions)), $id]);
+    }
+
+    public static function setStatus(int $id, string $status): void
+    {
+        Database::connect()->prepare('UPDATE users SET status = ? WHERE id = ?')->execute([$status, $id]);
+    }
 }

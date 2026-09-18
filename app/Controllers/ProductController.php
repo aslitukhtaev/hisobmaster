@@ -87,7 +87,7 @@ class ProductController
             redirect('/products');
         }
 
-        $data = $this->validate($request, (int) $id);
+        $data = $this->validate($request, $product);
 
         if ($data === null) {
             redirect("/products/{$id}/edit");
@@ -128,15 +128,20 @@ class ProductController
     /**
      * @return array{name: string, category: string, unit: string, cost_price: float, sell_price: float, stock_qty: float, barcode: string}|null
      */
-    private function validate(Request $request, ?int $editingId = null): ?array
+    private function validate(Request $request, ?array $existingProduct = null): ?array
     {
+        $canEditPrice = Auth::can('prices');
+
         $name = trim((string) $request->input('name', ''));
         $category = trim((string) $request->input('category', ''));
         $unit = trim((string) $request->input('unit', '')) ?: 'dona';
-        $costPrice = $request->input('cost_price', '');
         $sellPrice = $request->input('sell_price', '');
         $stockQty = $request->input('stock_qty', '');
         $barcode = trim((string) $request->input('barcode', ''));
+
+        $costPrice = $canEditPrice
+            ? $request->input('cost_price', '')
+            : (string) ($existingProduct['cost_price'] ?? 0);
 
         $old = [
             'name' => $name,
