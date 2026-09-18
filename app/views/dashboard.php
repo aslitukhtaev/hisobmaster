@@ -2,9 +2,10 @@
 
 use App\Core\Auth;
 use App\Models\Product;
+use App\Models\Sale;
 
 $cards = [
-    ['icon' => '🧾', 'title' => t('sales'), 'href' => '#', 'implemented' => false],
+    ['icon' => '🧾', 'title' => t('sales'), 'href' => '/sales', 'implemented' => true],
     ['icon' => '📦', 'title' => t('products'), 'href' => '/products', 'implemented' => true],
     ['icon' => '👥', 'title' => t('customers'), 'href' => '#', 'implemented' => false],
     ['icon' => '💸', 'title' => t('expenses'), 'href' => '#', 'implemented' => false],
@@ -12,12 +13,30 @@ $cards = [
     ['icon' => '🧑‍🤝‍🧑', 'title' => t('employees'), 'href' => '#', 'implemented' => false],
 ];
 
-$productCounts = Auth::shopId() ? Product::counts((int) Auth::shopId()) : null;
+$shopId = Auth::shopId();
+$productCounts = $shopId ? Product::counts((int) $shopId) : null;
+$todaySales = $shopId ? Sale::todaysSummary((int) $shopId) : null;
 ?>
-<section class="page-head">
-    <h1><?= e(t('welcome', ['name' => $user['full_name'] ?? ''])) ?></h1>
-    <p class="muted"><?= e(t('system_running')) ?> — HisobMaster</p>
+<section class="page-head page-head-row">
+    <div>
+        <h1><?= e(t('welcome', ['name' => $user['full_name'] ?? ''])) ?></h1>
+        <p class="muted"><?= e(t('system_running')) ?> — HisobMaster</p>
+    </div>
+    <a href="/sales/new" class="btn btn-primary"><?= e(t('new_sale')) ?></a>
 </section>
+
+<?php if ($todaySales || ($productCounts && $productCounts['total'] > 0)): ?>
+<section class="stat-grid">
+    <div class="stat-tile">
+        <div class="stat-value"><?= (int) ($todaySales['count'] ?? 0) ?></div>
+        <div class="stat-label"><?= e(t('todays_sales_count')) ?></div>
+    </div>
+    <div class="stat-tile" style="grid-column: span 2;">
+        <div class="stat-value" style="font-size:1.15rem;"><?= money((float) ($todaySales['revenue'] ?? 0)) ?></div>
+        <div class="stat-label"><?= e(t('todays_revenue')) ?></div>
+    </div>
+</section>
+<?php endif; ?>
 
 <?php if ($productCounts && $productCounts['total'] > 0): ?>
 <section class="stat-grid">

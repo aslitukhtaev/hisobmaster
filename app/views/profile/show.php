@@ -38,3 +38,38 @@
         <button type="submit" class="btn btn-primary btn-block"><?= e(t('save')) ?></button>
     </form>
 </div>
+
+<?php if (!empty($shop)): ?>
+<section class="page-head" style="margin-top:24px;">
+    <h1><?= e(t('shop_settings')) ?></h1>
+    <p class="muted"><?= e(t('shop_settings_hint')) ?></p>
+</section>
+
+<div class="card form-card">
+    <form method="post" action="/profile/shop" class="stack">
+        <?= csrf_field() ?>
+        <label class="field">
+            <span><?= e(t('shop_name')) ?></span>
+            <input type="text" name="shop_name" required value="<?= e(old('shop_name', $shop['name'])) ?>">
+        </label>
+        <label class="field">
+            <span><?= e(t('address')) ?> (<?= e(t('optional')) ?>)</span>
+            <input type="text" name="shop_address" value="<?= e(old('shop_address', $shop['address'] ?? '')) ?>">
+        </label>
+        <div class="field">
+            <span><?= e(t('receipt_width_label')) ?></span>
+            <div class="payment-types">
+                <label class="radio-pill">
+                    <input type="radio" name="receipt_printer_width" value="80" <?= (int) $shop['receipt_printer_width'] === 80 ? 'checked' : '' ?>>
+                    <span>80mm</span>
+                </label>
+                <label class="radio-pill">
+                    <input type="radio" name="receipt_printer_width" value="58" <?= (int) $shop['receipt_printer_width'] === 58 ? 'checked' : '' ?>>
+                    <span>58mm</span>
+                </label>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block"><?= e(t('save')) ?></button>
+    </form>
+</div>
+<?php endif; ?>

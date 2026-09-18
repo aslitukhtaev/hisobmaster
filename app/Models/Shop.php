@@ -46,6 +46,13 @@ class Shop
         Database::connect()->prepare('UPDATE shops SET status = ? WHERE id = ?')->execute([$status, $id]);
     }
 
+    public static function updateSettings(int $id, string $name, ?string $address, int $receiptPrinterWidth): void
+    {
+        Database::connect()
+            ->prepare('UPDATE shops SET name = ?, address = ?, receipt_printer_width = ? WHERE id = ?')
+            ->execute([$name, $address, $receiptPrinterWidth, $id]);
+    }
+
     public static function counts(): array
     {
         $pdo = Database::connect();
