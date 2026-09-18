@@ -78,8 +78,10 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title><?= e(t('app_name')) ?></title>
     <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
+    <script src="<?= asset('js/telegram.js') ?>"></script>
     <div class="shell">
         <aside class="sidebar">
             <div class="brand">

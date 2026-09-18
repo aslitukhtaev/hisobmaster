@@ -14,6 +14,7 @@ use App\Controllers\ProfileController;
 use App\Controllers\ReportController;
 use App\Controllers\SaleController;
 use App\Controllers\SuperAdminController;
+use App\Controllers\TelegramController;
 
 /** @var App\Core\Router $router */
 
@@ -75,3 +76,5 @@ $router->post('/employees/{id}/toggle-status', [EmployeeController::class, 'togg
 
 $router->get('/join/{token}', [JoinController::class, 'show'], ['guest']);
 $router->post('/join/{token}', [JoinController::class, 'register'], ['guest', 'csrf']);
+
+$router->post('/telegram/webhook', [TelegramController::class, 'webhook'], []);

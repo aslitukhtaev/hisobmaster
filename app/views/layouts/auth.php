@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title><?= e(t('app_name')) ?></title>
     <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body class="auth-body">
     <div class="auth-topbar">
@@ -13,6 +14,7 @@
     <main class="auth-wrap">
         <?= $content ?>
     </main>
+    <script src="<?= asset('js/telegram.js') ?>"></script>
     <script src="<?= asset('js/app.js') ?>" defer></script>
 </body>
 </html>

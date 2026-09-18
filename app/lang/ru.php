@@ -259,4 +259,8 @@ return [
     'permission_customers' => 'Работа с должниками',
     'permission_expenses' => 'Управление расходами',
     'permission_reports' => 'Просмотр отчётов',
+
+    // Telegram
+    'telegram_welcome_message' => 'Здравствуйте! Нажмите кнопку ниже, чтобы войти в HisobMaster.',
+    'telegram_open_app_button' => '🛍 Открыть приложение',
 ];

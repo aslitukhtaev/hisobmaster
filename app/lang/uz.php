@@ -259,4 +259,8 @@ return [
     'permission_customers' => 'Qarzdorlar bilan ishlash',
     'permission_expenses' => 'Xarajatlarni boshqarish',
     'permission_reports' => 'Hisobotlarni ko\'rish',
+
+    // Telegram
+    'telegram_welcome_message' => "Assalomu alaykum! HisobMaster tizimiga kirish uchun quyidagi tugmani bosing.",
+    'telegram_open_app_button' => "🛍 Ilovani ochish",
 ];
