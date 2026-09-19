@@ -62,7 +62,7 @@ class SuperAdminController
             'address' => $address !== '' ? $address : null,
         ]);
 
-        $login = 'dokon' . $shopId;
+        $login = $this->generateLogin($ownerName !== '' ? $ownerName : $name);
         $password = $this->generatePassword();
 
         User::create([
@@ -136,5 +136,53 @@ class SuperAdminController
         }
 
         return $password;
+    }
+
+    /**
+     * Do'kon egasi uchun login: manba matn (F.I.Sh yoki do'kon nomi) asosidagi qisqa slug
+     * + 4 xonali tasodifiy raqam. Sequential ID'ga bog'liq emas, shuning uchun keyingi
+     * do'konlarning loginini oldindan taxmin qilib bo'lmaydi. Band bo'lsa, raqam qismini
+     * qayta generatsiya qilib, bir necha marta urinib ko'ramiz.
+     */
+    private function generateLogin(string $source): string
+    {
+        $base = $this->slugify($source);
+
+        if ($base === '') {
+            $base = 'dokon';
+        }
+
+        $base = substr($base, 0, 20);
+
+        for ($attempt = 0; $attempt < 10; $attempt++) {
+            $candidate = $base . random_int(1000, 9999);
+
+            if (!User::loginExists($candidate)) {
+                return $candidate;
+            }
+        }
+
+        // Juda kam ehtimol bilan 10 marta ham band chiqsa, kengroq tasodifiy qo'shimcha bilan yakunlaymiz.
+        return $base . bin2hex(random_bytes(4));
+    }
+
+    /**
+     * Kirill/o'zbekcha maxsus harflarni lotin/ASCII'ga o'giradi va faqat [a-z0-9] qoldiradi.
+     */
+    private function slugify(string $text): string
+    {
+        $map = [
+            'а' => 'a', 'б' => 'b', 'в' => 'v', 'г' => 'g', 'д' => 'd', 'е' => 'e', 'ё' => 'e',
+            'ж' => 'zh', 'з' => 'z', 'и' => 'i', 'й' => 'y', 'к' => 'k', 'л' => 'l', 'м' => 'm',
+            'н' => 'n', 'о' => 'o', 'п' => 'p', 'р' => 'r', 'с' => 's', 'т' => 't', 'у' => 'u',
+            'ф' => 'f', 'х' => 'h', 'ц' => 'ts', 'ч' => 'ch', 'ш' => 'sh', 'щ' => 'sch', 'ъ' => '',
+            'ы' => 'y', 'ь' => '', 'э' => 'e', 'ю' => 'yu', 'я' => 'ya',
+            'ў' => 'o', 'қ' => 'q', 'ғ' => 'g', 'ҳ' => 'h',
+        ];
+
+        $text = mb_strtolower($text, 'UTF-8');
+        $text = strtr($text, $map);
+
+        return preg_replace('/[^a-z0-9]+/', '', $text) ?? '';
     }
 }

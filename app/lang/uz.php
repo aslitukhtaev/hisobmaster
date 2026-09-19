@@ -13,6 +13,7 @@ return [
     'login_button' => 'Kirish',
     'login_required' => "Login va parolni kiriting",
     'login_failed' => "Login yoki parol noto'g'ri",
+    'login_locked' => "Ko'p marta noto'g'ri urinish sababli hisob 15 daqiqaga vaqtincha bloklandi. Birozdan so'ng qaytadan urinib ko'ring",
     'csrf_error' => "Sessiya muddati tugadi, qaytadan urinib ko'ring",
     'logout' => 'Chiqish',
     'welcome' => 'Xush kelibsiz, :name',

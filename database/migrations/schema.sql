@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS users (
     lang TEXT NOT NULL DEFAULT 'uz',
     permissions_json TEXT,
     status TEXT NOT NULL DEFAULT 'active',
+    failed_login_attempts INTEGER NOT NULL DEFAULT 0,
+    locked_until TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_users_shop ON users(shop_id);

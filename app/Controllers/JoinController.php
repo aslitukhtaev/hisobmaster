@@ -68,18 +68,19 @@ class JoinController
             redirect("/join/{$token}");
         }
 
-        $userId = User::create([
-            'shop_id' => (int) $invite['shop_id'],
-            'role' => 'employee',
+        $userId = EmployeeInvite::claimAndRegister($token, [
             'full_name' => $fullName,
             'phone' => $phone !== '' ? $phone : null,
             'login' => $login,
             'password' => $password,
             'lang' => current_lang(),
-            'permissions_json' => $invite['preset_permissions_json'],
         ]);
 
-        EmployeeInvite::markUsed((int) $invite['id'], $userId);
+        if ($userId === null) {
+            // Someone else claimed this invite (or it expired) between the check above and now.
+            View::render('join/invalid', [], 'layouts/auth');
+            return;
+        }
 
         Auth::attempt($login, $password);
 
