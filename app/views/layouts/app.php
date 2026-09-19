@@ -25,6 +25,7 @@ if (Auth::isSuperAdmin()) {
         ['href' => '/', 'label' => t('dashboard'), 'icon' => 'home', 'implemented' => true, 'permission' => null],
         ['href' => '/sales', 'label' => t('sales'), 'icon' => 'cart', 'implemented' => true, 'permission' => 'sales'],
         ['href' => '/products', 'label' => t('products'), 'icon' => 'box', 'implemented' => true, 'permission' => 'products'],
+        ['href' => '/suppliers', 'label' => t('suppliers'), 'icon' => 'truck', 'implemented' => true, 'permission' => 'products'],
         ['href' => '/customers', 'label' => t('customers'), 'icon' => 'users', 'implemented' => true, 'permission' => 'customers'],
         ['href' => '/expenses', 'label' => t('expenses'), 'icon' => 'wallet', 'implemented' => true, 'permission' => 'expenses'],
         ['href' => '/reports', 'label' => t('reports'), 'icon' => 'chart', 'implemented' => true, 'permission' => 'reports'],
@@ -57,6 +58,7 @@ $icon = static function (string $name): string {
         'gear' => '<circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1h-.2a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.5v-.2a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/>',
         'clock' => '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
         'more' => '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+        'truck' => '<rect x="2.5" y="7" width="12" height="9"/><path d="M14.5 10h4l3 3.5V16h-7z"/><circle cx="7" cy="18.5" r="1.6"/><circle cx="17" cy="18.5" r="1.6"/>',
     ];
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' . ($paths[$name] ?? '') . '</svg>';
 };
