@@ -13,15 +13,16 @@ class Sale
      * @param array<int, array{product_id: int, qty: float}> $items
      * @return int the new sale id
      *
-     * @throws RuntimeException when an item is invalid or stock is insufficient
+     * @throws RuntimeException when an item is invalid, stock is insufficient,
+     *         or a debt remains with no customer to carry it
      */
     public static function create(
         int $shopId,
         int $cashierId,
         array $items,
-        string $paymentType,
+        float $naqdAmount,
+        float $kartaAmount,
         float $discount,
-        float $paidAmount,
         ?int $customerId
     ): int {
         if (empty($items)) {
@@ -72,10 +73,23 @@ class Sale
             $discount = max(0.0, min($discount, $subtotal));
             $total = round($subtotal - $discount, 2);
 
-            $paidAmount = $paymentType === 'qarz'
-                ? max(0.0, min($paidAmount, $total))
-                : $total;
+            // naqd/karta are whatever the cashier explicitly collected up front;
+            // qarz is never entered directly — it's always just what's left of
+            // the total once naqd+karta are accounted for (clamped so the three
+            // can never add up to more than the total).
+            $naqdAmount = max(0.0, min($naqdAmount, $total));
+            $kartaAmount = max(0.0, min($kartaAmount, round($total - $naqdAmount, 2)));
+            $qarzAmount = max(0.0, round($total - $naqdAmount - $kartaAmount, 2));
 
+            if ($qarzAmount > 0 && $customerId === null) {
+                throw new RuntimeException('customer_required_for_debt');
+            }
+
+            // paid_amount keeps its original meaning (total - debt), so every
+            // pre-existing read of it — including this file's own receipt-page
+            // debt calculation — stays correct without any change.
+            $paidAmount = round($naqdAmount + $kartaAmount, 2);
+            $paymentType = self::derivePaymentTypeLabel($naqdAmount, $kartaAmount, $qarzAmount);
             $status = 'completed';
 
             $stmt = $pdo->prepare(
@@ -84,6 +98,15 @@ class Sale
             );
             $stmt->execute([$shopId, $cashierId, $customerId, $total, $discount, $paymentType, $paidAmount, $status]);
             $saleId = (int) $pdo->lastInsertId();
+
+            $paymentStmt = $pdo->prepare(
+                'INSERT INTO sale_payments (sale_id, payment_type, amount) VALUES (?, ?, ?)'
+            );
+            foreach (['naqd' => $naqdAmount, 'karta' => $kartaAmount, 'qarz' => $qarzAmount] as $type => $amount) {
+                if ($amount > 0) {
+                    $paymentStmt->execute([$saleId, $type, $amount]);
+                }
+            }
 
             $itemStmt = $pdo->prepare(
                 'INSERT INTO sale_items (sale_id, product_id, product_name, qty, unit_price, cost_price_snapshot, subtotal)
@@ -120,9 +143,8 @@ class Sale
                 }
             }
 
-            $debtAmount = round($total - $paidAmount, 2);
-            if ($paymentType === 'qarz' && $debtAmount > 0 && $customerId !== null) {
-                DebtTransaction::record($shopId, $customerId, $saleId, 'qarz', $debtAmount, $cashierId);
+            if ($qarzAmount > 0 && $customerId !== null) {
+                DebtTransaction::record($shopId, $customerId, $saleId, 'qarz', $qarzAmount, $cashierId);
             }
 
             $pdo->commit();
@@ -154,6 +176,45 @@ class Sale
         $stmt->execute([$saleId]);
 
         return $stmt->fetchAll();
+    }
+
+    /**
+     * The naqd/karta/qarz breakdown of a single sale. Every sale created since
+     * split payments shipped has at least one row here; older sales have none
+     * (they only ever used a single payment_type, still readable straight off
+     * the sales row itself).
+     */
+    public static function payments(int $saleId): array
+    {
+        $stmt = Database::connect()->prepare(
+            "SELECT * FROM sale_payments WHERE sale_id = ?
+             ORDER BY CASE payment_type WHEN 'naqd' THEN 1 WHEN 'karta' THEN 2 WHEN 'qarz' THEN 3 ELSE 4 END"
+        );
+        $stmt->execute([$saleId]);
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * A short label for the sales.payment_type summary column: the single type
+     * name when only one method was used (so old single-payment-type sales and
+     * reports keep reading exactly what they always did), or 'aralash' (mixed)
+     * once two or more methods carry a nonzero amount.
+     */
+    private static function derivePaymentTypeLabel(float $naqd, float $karta, float $qarz): string
+    {
+        $active = array_keys(array_filter(
+            ['naqd' => $naqd, 'karta' => $karta, 'qarz' => $qarz],
+            static fn (float $amount): bool => $amount > 0.0
+        ));
+
+        if (count($active) === 1) {
+            return $active[0];
+        }
+
+        // A zero-total sale (fully discounted) has no active payment method at
+        // all — default it to 'naqd' rather than the meaningless 'aralash'.
+        return count($active) === 0 ? 'naqd' : 'aralash';
     }
 
     public static function recentByShop(int $shopId, int $limit = 50): array

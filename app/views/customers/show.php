@@ -51,11 +51,16 @@
                 </thead>
                 <tbody>
                 <?php foreach ($history as $entry): ?>
+                    <?php $debtTypeLabel = match ($entry['type']) {
+                        'qarz' => t('debt_type_qarz'),
+                        'refund' => t('debt_type_refund'),
+                        default => t('debt_type_tolov'),
+                    }; ?>
                     <tr>
                         <td><?= e(substr((string) $entry['created_at'], 0, 16)) ?></td>
                         <td data-label="<?= e(t('debt_type')) ?>">
                             <span class="status-pill <?= $entry['type'] === 'qarz' ? 'status-blocked' : 'status-active' ?>">
-                                <?= e($entry['type'] === 'qarz' ? t('debt_type_qarz') : t('debt_type_tolov')) ?>
+                                <?= e($debtTypeLabel) ?>
                             </span>
                         </td>
                         <td data-label="<?= e(t('amount')) ?>">

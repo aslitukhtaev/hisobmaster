@@ -49,6 +49,12 @@ $router->post('/products/{id}/toggle-status', [ProductController::class, 'toggle
 $router->get('/sales', [SaleController::class, 'index'], ['auth', 'permission:sales']);
 $router->get('/sales/new', [SaleController::class, 'newForm'], ['auth', 'permission:sales']);
 $router->post('/sales', [SaleController::class, 'store'], ['auth', 'permission:sales', 'csrf']);
+// Registered before the single-segment /sales/{id} route below, since that
+// route's {id} pattern would otherwise swallow "shift-report" as if it were a
+// sale id.
+$router->get('/sales/shift-report', [SaleController::class, 'shiftReport'], ['auth', 'permission:sales']);
+$router->get('/sales/{id}/refund', [SaleController::class, 'refundForm'], ['auth', 'permission:sales']);
+$router->post('/sales/{id}/refund', [SaleController::class, 'refundStore'], ['auth', 'permission:sales', 'csrf']);
 $router->get('/sales/{id}', [SaleController::class, 'receipt'], ['auth', 'permission:sales']);
 
 $router->get('/customers', [CustomerController::class, 'index'], ['auth', 'permission:customers']);

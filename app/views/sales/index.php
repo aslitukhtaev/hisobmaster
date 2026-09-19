@@ -7,7 +7,10 @@
             <?= money((float) $today['revenue']) ?>
         </p>
     </div>
-    <a href="/sales/new" class="btn btn-primary"><?= e(t('new_sale')) ?></a>
+    <div class="row-actions">
+        <a href="/sales/shift-report" class="btn btn-ghost"><?= e(t('shift_report_button')) ?></a>
+        <a href="/sales/new" class="btn btn-primary"><?= e(t('new_sale')) ?></a>
+    </div>
 </section>
 
 <?php if (empty($sales)): ?>

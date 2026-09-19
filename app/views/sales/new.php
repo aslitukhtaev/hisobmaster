@@ -28,7 +28,14 @@
             <div class="cart-totals">
                 <label class="field">
                     <span><?= e(t('discount')) ?></span>
-                    <input type="number" id="discount-input" min="0" step="0.01" value="0" inputmode="decimal">
+                    <div class="discount-input-row">
+                        <input type="number" id="discount-input" min="0" step="0.01" value="0" inputmode="decimal">
+                        <div class="discount-mode-toggle" role="group" aria-label="<?= e(t('discount_mode_toggle_label')) ?>">
+                            <button type="button" class="discount-mode-btn active" data-mode="amount"><?= e(t('discount_mode_fixed')) ?></button>
+                            <button type="button" class="discount-mode-btn" data-mode="percent">%</button>
+                        </div>
+                    </div>
+                    <span class="muted" id="discount-computed-label" style="display:none;"></span>
                 </label>
                 <div class="cart-total-row">
                     <span><?= e(t('total')) ?></span>
@@ -38,11 +45,23 @@
             <input type="hidden" name="discount" id="discount-field" value="0">
 
             <div class="payment-types">
-                <button type="button" class="payment-btn active" data-type="naqd"><?= e(t('payment_naqd')) ?></button>
-                <button type="button" class="payment-btn" data-type="karta"><?= e(t('payment_karta')) ?></button>
-                <button type="button" class="payment-btn" data-type="qarz"><?= e(t('payment_qarz')) ?></button>
+                <button type="button" class="payment-btn active" data-preset="naqd"><?= e(t('payment_naqd')) ?></button>
+                <button type="button" class="payment-btn" data-preset="karta"><?= e(t('payment_karta')) ?></button>
+                <button type="button" class="payment-btn" data-preset="qarz"><?= e(t('payment_qarz')) ?></button>
             </div>
-            <input type="hidden" name="payment_type" id="payment-type-field" value="naqd">
+
+            <div class="field-row">
+                <label class="field">
+                    <span><?= e(t('payment_naqd')) ?></span>
+                    <input type="number" id="naqd-amount-input" min="0" step="0.01" value="0" inputmode="decimal">
+                </label>
+                <label class="field">
+                    <span><?= e(t('payment_karta')) ?></span>
+                    <input type="number" id="karta-amount-input" min="0" step="0.01" value="0" inputmode="decimal">
+                </label>
+            </div>
+            <input type="hidden" name="naqd_amount" id="naqd-amount-field" value="0">
+            <input type="hidden" name="karta_amount" id="karta-amount-field" value="0">
 
             <div id="debt-fields" class="stack" style="display:none;">
                 <label class="field">
@@ -61,13 +80,8 @@
                         <input type="text" id="new-customer-phone">
                     </label>
                 </div>
-                <label class="field">
-                    <span><?= e(t('paid_now')) ?></span>
-                    <input type="number" id="paid-amount-input" min="0" step="0.01" value="0" inputmode="decimal">
-                </label>
                 <p class="muted" id="debt-remaining-label"></p>
             </div>
-            <input type="hidden" name="paid_amount" id="paid-amount-field" value="0">
             <input type="hidden" name="customer_id" id="customer-id-field" value="">
             <input type="hidden" name="customer_name" id="customer-name-field" value="">
             <input type="hidden" name="customer_phone" id="customer-phone-field" value="">
@@ -96,13 +110,15 @@ if (!is_array($oldCart)) {
         decreaseQty: <?= json_encode(t('decrease_qty'), JSON_UNESCAPED_UNICODE) ?>,
         increaseQty: <?= json_encode(t('increase_qty'), JSON_UNESCAPED_UNICODE) ?>,
         removeFromCart: <?= json_encode(t('remove_from_cart'), JSON_UNESCAPED_UNICODE) ?>,
+        editQty: <?= json_encode(t('edit_qty_label'), JSON_UNESCAPED_UNICODE) ?>,
+        discountEqualsLabel: <?= json_encode(t('discount_equals_label'), JSON_UNESCAPED_UNICODE) ?>,
         currency: "so'm"
     };
     window.HM_OLD_CART = <?= json_encode($oldCart, JSON_UNESCAPED_UNICODE) ?>;
     window.HM_OLD_SALE = {
-        paymentType: <?= json_encode(old('payment_type', 'naqd'), JSON_UNESCAPED_UNICODE) ?>,
         discount: <?= json_encode(old('discount', '0'), JSON_UNESCAPED_UNICODE) ?>,
-        paidAmount: <?= json_encode(old('paid_amount', '0'), JSON_UNESCAPED_UNICODE) ?>,
+        naqdAmount: <?= json_encode(old('naqd_amount', ''), JSON_UNESCAPED_UNICODE) ?>,
+        kartaAmount: <?= json_encode(old('karta_amount', ''), JSON_UNESCAPED_UNICODE) ?>,
         customerId: <?= json_encode(old('customer_id', ''), JSON_UNESCAPED_UNICODE) ?>,
         customerName: <?= json_encode(old('customer_name', ''), JSON_UNESCAPED_UNICODE) ?>,
         customerPhone: <?= json_encode(old('customer_phone', ''), JSON_UNESCAPED_UNICODE) ?>
