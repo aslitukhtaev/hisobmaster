@@ -10,6 +10,7 @@ use App\Core\View;
 use App\Models\ActivityLog;
 use App\Models\Customer;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Refund;
 use App\Models\Report;
 use App\Models\Sale;
@@ -32,12 +33,33 @@ class SaleController
     {
         $shopId = (int) Auth::shopId();
 
+        $variantsByProduct = [];
+        foreach (ProductVariant::activeAllByShop($shopId) as $variant) {
+            $variantsByProduct[(int) $variant['product_id']][] = $variant;
+        }
+
+        // A product with no active variants is sellable directly (needs its
+        // own stock); a product WITH active variants is only sellable through
+        // one of them (see Sale::create()), so it belongs in the list whenever
+        // at least one of its variants still has stock, even if the parent's
+        // own stock_qty (unused in that case) happens to be 0.
         $activeProducts = array_values(array_filter(
             Product::allByShop($shopId),
-            static fn (array $p) => $p['status'] === 'active' && (float) $p['stock_qty'] > 0
+            static function (array $p) use ($variantsByProduct): bool {
+                if ($p['status'] !== 'active') {
+                    return false;
+                }
+                $variants = $variantsByProduct[(int) $p['id']] ?? [];
+                if (!empty($variants)) {
+                    return array_sum(array_map(static fn (array $v) => (float) $v['stock_qty'], $variants)) > 0;
+                }
+                return (float) $p['stock_qty'] > 0;
+            }
         ));
 
-        $productsJson = array_map(static function (array $p): array {
+        $productsJson = array_map(static function (array $p) use ($variantsByProduct): array {
+            $variants = $variantsByProduct[(int) $p['id']] ?? [];
+
             return [
                 'id' => (int) $p['id'],
                 'name' => $p['name'],
@@ -45,6 +67,15 @@ class SaleController
                 'price' => (float) $p['sell_price'],
                 'stock' => (float) $p['stock_qty'],
                 'barcode' => $p['barcode'],
+                'variants' => array_map(static function (array $v) use ($p): array {
+                    return [
+                        'id' => (int) $v['id'],
+                        'label' => $v['variant_label'],
+                        'price' => $v['sell_price'] !== null ? (float) $v['sell_price'] : (float) $p['sell_price'],
+                        'stock' => (float) $v['stock_qty'],
+                        'barcode' => $v['barcode'],
+                    ];
+                }, $variants),
             ];
         }, $activeProducts);
 
@@ -97,7 +128,11 @@ class SaleController
             if (!isset($row['product_id'], $row['qty'])) {
                 continue;
             }
-            $items[] = ['product_id' => (int) $row['product_id'], 'qty' => (float) $row['qty']];
+            $items[] = [
+                'product_id' => (int) $row['product_id'],
+                'qty' => (float) $row['qty'],
+                'variant_id' => !empty($row['variant_id']) ? (int) $row['variant_id'] : null,
+            ];
         }
 
         // Whether the sale ends up leaving any qarz (debt) remainder isn't known

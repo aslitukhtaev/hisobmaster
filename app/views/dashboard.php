@@ -10,6 +10,7 @@ $pageTitle = t('dashboard');
 $cards = [
     ['icon' => '🧾', 'title' => t('sales'), 'href' => '/sales', 'permission' => 'sales'],
     ['icon' => '📦', 'title' => t('products'), 'href' => '/products', 'permission' => 'products'],
+    ['icon' => '🚚', 'title' => t('suppliers'), 'href' => '/suppliers', 'permission' => 'products'],
     ['icon' => '👥', 'title' => t('customers'), 'href' => '/customers', 'permission' => 'customers'],
     ['icon' => '💸', 'title' => t('expenses'), 'href' => '/expenses', 'permission' => 'expenses'],
     ['icon' => '📊', 'title' => t('reports'), 'href' => '/reports', 'permission' => 'reports'],
@@ -74,6 +75,22 @@ $totalDebt = ($shopId && $canCustomers) ? DebtTransaction::totalDebtByShop((int)
     <span class="stat-label"><?= e(t('total_debt_label')) ?></span>
     <a href="/customers" class="stat-value stock-value-amount" style="color:var(--danger);"><?= money($totalDebt) ?></a>
 </section>
+<?php endif; ?>
+
+<?php if ($lowStockCounts && $lowStockCounts['low'] > 0): ?>
+<a href="/products?filter=low_stock" class="card low-stock-tile">
+    <div class="low-stock-tile-icon">⚠️</div>
+    <div class="low-stock-tile-body">
+        <div class="low-stock-tile-title"><?= e(t('low_stock_alert_title')) ?></div>
+        <div class="muted">
+            <?= (int) $lowStockCounts['low'] ?> <?= e(t('low_stock_count_label')) ?>
+            <?php if ($lowStockCounts['out'] > 0): ?>
+                · <?= (int) $lowStockCounts['out'] ?> <?= e(t('out_of_stock_count_label')) ?>
+            <?php endif; ?>
+        </div>
+    </div>
+    <div class="low-stock-tile-arrow">→</div>
+</a>
 <?php endif; ?>
 
 <section class="card-grid">

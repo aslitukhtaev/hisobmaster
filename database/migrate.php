@@ -51,6 +51,35 @@ if (!in_array('locked_until', $userColumns, true)) {
     echo "users jadvaliga locked_until ustuni qo'shildi.\n";
 }
 
+// Eski bazalarda products jadvali allaqachon mavjud bo'lishi mumkin — kam
+// tovar ogohlantirishi (low_stock_threshold) va karobka/quti hajmi
+// (pack_size) ustunlari kerak bo'lsa qo'shiladi.
+$productColumns = array_column($pdo->query('PRAGMA table_info(products)')->fetchAll(PDO::FETCH_ASSOC), 'name');
+
+if (!in_array('low_stock_threshold', $productColumns, true)) {
+    $pdo->exec('ALTER TABLE products ADD COLUMN low_stock_threshold REAL');
+    echo "products jadvaliga low_stock_threshold ustuni qo'shildi.\n";
+}
+
+if (!in_array('pack_size', $productColumns, true)) {
+    $pdo->exec('ALTER TABLE products ADD COLUMN pack_size INTEGER');
+    echo "products jadvaliga pack_size ustuni qo'shildi.\n";
+}
+
+// sale_items jadvaliga variant qo'shildi (mahsulot variantlari moduli) —
+// eski bazalarda bu ustunlar bo'lmasligi mumkin.
+$saleItemColumns = array_column($pdo->query('PRAGMA table_info(sale_items)')->fetchAll(PDO::FETCH_ASSOC), 'name');
+
+if (!in_array('variant_id', $saleItemColumns, true)) {
+    $pdo->exec('ALTER TABLE sale_items ADD COLUMN variant_id INTEGER REFERENCES product_variants(id)');
+    echo "sale_items jadvaliga variant_id ustuni qo'shildi.\n";
+}
+
+if (!in_array('variant_label', $saleItemColumns, true)) {
+    $pdo->exec('ALTER TABLE sale_items ADD COLUMN variant_label TEXT');
+    echo "sale_items jadvaliga variant_label ustuni qo'shildi.\n";
+}
+
 $adminLogin = getenv('SUPER_ADMIN_LOGIN') ?: 'admin';
 $adminPassword = getenv('SUPER_ADMIN_PASSWORD') ?: 'change-me-please';
 

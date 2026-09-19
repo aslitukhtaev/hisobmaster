@@ -26,7 +26,7 @@
                 <tbody>
                 <?php foreach ($lines as $line): $remaining = (float) $line['remaining_qty']; ?>
                     <tr data-unit-price="<?= (float) $line['unit_price'] ?>">
-                        <td data-label="<?= e(t('product_name')) ?>"><?= e($line['product_name']) ?></td>
+                        <td data-label="<?= e(t('product_name')) ?>"><?= e($line['product_name']) ?><?= !empty($line['variant_label']) ? ' — ' . e($line['variant_label']) : '' ?></td>
                         <td data-label="<?= e(t('sold_qty_label')) ?>"><?= e(format_qty((float) $line['qty'])) ?></td>
                         <td data-label="<?= e(t('already_refunded_label')) ?>"><?= e(format_qty((float) $line['refunded_qty'])) ?></td>
                         <td data-label="<?= e(t('remaining_qty_label')) ?>"><?= e(format_qty($remaining)) ?></td>

@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Request;
 use App\Core\View;
+use App\Models\Settings;
 use App\Models\Shop;
 use App\Models\User;
 
@@ -15,8 +16,9 @@ class ProfileController
     public function show(Request $request): void
     {
         $shop = Auth::isOwner() ? Shop::find((int) Auth::shopId()) : null;
+        $lowStockThresholdDefault = $shop ? Settings::lowStockThresholdDefault((int) Auth::shopId()) : null;
 
-        View::render('profile/show', ['shop' => $shop]);
+        View::render('profile/show', ['shop' => $shop, 'lowStockThresholdDefault' => $lowStockThresholdDefault]);
     }
 
     public function update(Request $request): void
@@ -90,9 +92,15 @@ class ProfileController
         $name = trim((string) $request->input('shop_name', ''));
         $address = trim((string) $request->input('shop_address', ''));
         $printerWidth = (int) $request->input('receipt_printer_width', 80);
+        $lowStockDefaultRaw = trim((string) $request->input('low_stock_threshold_default', ''));
 
         if ($name === '') {
             flash('error', t('fill_required_fields'));
+            redirect('/profile');
+        }
+
+        if ($lowStockDefaultRaw !== '' && (!is_numeric($lowStockDefaultRaw) || (float) $lowStockDefaultRaw < 0)) {
+            flash('error', t('values_must_be_positive'));
             redirect('/profile');
         }
 
@@ -101,6 +109,7 @@ class ProfileController
         }
 
         Shop::updateSettings($shopId, $name, $address !== '' ? $address : null, $printerWidth);
+        Settings::set($shopId, 'low_stock_threshold_default', $lowStockDefaultRaw !== '' ? $lowStockDefaultRaw : null);
 
         flash('success', t('shop_settings_updated'));
         redirect('/profile');

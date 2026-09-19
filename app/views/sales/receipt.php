@@ -45,7 +45,7 @@ $debtAmount = round((float) $sale['total'] - (float) $sale['paid_amount'], 2);
         <tbody>
         <?php foreach ($items as $item): ?>
             <tr>
-                <td><?= e($item['product_name']) ?></td>
+                <td><?= e($item['product_name']) ?><?= !empty($item['variant_label']) ? ' — ' . e($item['variant_label']) : '' ?></td>
                 <td><?= e(format_qty((float) $item['qty'])) ?></td>
                 <td><?= money((float) $item['subtotal']) ?></td>
             </tr>

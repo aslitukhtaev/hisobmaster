@@ -62,11 +62,82 @@ CREATE TABLE IF NOT EXISTS products (
     stock_qty REAL NOT NULL DEFAULT 0,
     barcode TEXT,
     status TEXT NOT NULL DEFAULT 'active',
+    -- NULL means "no low-stock alert configured" for this product; a shop-wide
+    -- fallback threshold can be set in `settings` (key
+    -- 'low_stock_threshold_default') and is used only when this is NULL.
+    low_stock_threshold REAL,
+    -- NULL means this product isn't purchased in packs/boxes — set when a
+    -- product is bought e.g. by the "karobka" of 24 but stock_qty/sales are
+    -- tracked per individual unit ("dona"). Surfaced as a multiplier in the
+    -- purchase-recording flow (see PurchaseController) and as a hint on the
+    -- product form; not a general multi-unit conversion graph.
+    pack_size INTEGER,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_products_shop ON products(shop_id);
 CREATE INDEX IF NOT EXISTS idx_products_name ON products(shop_id, name);
+
+-- A specific size/color/etc. variant of a product. Each variant tracks its
+-- own stock_qty (and, optionally, its own barcode/sell_price/cost_price —
+-- NULL falls back to the parent product's own value) while sharing the
+-- parent's name/category. When a product has any active variant, sales must
+-- pick a specific variant rather than the parent directly (see Sale::create()
+-- and sale_items.variant_id below); the parent's own stock_qty then simply
+-- goes unused for that product.
+CREATE TABLE IF NOT EXISTS product_variants (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    shop_id INTEGER NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+    variant_label TEXT NOT NULL,
+    stock_qty REAL NOT NULL DEFAULT 0,
+    barcode TEXT,
+    sell_price REAL,
+    cost_price REAL,
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_variants_product ON product_variants(product_id);
+CREATE INDEX IF NOT EXISTS idx_variants_shop ON product_variants(shop_id);
+
+CREATE TABLE IF NOT EXISTS suppliers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shop_id INTEGER NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    phone TEXT,
+    address TEXT,
+    note TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_suppliers_shop ON suppliers(shop_id);
+
+-- A single restock event from a supplier. Line items live in purchase_items;
+-- recording a purchase increases each line's product stock_qty (atomic
+-- conditional UPDATE, mirroring Refund's stock restore) and, only when the
+-- shop owner explicitly checks the "update cost price" box in the UI, also
+-- updates that product's cost_price to the new purchase price.
+CREATE TABLE IF NOT EXISTS purchases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shop_id INTEGER NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+    supplier_id INTEGER REFERENCES suppliers(id) ON DELETE SET NULL,
+    total_amount REAL NOT NULL DEFAULT 0,
+    note TEXT,
+    created_by INTEGER NOT NULL REFERENCES users(id),
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_purchases_shop ON purchases(shop_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_purchases_supplier ON purchases(supplier_id);
+
+CREATE TABLE IF NOT EXISTS purchase_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    purchase_id INTEGER NOT NULL REFERENCES purchases(id) ON DELETE CASCADE,
+    product_id INTEGER NOT NULL REFERENCES products(id),
+    qty REAL NOT NULL,
+    unit_cost REAL NOT NULL,
+    subtotal REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_purchase_items_purchase ON purchase_items(purchase_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_items_product ON purchase_items(product_id);
 
 CREATE TABLE IF NOT EXISTS customers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -110,7 +181,16 @@ CREATE TABLE IF NOT EXISTS sale_items (
     qty REAL NOT NULL,
     unit_price REAL NOT NULL,
     cost_price_snapshot REAL NOT NULL,
-    subtotal REAL NOT NULL
+    subtotal REAL NOT NULL,
+    -- NULL for a plain (variant-less) sale line. product_id always stays the
+    -- parent product (so Report.php's existing top-products/revenue queries,
+    -- which group by product_id/product_name, keep working unchanged even for
+    -- variant sales); variant_id/variant_label additionally record which
+    -- specific variant was sold, and are what Refund::create() and stock
+    -- restore look at to know whether to credit the variant's own stock_qty
+    -- or the parent product's.
+    variant_id INTEGER REFERENCES product_variants(id),
+    variant_label TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_sale_items_sale ON sale_items(sale_id);
 CREATE INDEX IF NOT EXISTS idx_sale_items_product ON sale_items(product_id);

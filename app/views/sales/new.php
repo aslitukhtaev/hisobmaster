@@ -12,7 +12,12 @@
 <div class="pos-layout">
     <div class="pos-products">
         <label class="sr-only" for="product-search"><?= e(t('search_products_placeholder')) ?></label>
-        <input type="text" id="product-search" class="pos-search" placeholder="<?= e(t('search_products_placeholder')) ?>" autofocus>
+        <div class="scan-input-row" style="margin-bottom:12px;">
+            <input type="text" id="product-search" class="pos-search" placeholder="<?= e(t('search_products_placeholder')) ?>" autofocus style="margin-bottom:0;">
+            <button type="button" class="scan-btn barcode-scan-btn" data-target="#product-search" aria-label="<?= e(t('scan_barcode')) ?>" title="<?= e(t('scan_barcode')) ?>">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M20 8V5a1 1 0 0 0-1-1h-3M4 16v3a1 1 0 0 0 1 1h3M20 16v3a1 1 0 0 1-1 1h-3M6 8v8M10 8v8M14 8v8M18 8v8"/></svg>
+            </button>
+        </div>
         <div id="product-list" class="pos-product-list"></div>
     </div>
 
@@ -112,6 +117,7 @@ if (!is_array($oldCart)) {
         removeFromCart: <?= json_encode(t('remove_from_cart'), JSON_UNESCAPED_UNICODE) ?>,
         editQty: <?= json_encode(t('edit_qty_label'), JSON_UNESCAPED_UNICODE) ?>,
         discountEqualsLabel: <?= json_encode(t('discount_equals_label'), JSON_UNESCAPED_UNICODE) ?>,
+        pickVariantHint: <?= json_encode(t('pick_variant_hint'), JSON_UNESCAPED_UNICODE) ?>,
         currency: "so'm"
     };
     window.HM_OLD_CART = <?= json_encode($oldCart, JSON_UNESCAPED_UNICODE) ?>;

@@ -12,8 +12,10 @@ use App\Controllers\JoinController;
 use App\Controllers\LocaleController;
 use App\Controllers\ProductController;
 use App\Controllers\ProfileController;
+use App\Controllers\PurchaseController;
 use App\Controllers\ReportController;
 use App\Controllers\SaleController;
+use App\Controllers\SupplierController;
 use App\Controllers\SuperAdminController;
 use App\Controllers\TelegramController;
 
@@ -42,9 +44,28 @@ $router->post('/superadmin/shops/{id}/reset-password', [SuperAdminController::cl
 $router->get('/products', [ProductController::class, 'index'], ['auth', 'permission:products']);
 $router->get('/products/create', [ProductController::class, 'createForm'], ['auth', 'permission:products']);
 $router->post('/products', [ProductController::class, 'store'], ['auth', 'permission:products', 'csrf']);
+// Registered before /products/{id}/edit below for readability, though there's
+// no actual pattern collision (different segment counts).
+$router->get('/products/import', [ProductController::class, 'importForm'], ['auth', 'permission:products']);
+$router->post('/products/import/preview', [ProductController::class, 'importPreview'], ['auth', 'permission:products', 'csrf']);
+$router->post('/products/import/commit', [ProductController::class, 'importCommit'], ['auth', 'permission:products', 'csrf']);
 $router->get('/products/{id}/edit', [ProductController::class, 'editForm'], ['auth', 'permission:products']);
 $router->post('/products/{id}', [ProductController::class, 'update'], ['auth', 'permission:products', 'csrf']);
 $router->post('/products/{id}/toggle-status', [ProductController::class, 'toggleStatus'], ['auth', 'permission:products', 'csrf']);
+$router->post('/products/{id}/variants', [ProductController::class, 'variantStore'], ['auth', 'permission:products', 'csrf']);
+$router->post('/products/{id}/variants/{variantId}', [ProductController::class, 'variantUpdate'], ['auth', 'permission:products', 'csrf']);
+$router->post('/products/{id}/variants/{variantId}/toggle-status', [ProductController::class, 'variantToggleStatus'], ['auth', 'permission:products', 'csrf']);
+
+$router->get('/suppliers', [SupplierController::class, 'index'], ['auth', 'permission:products']);
+$router->get('/suppliers/create', [SupplierController::class, 'createForm'], ['auth', 'permission:products']);
+$router->post('/suppliers', [SupplierController::class, 'store'], ['auth', 'permission:products', 'csrf']);
+$router->get('/suppliers/{id}/edit', [SupplierController::class, 'editForm'], ['auth', 'permission:products']);
+$router->post('/suppliers/{id}', [SupplierController::class, 'update'], ['auth', 'permission:products', 'csrf']);
+
+$router->get('/purchases', [PurchaseController::class, 'index'], ['auth', 'permission:products']);
+$router->get('/purchases/create', [PurchaseController::class, 'createForm'], ['auth', 'permission:products']);
+$router->post('/purchases', [PurchaseController::class, 'store'], ['auth', 'permission:products', 'csrf']);
+$router->get('/purchases/{id}', [PurchaseController::class, 'show'], ['auth', 'permission:products']);
 
 $router->get('/sales', [SaleController::class, 'index'], ['auth', 'permission:sales']);
 $router->get('/sales/new', [SaleController::class, 'newForm'], ['auth', 'permission:sales']);
