@@ -398,4 +398,93 @@ class Report
 
         return $result;
     }
+
+    /**
+     * Per-cashier ranking for a period: sales count, revenue, COGS, net
+     * contribution (revenue - COGS) and computed commission, one row per
+     * shop user who can ring up a sale (the owner + every employee) — even
+     * one with zero sales in the period — sorted by revenue descending.
+     *
+     * This extends shiftReport()'s "GROUP BY cashier_id, join users" pattern
+     * from a single Tashkent day to an arbitrary period, and extends
+     * summary()'s COGS-from-cost_price_snapshot pattern the same way,
+     * grouped by cashier instead of shop-wide. Revenue/COGS are computed
+     * once here (two grouped queries, same "don't join sale_items onto
+     * sales directly" trap perShopSummary()'s docblock explains) and reused
+     * for both the leaderboard ranking and the commission figure, rather
+     * than running the same per-cashier revenue query twice for two
+     * separate features.
+     *
+     * commission_rate/commission_amount are null when the user has no
+     * commission_rate configured ("not eligible for commission this
+     * period"), never 0 — a configured rate of 0 still produces a real
+     * commission_amount of 0.0 ("eligible, earned nothing"), which is a
+     * different fact from "not eligible" and is shown differently by the
+     * caller (see reports/leaderboard.php).
+     *
+     * @return array<int, array{cashier_id:int, cashier_name:string, role:string,
+     *     sales_count:int, revenue:float, cogs:float, net_contribution:float,
+     *     commission_rate: ?float, commission_amount: ?float}>
+     */
+    public static function cashierLeaderboard(int $shopId, string $from, string $to): array
+    {
+        [$startUtc, $endUtc] = tashkent_day_bounds_utc($from, $to);
+        $pdo = Database::connect();
+
+        $salesByCashier = [];
+        $stmt = $pdo->prepare(
+            "SELECT cashier_id, COUNT(*) AS cnt, COALESCE(SUM(total), 0) AS revenue
+             FROM sales
+             WHERE shop_id = ? AND status = 'completed' AND created_at >= ? AND created_at < ?
+             GROUP BY cashier_id"
+        );
+        $stmt->execute([$shopId, $startUtc, $endUtc]);
+        foreach ($stmt->fetchAll() as $row) {
+            $salesByCashier[(int) $row['cashier_id']] = ['cnt' => (int) $row['cnt'], 'revenue' => (float) $row['revenue']];
+        }
+
+        $cogsByCashier = [];
+        $stmt = $pdo->prepare(
+            "SELECT s.cashier_id, COALESCE(SUM(si.qty * si.cost_price_snapshot), 0) AS cogs
+             FROM sale_items si
+             INNER JOIN sales s ON s.id = si.sale_id
+             WHERE s.shop_id = ? AND s.status = 'completed' AND s.created_at >= ? AND s.created_at < ?
+             GROUP BY s.cashier_id"
+        );
+        $stmt->execute([$shopId, $startUtc, $endUtc]);
+        foreach ($stmt->fetchAll() as $row) {
+            $cogsByCashier[(int) $row['cashier_id']] = (float) $row['cogs'];
+        }
+
+        $stmt = $pdo->prepare(
+            "SELECT id, full_name, role, commission_rate FROM users
+             WHERE shop_id = ? AND role IN ('owner', 'employee')
+             ORDER BY full_name"
+        );
+        $stmt->execute([$shopId]);
+
+        $result = [];
+        foreach ($stmt->fetchAll() as $u) {
+            $cashierId = (int) $u['id'];
+            $revenue = $salesByCashier[$cashierId]['revenue'] ?? 0.0;
+            $cogs = $cogsByCashier[$cashierId] ?? 0.0;
+            $rate = $u['commission_rate'] !== null ? (float) $u['commission_rate'] : null;
+
+            $result[] = [
+                'cashier_id' => $cashierId,
+                'cashier_name' => (string) $u['full_name'],
+                'role' => (string) $u['role'],
+                'sales_count' => $salesByCashier[$cashierId]['cnt'] ?? 0,
+                'revenue' => $revenue,
+                'cogs' => $cogs,
+                'net_contribution' => $revenue - $cogs,
+                'commission_rate' => $rate,
+                'commission_amount' => $rate !== null ? round($revenue * $rate / 100, 2) : null,
+            ];
+        }
+
+        usort($result, static fn (array $a, array $b): int => $b['revenue'] <=> $a['revenue']);
+
+        return $result;
+    }
 }

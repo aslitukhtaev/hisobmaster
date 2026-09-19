@@ -82,6 +82,7 @@ class EmployeeController
         }
 
         User::updatePermissions((int) $id, $this->readPermissions($request));
+        User::updateCommissionRate((int) $id, $this->readCommissionRate($request));
 
         ActivityLog::record($shopId, (int) Auth::id(), 'employee_permissions_updated', [
             'employee_name' => $employee['full_name'],
@@ -117,5 +118,21 @@ class EmployeeController
         }
 
         return array_values(array_intersect($submitted, self::PERMISSIONS));
+    }
+
+    /**
+     * Blank input means "not eligible for commission" (null), never 0 — see
+     * User::updateCommissionRate(). A non-numeric value is treated the same
+     * as blank rather than rejecting the whole permissions save over it.
+     * Clamped to a sane 0..100 percentage range.
+     */
+    private function readCommissionRate(Request $request): ?float
+    {
+        $raw = trim((string) $request->input('commission_rate', ''));
+        if ($raw === '' || !is_numeric($raw)) {
+            return null;
+        }
+
+        return max(0.0, min(100.0, (float) $raw));
     }
 }

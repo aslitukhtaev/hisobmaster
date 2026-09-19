@@ -212,6 +212,14 @@ img.logo-for-dark-theme { display: none; }
     :root:not([data-theme="light"]) img.logo-for-dark-theme { display: block; }
 }
 
+/* ---------- Attendance clock-in/out (dashboard page-head) ---------- */
+.attendance-form { display: flex; margin: 0; }
+.attendance-btn-dashboard.clocked-in {
+    background: var(--success-bg); color: var(--success);
+    border: 1px solid var(--success);
+}
+.attendance-btn-dashboard.clocked-in:hover { background: var(--success-bg); opacity: .85; }
+
 /* ---------- Theme toggle button ---------- */
 .theme-toggle {
     display: inline-flex; align-items: center; justify-content: center;

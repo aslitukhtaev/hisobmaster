@@ -51,6 +51,12 @@ if (!in_array('locked_until', $userColumns, true)) {
     echo "users jadvaliga locked_until ustuni qo'shildi.\n";
 }
 
+// Xodim komissiyasi (commission_rate) — eski bazalarda bu ustun bo'lmasligi mumkin.
+if (!in_array('commission_rate', $userColumns, true)) {
+    $pdo->exec('ALTER TABLE users ADD COLUMN commission_rate REAL');
+    echo "users jadvaliga commission_rate ustuni qo'shildi.\n";
+}
+
 // Eski bazalarda products jadvali allaqachon mavjud bo'lishi mumkin — kam
 // tovar ogohlantirishi (low_stock_threshold) va karobka/quti hajmi
 // (pack_size) ustunlari kerak bo'lsa qo'shiladi.

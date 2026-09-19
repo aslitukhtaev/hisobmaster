@@ -103,4 +103,16 @@ class User
     {
         Database::connect()->prepare('UPDATE users SET status = ? WHERE id = ?')->execute([$status, $id]);
     }
+
+    /**
+     * $rate is a percentage (e.g. 2.5 meaning 2.5%), or null to make this
+     * employee ineligible for commission entirely — distinct from a rate of
+     * 0 ("eligible, currently earns 0%"), see Report::cashierLeaderboard().
+     */
+    public static function updateCommissionRate(int $id, ?float $rate): void
+    {
+        Database::connect()
+            ->prepare('UPDATE users SET commission_rate = ? WHERE id = ?')
+            ->execute([$rate, $id]);
+    }
 }

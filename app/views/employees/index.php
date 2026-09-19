@@ -4,7 +4,10 @@
         <h1><?= e(t('employees')) ?></h1>
         <p class="muted"><?= count($employees) ?> <?= e(t('employees_count_label')) ?></p>
     </div>
-    <a href="/employees/invite" class="btn btn-primary"><?= e(t('invite_employee')) ?></a>
+    <div class="row-actions">
+        <a href="/employees/attendance" class="btn btn-ghost"><?= e(t('attendance_history_title')) ?></a>
+        <a href="/employees/invite" class="btn btn-primary"><?= e(t('invite_employee')) ?></a>
+    </div>
 </section>
 
 <?php if (!empty($invites)): ?>
@@ -36,6 +39,7 @@
                         <th><?= e(t('full_name_label')) ?></th>
                         <th><?= e(t('login')) ?></th>
                         <th><?= e(t('permissions_label')) ?></th>
+                        <th><?= e(t('commission_label')) ?></th>
                         <th><?= e(t('status')) ?></th>
                         <th><?= e(t('actions')) ?></th>
                     </tr>
@@ -52,6 +56,13 @@
                                 <?php foreach ($empPerms as $p): ?>
                                     <span class="perm-badge"><?= e(t('permission_' . $p)) ?></span>
                                 <?php endforeach; ?>
+                            <?php endif; ?>
+                        </td>
+                        <td data-label="<?= e(t('commission_label')) ?>">
+                            <?php if ($employee['commission_rate'] !== null): ?>
+                                <?= e(format_qty((float) $employee['commission_rate']) . '%') ?>
+                            <?php else: ?>
+                                <span class="muted">—</span>
                             <?php endif; ?>
                         </td>
                         <td data-label="<?= e(t('status')) ?>">
