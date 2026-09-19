@@ -566,11 +566,26 @@ img.logo-for-dark-theme { display: none; }
     background: var(--surface); color: var(--text); font-weight: 700; cursor: pointer; font-size: 1rem; line-height: 1;
 }
 .qty-stepper span { min-width: 24px; text-align: center; font-weight: 600; font-size: .85rem; }
+.qty-stepper-fractional .qty-direct-input {
+    width: 58px; min-width: 0; text-align: center; font: inherit; font-weight: 600; font-size: .85rem;
+    padding: 4px 2px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text); outline: none;
+}
+.qty-stepper-fractional .qty-direct-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
 .cart-row-subtotal { font-weight: 700; font-size: .85rem; min-width: 76px; text-align: right; flex-shrink: 0; }
 .cart-remove { background: none; border: none; color: var(--danger); font-size: 1rem; cursor: pointer; padding: 4px; flex-shrink: 0; }
 
 .cart-totals { margin: 14px 0; }
 .cart-total-row { display: flex; justify-content: space-between; align-items: center; font-size: 1.15rem; margin-top: 10px; }
+
+.discount-input-row { display: flex; gap: 8px; align-items: stretch; }
+.discount-input-row input { flex: 1; min-width: 0; }
+.discount-mode-toggle { display: flex; flex-shrink: 0; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.discount-mode-btn {
+    border: none; background: var(--surface); color: var(--muted); font-weight: 700; font-size: .82rem;
+    padding: 0 12px; cursor: pointer;
+}
+.discount-mode-btn.active { background: var(--primary); color: #fff; }
 
 .payment-types { display: flex; gap: 8px; margin: 14px 0; }
 .payment-btn {

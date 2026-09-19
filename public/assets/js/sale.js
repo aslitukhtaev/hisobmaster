@@ -7,9 +7,30 @@
     var oldCart = window.HM_OLD_CART || [];
     var oldSale = window.HM_OLD_SALE || {};
 
+    // Units a product can be sold in fractional amounts of (checked
+    // case-insensitively). Anything else ("dona", "pcs", ...) stays whole-unit
+    // only, exactly like before.
+    var FRACTIONAL_UNITS = ['kg', 'litr', 'l', 'metr', 'm'];
+    var FRACTIONAL_STEP = 0.1;
+
     var cart = new Map(); // product_id -> qty
-    var paymentType = 'naqd';
     var discount = 0;
+    var discountMode = 'amount'; // 'amount' | 'percent'
+
+    // naqd/karta amounts the cashier explicitly entered. A "preset" keeps the
+    // corresponding field pinned to the live total as the cart changes (the
+    // one-click single-payment-type flow); editing a field by hand drops into
+    // free/custom mode so a genuine split sticks instead of being overwritten
+    // on the next render.
+    var naqdAmount = 0;
+    var kartaAmount = 0;
+    var activePreset = 'naqd';
+    // Whichever field the cashier last typed into keeps the value they typed
+    // (clamped only to the total); the other one yields to make room for it.
+    // Without this, editing karta while naqd was still pinned to the old total
+    // would just clamp karta straight back down to 0 instead of actually
+    // making a split.
+    var lastEditedField = 'naqd';
 
     var productListEl = document.getElementById('product-list');
     var searchEl = document.getElementById('product-search');
@@ -17,15 +38,17 @@
     var cartEmptyMsgEl = document.getElementById('cart-empty-msg');
     var cartTotalEl = document.getElementById('cart-total');
     var discountInputEl = document.getElementById('discount-input');
+    var discountComputedLabelEl = document.getElementById('discount-computed-label');
     var completeBtnEl = document.getElementById('complete-sale-btn');
     var debtFieldsEl = document.getElementById('debt-fields');
     var customerSelectEl = document.getElementById('customer-select');
     var newCustomerFieldsEl = document.getElementById('new-customer-fields');
     var newCustomerNameEl = document.getElementById('new-customer-name');
     var newCustomerPhoneEl = document.getElementById('new-customer-phone');
-    var paidAmountInputEl = document.getElementById('paid-amount-input');
     var debtRemainingLabelEl = document.getElementById('debt-remaining-label');
     var saleFormEl = document.getElementById('sale-form');
+    var naqdAmountInputEl = document.getElementById('naqd-amount-input');
+    var kartaAmountInputEl = document.getElementById('karta-amount-input');
 
     function escapeHtml(str) {
         var div = document.createElement('div');
@@ -43,6 +66,14 @@
             return n.toString();
         }
         return (Math.round(n * 100) / 100).toString();
+    }
+
+    function roundQty(n) {
+        return Math.round(n * 100) / 100;
+    }
+
+    function isFractionalUnit(unit) {
+        return FRACTIONAL_UNITS.indexOf(String(unit || '').toLowerCase()) !== -1;
     }
 
     function productById(id) {
@@ -82,18 +113,25 @@
             return;
         }
         var currentQty = cart.get(id) || 0;
-        if (currentQty + 1 > product.stock) {
+        // Tapping a fractional-unit product in the list still adds a plain "1"
+        // the first time, same as a whole-unit product — the 0.1 step only
+        // applies to the +/- stepper once it's in the cart, so a cashier
+        // reaching for the direct qty input to type an exact amount (e.g. 1.35
+        // kg) starts from a sensible whole number instead of a stray "0.1".
+        var next = roundQty(currentQty + 1);
+        if (next > product.stock) {
             alert(i18n.stockLimitReached || 'Stock limit reached');
             return;
         }
-        cart.set(id, currentQty + 1);
+        cart.set(id, next);
         renderCart();
     }
 
-    function changeQty(id, delta) {
+    function changeQty(id, direction) {
         var product = productById(id);
         var currentQty = cart.get(id) || 0;
-        var next = currentQty + delta;
+        var step = product && isFractionalUnit(product.unit) ? FRACTIONAL_STEP : 1;
+        var next = roundQty(currentQty + direction * step);
 
         if (next <= 0) {
             cart.delete(id);
@@ -101,6 +139,24 @@
             alert(i18n.stockLimitReached || 'Stock limit reached');
             return;
         } else {
+            cart.set(id, next);
+        }
+        renderCart();
+    }
+
+    function setQty(id, qty) {
+        var product = productById(id);
+        if (!product) {
+            return;
+        }
+        var next = roundQty(qty);
+        if (next <= 0) {
+            cart.delete(id);
+        } else {
+            if (next > product.stock) {
+                next = product.stock;
+                alert(i18n.stockLimitReached || 'Stock limit reached');
+            }
             cart.set(id, next);
         }
         renderCart();
@@ -115,6 +171,14 @@
             }
         });
         return subtotal;
+    }
+
+    function discountAmount(subtotal) {
+        if (discountMode === 'percent') {
+            var pct = Math.max(0, Math.min(100, parseFloat(discountInputEl.value) || 0));
+            return Math.round(subtotal * pct / 100 * 100) / 100;
+        }
+        return Math.max(0, parseFloat(discountInputEl.value) || 0);
     }
 
     function renderCart() {
@@ -133,15 +197,20 @@
                     return;
                 }
                 var lineTotal = product.price * qty;
+                var fractional = isFractionalUnit(product.unit);
+                var qtyControl = fractional
+                    ? '<input type="number" class="qty-direct-input" data-id="' + id + '" min="0.01" max="' + product.stock + '" step="0.01" value="' + qty + '" inputmode="decimal" aria-label="' + escapeHtml(i18n.editQty || '') + ' — ' + escapeHtml(product.name) + '">'
+                    : '<span>' + escapeHtml(formatQty(qty)) + '</span>';
+
                 rows.push(
                     '<div class="cart-row" data-id="' + id + '">' +
                         '<div class="cart-row-main">' +
                             '<div class="cart-row-name" title="' + escapeHtml(product.name) + '">' + escapeHtml(product.name) + '</div>' +
                             '<div class="cart-row-price">' + escapeHtml(formatMoney(product.price)) + ' / ' + escapeHtml(product.unit) + '</div>' +
                         '</div>' +
-                        '<div class="qty-stepper">' +
+                        '<div class="qty-stepper' + (fractional ? ' qty-stepper-fractional' : '') + '">' +
                             '<button type="button" data-action="dec" data-id="' + id + '" aria-label="' + escapeHtml(i18n.decreaseQty || '') + '">−</button>' +
-                            '<span>' + escapeHtml(formatQty(qty)) + '</span>' +
+                            qtyControl +
                             '<button type="button" data-action="inc" data-id="' + id + '" aria-label="' + escapeHtml(i18n.increaseQty || '') + '">+</button>' +
                         '</div>' +
                         '<div class="cart-row-subtotal">' + escapeHtml(formatMoney(lineTotal)) + '</div>' +
@@ -153,37 +222,64 @@
         }
 
         var subtotal = cartSubtotal();
-        var total = Math.max(0, subtotal - discount);
+        discount = discountAmount(subtotal);
+        var total = Math.max(0, Math.round((subtotal - discount) * 100) / 100);
         cartTotalEl.textContent = formatMoney(total);
+        document.getElementById('discount-field').value = discount;
+
+        if (discountMode === 'percent') {
+            discountComputedLabelEl.style.display = 'block';
+            discountComputedLabelEl.textContent = (i18n.discountEqualsLabel || '= :amount').replace(':amount', formatMoney(discount));
+        } else {
+            discountComputedLabelEl.style.display = 'none';
+        }
 
         document.getElementById('cart-field').value = JSON.stringify(
             Array.from(cart, function (entry) { return { product_id: entry[0], qty: entry[1] }; })
         );
-        document.getElementById('discount-field').value = discount;
 
-        if (paymentType === 'qarz') {
-            var paid = parseFloat(paidAmountInputEl.value) || 0;
-            if (paid > total) {
-                paid = total;
-                paidAmountInputEl.value = total;
-            }
-            var remaining = Math.max(0, total - paid);
-            debtRemainingLabelEl.textContent = (i18n.debtRemainingLabel || 'Debt: :amount').replace(':amount', formatMoney(remaining));
-            document.getElementById('paid-amount-field').value = paid;
-        } else {
-            document.getElementById('paid-amount-field').value = total;
-        }
+        applyPayments(total);
     }
 
-    function setPaymentType(type) {
-        paymentType = type;
-        document.getElementById('payment-type-field').value = type;
+    // Keeps naqd/karta amounts consistent with the live total and with each
+    // other: a preset re-syncs its field to the current total on every
+    // render (so the common single-payment case just tracks the cart as it
+    // changes); free/custom edits are clamped so naqd+karta never exceed the
+    // total, and whatever's left over becomes the qarz (debt) remainder.
+    function applyPayments(total) {
+        if (activePreset === 'naqd') {
+            naqdAmount = total;
+            kartaAmount = 0;
+        } else if (activePreset === 'karta') {
+            naqdAmount = 0;
+            kartaAmount = total;
+        } else if (activePreset === 'qarz') {
+            naqdAmount = 0;
+            kartaAmount = 0;
+        } else if (lastEditedField === 'karta') {
+            kartaAmount = Math.max(0, Math.min(kartaAmount, total));
+            naqdAmount = Math.max(0, Math.min(naqdAmount, Math.round((total - kartaAmount) * 100) / 100));
+        } else {
+            naqdAmount = Math.max(0, Math.min(naqdAmount, total));
+            kartaAmount = Math.max(0, Math.min(kartaAmount, Math.round((total - naqdAmount) * 100) / 100));
+        }
+
+        naqdAmountInputEl.value = naqdAmount;
+        kartaAmountInputEl.value = kartaAmount;
+        document.getElementById('naqd-amount-field').value = naqdAmount;
+        document.getElementById('karta-amount-field').value = kartaAmount;
 
         document.querySelectorAll('.payment-btn').forEach(function (btn) {
-            btn.classList.toggle('active', btn.getAttribute('data-type') === type);
+            btn.classList.toggle('active', btn.getAttribute('data-preset') === activePreset);
         });
 
-        debtFieldsEl.style.display = type === 'qarz' ? 'block' : 'none';
+        var remaining = Math.max(0, Math.round((total - naqdAmount - kartaAmount) * 100) / 100);
+        debtFieldsEl.style.display = remaining > 0 ? 'block' : 'none';
+        debtRemainingLabelEl.textContent = (i18n.debtRemainingLabel || 'Debt: :amount').replace(':amount', formatMoney(remaining));
+    }
+
+    function setPreset(preset) {
+        activePreset = preset;
         renderCart();
     }
 
@@ -246,19 +342,54 @@
         }
     });
 
-    discountInputEl.addEventListener('input', function () {
-        discount = parseFloat(discountInputEl.value) || 0;
-        renderCart();
+    // Direct numeric qty entry (fractional-unit products only) commits on
+    // change (blur/Enter) rather than every keystroke, so a full re-render
+    // doesn't steal focus mid-type.
+    cartListEl.addEventListener('change', function (e) {
+        if (e.target.classList.contains('qty-direct-input')) {
+            var id = parseInt(e.target.getAttribute('data-id'), 10);
+            setQty(id, parseFloat(e.target.value) || 0);
+        }
+    });
+
+    discountInputEl.addEventListener('input', renderCart);
+
+    document.querySelectorAll('.discount-mode-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var mode = btn.getAttribute('data-mode');
+            if (mode === discountMode) {
+                return;
+            }
+            discountMode = mode;
+            discountInputEl.value = 0;
+            discountInputEl.setAttribute('max', mode === 'percent' ? '100' : '');
+            document.querySelectorAll('.discount-mode-btn').forEach(function (b) {
+                b.classList.toggle('active', b === btn);
+            });
+            renderCart();
+        });
     });
 
     document.querySelectorAll('.payment-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
-            setPaymentType(btn.getAttribute('data-type'));
+            setPreset(btn.getAttribute('data-preset'));
         });
     });
 
+    naqdAmountInputEl.addEventListener('input', function () {
+        activePreset = null;
+        lastEditedField = 'naqd';
+        naqdAmount = Math.max(0, parseFloat(naqdAmountInputEl.value) || 0);
+        renderCart();
+    });
+    kartaAmountInputEl.addEventListener('input', function () {
+        activePreset = null;
+        lastEditedField = 'karta';
+        kartaAmount = Math.max(0, parseFloat(kartaAmountInputEl.value) || 0);
+        renderCart();
+    });
+
     customerSelectEl.addEventListener('change', updateCustomerFields);
-    paidAmountInputEl.addEventListener('input', renderCart);
 
     newCustomerNameEl.addEventListener('input', function () {
         document.getElementById('customer-name-field').value = newCustomerNameEl.value;
@@ -297,10 +428,6 @@
             }
         }
 
-        if (oldSale.paymentType) {
-            setPaymentType(oldSale.paymentType);
-        }
-
         if (oldSale.customerId) {
             customerSelectEl.value = oldSale.customerId;
         }
@@ -317,11 +444,12 @@
             }
         }
 
-        if (oldSale.paidAmount !== undefined && oldSale.paidAmount !== '') {
-            var restoredPaid = parseFloat(oldSale.paidAmount);
-            if (!isNaN(restoredPaid)) {
-                paidAmountInputEl.value = restoredPaid;
-            }
+        var hasOldNaqd = oldSale.naqdAmount !== undefined && oldSale.naqdAmount !== '';
+        var hasOldKarta = oldSale.kartaAmount !== undefined && oldSale.kartaAmount !== '';
+        if (hasOldNaqd || hasOldKarta) {
+            activePreset = null;
+            naqdAmount = hasOldNaqd ? (parseFloat(oldSale.naqdAmount) || 0) : 0;
+            kartaAmount = hasOldKarta ? (parseFloat(oldSale.kartaAmount) || 0) : 0;
         }
     }
 

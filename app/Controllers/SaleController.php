@@ -10,6 +10,8 @@ use App\Core\View;
 use App\Models\ActivityLog;
 use App\Models\Customer;
 use App\Models\Product;
+use App\Models\Refund;
+use App\Models\Report;
 use App\Models\Sale;
 use App\Models\Shop;
 use RuntimeException;
@@ -65,13 +67,9 @@ class SaleController
         $cartRaw = (string) $request->input('cart', '[]');
         $cart = json_decode($cartRaw, true);
 
-        $paymentType = (string) $request->input('payment_type', 'naqd');
-        if (!in_array($paymentType, ['naqd', 'karta', 'qarz'], true)) {
-            $paymentType = 'naqd';
-        }
-
         $discount = (float) $request->input('discount', 0);
-        $paidAmount = (float) $request->input('paid_amount', 0);
+        $naqdAmount = (float) $request->input('naqd_amount', 0);
+        $kartaAmount = (float) $request->input('karta_amount', 0);
         $customerIdInput = trim((string) $request->input('customer_id', ''));
         $customerName = trim((string) $request->input('customer_name', ''));
         $customerPhone = trim((string) $request->input('customer_phone', ''));
@@ -80,9 +78,9 @@ class SaleController
         // has to re-build the cart from scratch after a validation failure.
         $old = [
             'cart' => $cartRaw,
-            'payment_type' => $paymentType,
             'discount' => (string) $discount,
-            'paid_amount' => (string) $paidAmount,
+            'naqd_amount' => (string) $naqdAmount,
+            'karta_amount' => (string) $kartaAmount,
             'customer_id' => $customerIdInput,
             'customer_name' => $customerName,
             'customer_phone' => $customerPhone,
@@ -102,25 +100,22 @@ class SaleController
             $items[] = ['product_id' => (int) $row['product_id'], 'qty' => (float) $row['qty']];
         }
 
+        // Whether the sale ends up leaving any qarz (debt) remainder isn't known
+        // until Sale::create() has resolved real prices/discount, so a customer
+        // is resolved here whenever one was given, regardless of the naqd/karta
+        // split — Sale::create() itself throws customer_required_for_debt if a
+        // debt remainder turns out to need one and none was provided.
         $customerId = null;
-        if ($paymentType === 'qarz') {
-            if ($customerIdInput !== '') {
-                $existing = Customer::find((int) $customerIdInput, $shopId);
-                $customerId = $existing ? (int) $existing['id'] : null;
-            }
-
-            if ($customerId === null) {
-                if ($customerName === '') {
-                    flash('error', t('customer_required_for_debt'));
-                    keep_old($old);
-                    redirect('/sales/new');
-                }
-                $customerId = Customer::findOrCreate($shopId, $customerName, $customerPhone !== '' ? $customerPhone : null);
-            }
+        if ($customerIdInput !== '') {
+            $existing = Customer::find((int) $customerIdInput, $shopId);
+            $customerId = $existing ? (int) $existing['id'] : null;
+        }
+        if ($customerId === null && $customerName !== '') {
+            $customerId = Customer::findOrCreate($shopId, $customerName, $customerPhone !== '' ? $customerPhone : null);
         }
 
         try {
-            $saleId = Sale::create($shopId, $cashierId, $items, $paymentType, $discount, $paidAmount, $customerId);
+            $saleId = Sale::create($shopId, $cashierId, $items, $naqdAmount, $kartaAmount, $discount, $customerId);
         } catch (RuntimeException $e) {
             // Sale::create() throws either a plain translation key (e.g.
             // 'insufficient_stock') or 'insufficient_stock:Product name' when it
@@ -151,10 +146,114 @@ class SaleController
             redirect('/sales');
         }
 
+        $refundableLines = Refund::refundableForSale((int) $id);
+        $canRefund = array_reduce(
+            $refundableLines,
+            static fn (bool $carry, array $line): bool => $carry || (float) $line['remaining_qty'] > 0.0001,
+            false
+        );
+
         View::render('sales/receipt', [
             'sale' => $sale,
             'items' => Sale::items((int) $id),
+            'payments' => Sale::payments((int) $id),
+            'refunds' => Refund::historyForSale((int) $id),
+            'canRefund' => $canRefund,
             'shop' => Shop::find($shopId),
+        ]);
+    }
+
+    public function refundForm(Request $request, string $id): void
+    {
+        $shopId = (int) Auth::shopId();
+        $sale = Sale::find((int) $id, $shopId);
+
+        if (!$sale) {
+            flash('error', t('sale_not_found'));
+            redirect('/sales');
+        }
+
+        $lines = Refund::refundableForSale((int) $id);
+        $hasRefundable = array_reduce(
+            $lines,
+            static fn (bool $carry, array $line): bool => $carry || (float) $line['remaining_qty'] > 0.0001,
+            false
+        );
+
+        if (!$hasRefundable) {
+            flash('error', t('no_refundable_items'));
+            redirect("/sales/{$id}");
+        }
+
+        View::render('sales/refund', [
+            'sale' => $sale,
+            'lines' => $lines,
+        ]);
+    }
+
+    public function refundStore(Request $request, string $id): void
+    {
+        $shopId = (int) Auth::shopId();
+        $userId = (int) Auth::id();
+        $sale = Sale::find((int) $id, $shopId);
+
+        if (!$sale) {
+            flash('error', t('sale_not_found'));
+            redirect('/sales');
+        }
+
+        $qtyInputs = $request->input('qty', []);
+        $reason = trim((string) $request->input('reason', ''));
+
+        $lines = [];
+        if (is_array($qtyInputs)) {
+            foreach ($qtyInputs as $saleItemId => $qtyRaw) {
+                $qty = (float) $qtyRaw;
+                if ($qty > 0) {
+                    $lines[] = ['sale_item_id' => (int) $saleItemId, 'qty' => $qty];
+                }
+            }
+        }
+
+        if (empty($lines)) {
+            flash('error', t('refund_no_items_selected'));
+            redirect("/sales/{$id}/refund");
+        }
+
+        try {
+            $refundId = Refund::create($shopId, (int) $id, $userId, $lines, $reason !== '' ? $reason : null);
+        } catch (RuntimeException $e) {
+            flash('error', t($e->getMessage()));
+            redirect("/sales/{$id}/refund");
+        }
+
+        $refund = null;
+        foreach (Refund::historyForSale((int) $id) as $entry) {
+            if ((int) $entry['id'] === $refundId) {
+                $refund = $entry;
+                break;
+            }
+        }
+
+        ActivityLog::record($shopId, $userId, 'refund_created', [
+            'sale_id' => (int) $id,
+            'amount' => money((float) ($refund['total_amount'] ?? 0)),
+        ]);
+
+        flash('success', t('refund_completed'));
+        redirect("/sales/{$id}");
+    }
+
+    public function shiftReport(Request $request): void
+    {
+        $shopId = (int) Auth::shopId();
+        $today = date('Y-m-d');
+        $report = Report::shiftReport($shopId, $today);
+
+        View::render('sales/shift-report', [
+            'totals' => $report['totals'],
+            'byCashier' => $report['by_cashier'],
+            'today' => $today,
         ]);
     }
 }

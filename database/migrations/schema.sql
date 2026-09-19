@@ -115,6 +115,19 @@ CREATE TABLE IF NOT EXISTS sale_items (
 CREATE INDEX IF NOT EXISTS idx_sale_items_sale ON sale_items(sale_id);
 CREATE INDEX IF NOT EXISTS idx_sale_items_product ON sale_items(product_id);
 
+-- One sale's total can be split across several payment methods (naqd/karta/qarz)
+-- at once. Every sale gets at least one row here (even a plain single-method
+-- sale) going forward; sales.payment_type/paid_amount stay in sync as a
+-- derived summary (single type name, or 'aralash' when mixed) purely for
+-- backward compatibility with code that only reads those two columns.
+CREATE TABLE IF NOT EXISTS sale_payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sale_id INTEGER NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
+    payment_type TEXT NOT NULL,
+    amount REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sale_payments_sale ON sale_payments(sale_id);
+
 CREATE TABLE IF NOT EXISTS expenses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     shop_id INTEGER NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
@@ -140,6 +153,35 @@ CREATE TABLE IF NOT EXISTS debt_transactions (
 );
 CREATE INDEX IF NOT EXISTS idx_debt_customer ON debt_transactions(customer_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_debt_shop ON debt_transactions(shop_id);
+
+-- A full or partial return against a completed sale. One sale can have several
+-- refunds over time (repeated partial returns), so both the money total and
+-- the per-line-item quantities live here rather than mutating the sale itself.
+CREATE TABLE IF NOT EXISTS refunds (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sale_id INTEGER NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
+    shop_id INTEGER NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+    refunded_by INTEGER NOT NULL REFERENCES users(id),
+    total_amount REAL NOT NULL,
+    reason TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_refunds_sale ON refunds(sale_id);
+CREATE INDEX IF NOT EXISTS idx_refunds_shop ON refunds(shop_id, created_at);
+
+-- Per-line-item breakdown of a refund. Summing qty/amount for a given
+-- sale_item_id across every row here (across every refund of that sale) gives
+-- "how much of this line item has already been refunded", which is what caps
+-- how much of it can still be returned.
+CREATE TABLE IF NOT EXISTS refund_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    refund_id INTEGER NOT NULL REFERENCES refunds(id) ON DELETE CASCADE,
+    sale_item_id INTEGER NOT NULL REFERENCES sale_items(id),
+    qty REAL NOT NULL,
+    amount REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_refund_items_refund ON refund_items(refund_id);
+CREATE INDEX IF NOT EXISTS idx_refund_items_sale_item ON refund_items(sale_item_id);
 
 CREATE TABLE IF NOT EXISTS activity_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
