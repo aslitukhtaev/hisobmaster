@@ -40,4 +40,20 @@ class Request
     {
         return array_intersect_key($this->all(), array_flip($keys));
     }
+
+    /**
+     * The raw $_FILES entry for a single <input type="file" name="$key">, or
+     * null when nothing was uploaded under that name (including a form
+     * submitted without selecting a file, where PHP still sets
+     * error = UPLOAD_ERR_NO_FILE rather than omitting the key).
+     */
+    public function file(string $key): ?array
+    {
+        $file = $_FILES[$key] ?? null;
+        if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return null;
+        }
+
+        return $file;
+    }
 }

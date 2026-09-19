@@ -103,6 +103,7 @@ class Refund
                 $resolved[] = [
                     'sale_item_id' => $saleItemId,
                     'product_id' => (int) $item['product_id'],
+                    'variant_id' => $item['variant_id'] !== null ? (int) $item['variant_id'] : null,
                     'qty' => $qty,
                     'amount' => $net,
                 ];
@@ -122,7 +123,9 @@ class Refund
             // Atomic restore: a single UPDATE that both adds the qty back and
             // verifies the product row still belongs to this shop, mirroring
             // Sale::create()'s atomic conditional decrement rather than a
-            // read-then-write.
+            // read-then-write. A line sold from a variant restores that
+            // variant's own stock_qty (ProductVariant::incrementStock(), same
+            // shape) instead of the parent product's.
             $stockStmt = $pdo->prepare(
                 'UPDATE products SET stock_qty = stock_qty + ? WHERE id = ? AND shop_id = ?'
             );
@@ -130,10 +133,16 @@ class Refund
             foreach ($resolved as $r) {
                 $itemStmt->execute([$refundId, $r['sale_item_id'], $r['qty'], $r['amount']]);
 
-                $stockStmt->execute([$r['qty'], $r['product_id'], $shopId]);
-                if ($stockStmt->rowCount() !== 1) {
-                    // The product row is gone or belongs to another shop —
-                    // shouldn't happen (products are never deleted, only
+                if ($r['variant_id'] !== null) {
+                    $affected = ProductVariant::incrementStock($r['variant_id'], $shopId, $r['qty']);
+                } else {
+                    $stockStmt->execute([$r['qty'], $r['product_id'], $shopId]);
+                    $affected = $stockStmt->rowCount();
+                }
+
+                if ($affected !== 1) {
+                    // The product/variant row is gone or belongs to another shop —
+                    // shouldn't happen (products/variants are never deleted, only
                     // deactivated), but fail loudly rather than silently
                     // dropping stock that should have been restored.
                     throw new RuntimeException('product_not_found');

@@ -179,6 +179,15 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
         </div>
     </div>
 
+    <script>
+        window.HM_BARCODE_I18N = {
+            scanBarcode: <?= json_encode(t('scan_barcode'), JSON_UNESCAPED_UNICODE) ?>,
+            scanUnsupported: <?= json_encode(t('scan_unsupported'), JSON_UNESCAPED_UNICODE) ?>,
+            scanHint: <?= json_encode(t('scan_hint'), JSON_UNESCAPED_UNICODE) ?>,
+            close: <?= json_encode(t('close'), JSON_UNESCAPED_UNICODE) ?>
+        };
+    </script>
     <script src="<?= asset('js/app.js') ?>" defer></script>
+    <script src="<?= asset('js/barcode-scan.js') ?>" defer></script>
 </body>
 </html>

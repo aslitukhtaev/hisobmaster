@@ -10,7 +10,7 @@ use RuntimeException;
 class Sale
 {
     /**
-     * @param array<int, array{product_id: int, qty: float}> $items
+     * @param array<int, array{product_id: int, qty: float, variant_id?: ?int}> $items
      * @return int the new sale id
      *
      * @throws RuntimeException when an item is invalid, stock is insufficient,
@@ -42,6 +42,7 @@ class Sale
             foreach ($items as $item) {
                 $product = Product::find((int) $item['product_id'], $shopId);
                 $qty = (float) $item['qty'];
+                $variantId = !empty($item['variant_id']) ? (int) $item['variant_id'] : null;
 
                 if (!$product || $product['status'] !== 'active') {
                     throw new RuntimeException('invalid_product');
@@ -51,18 +52,38 @@ class Sale
                     throw new RuntimeException('invalid_qty');
                 }
 
+                $variant = null;
+                if ($variantId !== null) {
+                    $variant = ProductVariant::find($variantId, $shopId);
+                    if (!$variant || (int) $variant['product_id'] !== (int) $product['id'] || $variant['status'] !== 'active') {
+                        throw new RuntimeException('invalid_product');
+                    }
+                } elseif (!empty(ProductVariant::activeByProduct((int) $product['id'], $shopId))) {
+                    // This product has at least one active variant — cashiers must
+                    // pick a specific one (its own stock, not the parent's, is what
+                    // actually gets decremented below), rather than silently
+                    // falling back to the parent product.
+                    throw new RuntimeException('variant_required:' . $product['name']);
+                }
+
                 // NOTE: no stock_qty check here — that would just be a second,
                 // equally racy read-then-write. The authoritative check is the
                 // atomic conditional UPDATE in the loop below.
 
-                $unitPrice = (float) $product['sell_price'];
-                $costPrice = (float) $product['cost_price'];
+                $unitPrice = $variant !== null && $variant['sell_price'] !== null
+                    ? (float) $variant['sell_price']
+                    : (float) $product['sell_price'];
+                $costPrice = $variant !== null && $variant['cost_price'] !== null
+                    ? (float) $variant['cost_price']
+                    : (float) $product['cost_price'];
                 $lineSubtotal = round($unitPrice * $qty, 2);
                 $subtotal += $lineSubtotal;
 
                 $resolvedItems[] = [
                     'product_id' => $product['id'],
                     'product_name' => $product['name'],
+                    'variant_id' => $variant['id'] ?? null,
+                    'variant_label' => $variant['variant_label'] ?? null,
                     'qty' => $qty,
                     'unit_price' => $unitPrice,
                     'cost_price_snapshot' => $costPrice,
@@ -109,14 +130,16 @@ class Sale
             }
 
             $itemStmt = $pdo->prepare(
-                'INSERT INTO sale_items (sale_id, product_id, product_name, qty, unit_price, cost_price_snapshot, subtotal)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO sale_items (sale_id, product_id, product_name, qty, unit_price, cost_price_snapshot, subtotal, variant_id, variant_label)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
             // Atomic conditional decrement: the WHERE clause re-checks stock_qty in
             // the same statement that decrements it, so the check-and-write is one
             // indivisible step instead of a separate read followed by a write. Two
             // concurrent sales of the last unit can now never both succeed — only
-            // one UPDATE will match a row and affect it.
+            // one UPDATE will match a row and affect it. A variant sale decrements
+            // the variant's own stock_qty (ProductVariant::decrementStock(), same
+            // shape) instead of the parent product's.
             $stockStmt = $pdo->prepare(
                 'UPDATE products SET stock_qty = stock_qty - ? WHERE id = ? AND shop_id = ? AND stock_qty >= ?'
             );
@@ -130,16 +153,26 @@ class Sale
                     $item['unit_price'],
                     $item['cost_price_snapshot'],
                     $item['subtotal'],
+                    $item['variant_id'],
+                    $item['variant_label'],
                 ]);
 
-                $stockStmt->execute([$item['qty'], $item['product_id'], $shopId, $item['qty']]);
+                if ($item['variant_id'] !== null) {
+                    $affected = ProductVariant::decrementStock($item['variant_id'], $item['product_id'], $shopId, $item['qty']);
+                } else {
+                    $stockStmt->execute([$item['qty'], $item['product_id'], $shopId, $item['qty']]);
+                    $affected = $stockStmt->rowCount();
+                }
 
-                if ($stockStmt->rowCount() !== 1) {
+                if ($affected !== 1) {
                     // Someone else already sold this stock between our read above and
                     // this write. Fail the whole sale (caught below, which rolls back
                     // everything — the sale row and any earlier line items too) rather
                     // than oversell.
-                    throw new RuntimeException('insufficient_stock:' . $item['product_name']);
+                    $label = $item['variant_label'] !== null
+                        ? $item['product_name'] . ' (' . $item['variant_label'] . ')'
+                        : $item['product_name'];
+                    throw new RuntimeException('insufficient_stock:' . $label);
                 }
             }
 
