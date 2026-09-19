@@ -42,8 +42,8 @@ class Product
     {
         $pdo = Database::connect();
         $stmt = $pdo->prepare(
-            'INSERT INTO products (shop_id, category_id, name, unit, cost_price, sell_price, stock_qty, barcode, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO products (shop_id, category_id, name, unit, cost_price, sell_price, stock_qty, barcode, status, low_stock_threshold, pack_size)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $data['shop_id'],
@@ -55,6 +55,8 @@ class Product
             $data['stock_qty'],
             $data['barcode'] ?? null,
             'active',
+            $data['low_stock_threshold'] ?? null,
+            $data['pack_size'] ?? null,
         ]);
 
         return (int) $pdo->lastInsertId();
@@ -64,7 +66,8 @@ class Product
     {
         Database::connect()->prepare(
             'UPDATE products
-             SET category_id = ?, name = ?, unit = ?, cost_price = ?, sell_price = ?, stock_qty = ?, barcode = ?, updated_at = datetime(\'now\')
+             SET category_id = ?, name = ?, unit = ?, cost_price = ?, sell_price = ?, stock_qty = ?, barcode = ?,
+                 low_stock_threshold = ?, pack_size = ?, updated_at = datetime(\'now\')
              WHERE id = ? AND shop_id = ?'
         )->execute([
             $data['category_id'] ?? null,
@@ -74,9 +77,74 @@ class Product
             $data['sell_price'],
             $data['stock_qty'],
             $data['barcode'] ?? null,
+            $data['low_stock_threshold'] ?? null,
+            $data['pack_size'] ?? null,
             $id,
             $shopId,
         ]);
+    }
+
+    /**
+     * Sets a product's cost_price directly (used by the purchase-recording
+     * flow when the shop owner explicitly opts to update the cost basis to
+     * the new purchase price). Not a stock-affecting write, so a plain SET is
+     * fine here — no read-then-write hazard, unlike stock_qty.
+     */
+    public static function updateCostPrice(int $id, int $shopId, float $costPrice): void
+    {
+        Database::connect()
+            ->prepare("UPDATE products SET cost_price = ?, updated_at = datetime('now') WHERE id = ? AND shop_id = ?")
+            ->execute([$costPrice, $id, $shopId]);
+    }
+
+    public static function findByBarcode(string $barcode, int $shopId): ?array
+    {
+        $stmt = Database::connect()->prepare('SELECT * FROM products WHERE shop_id = ? AND barcode = ? LIMIT 1');
+        $stmt->execute([$shopId, $barcode]);
+
+        return $stmt->fetch() ?: null;
+    }
+
+    /**
+     * Active products at or below their effective low-stock threshold: their
+     * own low_stock_threshold when set, otherwise the shop-wide default (see
+     * Settings::lowStockThresholdDefault()) when one is configured. A product
+     * with neither never shows up here.
+     */
+    public static function lowStock(int $shopId, ?float $shopDefaultThreshold): array
+    {
+        $sql = 'SELECT p.*, c.name AS category_name
+                FROM products p
+                LEFT JOIN categories c ON c.id = p.category_id
+                WHERE p.shop_id = ? AND p.status = ?
+                  AND (
+                        (p.low_stock_threshold IS NOT NULL AND p.stock_qty <= p.low_stock_threshold)';
+        $params = [$shopId, 'active'];
+
+        if ($shopDefaultThreshold !== null) {
+            $sql .= ' OR (p.low_stock_threshold IS NULL AND p.stock_qty <= ?)';
+            $params[] = $shopDefaultThreshold;
+        }
+
+        $sql .= '  ) ORDER BY p.stock_qty ASC, p.name';
+
+        $stmt = Database::connect()->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll();
+    }
+
+    public static function lowStockCounts(int $shopId, ?float $shopDefaultThreshold): array
+    {
+        $rows = self::lowStock($shopId, $shopDefaultThreshold);
+        $out = 0;
+        foreach ($rows as $row) {
+            if ((float) $row['stock_qty'] <= 0) {
+                $out++;
+            }
+        }
+
+        return ['low' => count($rows), 'out' => $out];
     }
 
     public static function setStatus(int $id, int $shopId, string $status): void

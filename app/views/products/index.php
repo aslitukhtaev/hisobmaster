@@ -7,7 +7,10 @@
             <?= (int) $counts['active'] ?> <?= e(t('active_label')) ?>
         </p>
     </div>
-    <a href="/products/create" class="btn btn-primary"><?= e(t('add_product')) ?></a>
+    <div class="row-actions">
+        <a href="/products/import" class="btn btn-ghost"><?= e(t('import_products')) ?></a>
+        <a href="/products/create" class="btn btn-primary"><?= e(t('add_product')) ?></a>
+    </div>
 </section>
 
 <?php if (can('prices')): ?>
@@ -17,15 +20,26 @@
 </section>
 <?php endif; ?>
 
+<?php if ($lowStockCounts['low'] > 0): ?>
+<div class="filter-tabs">
+    <a href="/products" class="filter-tab <?= !$lowStockOnly ? 'active' : '' ?>"><?= e(t('filter_all_products')) ?></a>
+    <a href="/products?filter=low_stock" class="filter-tab <?= $lowStockOnly ? 'active' : '' ?>">
+        <?= e(t('filter_low_stock_only')) ?> (<?= (int) $lowStockCounts['low'] ?>)
+    </a>
+</div>
+<?php endif; ?>
+
+<?php if (!$lowStockOnly): ?>
 <form method="get" action="/products" class="search-bar">
     <label class="sr-only" for="product-search-q"><?= e(t('search_products_placeholder')) ?></label>
     <input type="text" id="product-search-q" name="q" placeholder="<?= e(t('search_products_placeholder')) ?>" value="<?= e($search) ?>">
     <button type="submit" class="btn btn-ghost btn-sm"><?= e(t('search')) ?></button>
 </form>
+<?php endif; ?>
 
 <?php if (empty($products)): ?>
     <div class="card">
-        <p class="muted"><?= e($search !== '' ? t('no_products_found') : t('no_products_yet')) ?></p>
+        <p class="muted"><?= e($lowStockOnly ? t('no_low_stock_products') : ($search !== '' ? t('no_products_found') : t('no_products_yet'))) ?></p>
     </div>
 <?php else: ?>
     <div class="card table-card">
@@ -43,7 +57,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                <?php foreach ($products as $product): ?>
+                <?php foreach ($products as $product):
+                    $effectiveThreshold = $product['low_stock_threshold'] !== null
+                        ? (float) $product['low_stock_threshold']
+                        : $shopDefaultThreshold;
+                    $isLowStock = $effectiveThreshold !== null && (float) $product['stock_qty'] <= $effectiveThreshold;
+                ?>
                     <tr>
                         <td><?= e($product['name']) ?></td>
                         <td class="muted" data-label="<?= e(t('category')) ?>"><?= e($product['category_name'] ?? '—') ?></td>
@@ -51,7 +70,14 @@
                             <td data-label="<?= e(t('cost_price')) ?>"><?= money((float) $product['cost_price']) ?></td>
                         <?php endif; ?>
                         <td data-label="<?= e(t('sell_price')) ?>"><?= money((float) $product['sell_price']) ?></td>
-                        <td data-label="<?= e(t('stock_qty')) ?>"><?= e(format_qty((float) $product['stock_qty'])) ?> <?= e($product['unit']) ?></td>
+                        <td data-label="<?= e(t('stock_qty')) ?>">
+                            <?= e(format_qty((float) $product['stock_qty'])) ?> <?= e($product['unit']) ?>
+                            <?php if ($isLowStock): ?>
+                                <span class="stock-low-badge" title="<?= e(t('low_stock_badge_title')) ?>">
+                                    <?= e((float) $product['stock_qty'] <= 0 ? t('out_of_stock_badge') : t('low_stock_badge')) ?>
+                                </span>
+                            <?php endif; ?>
+                        </td>
                         <td data-label="<?= e(t('status')) ?>">
                             <span class="status-pill <?= $product['status'] === 'active' ? 'status-active' : 'status-blocked' ?>">
                                 <?= e($product['status'] === 'active' ? t('active_status') : t('inactive_status')) ?>

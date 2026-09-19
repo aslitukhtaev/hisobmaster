@@ -7,6 +7,8 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Request;
 use App\Core\View;
+use App\Models\Product;
+use App\Models\Settings;
 use App\Models\Shop;
 
 class DashboardController
@@ -21,6 +23,11 @@ class DashboardController
             return;
         }
 
-        View::render('dashboard');
+        $shopId = Auth::shopId();
+        $lowStockCounts = ($shopId && Auth::can('products'))
+            ? Product::lowStockCounts((int) $shopId, Settings::lowStockThresholdDefault((int) $shopId))
+            : null;
+
+        View::render('dashboard', ['lowStockCounts' => $lowStockCounts]);
     }
 }

@@ -70,6 +70,12 @@
                 </label>
             </div>
         </div>
+        <label class="field">
+            <span><?= e(t('low_stock_threshold_default_label')) ?> (<?= e(t('optional')) ?>)</span>
+            <input type="number" step="0.01" min="0" inputmode="decimal" name="low_stock_threshold_default"
+                   value="<?= e(old('low_stock_threshold_default', $lowStockThresholdDefault ?? '')) ?>">
+        </label>
+        <p class="muted"><?= e(t('low_stock_threshold_default_hint')) ?></p>
         <button type="submit" class="btn btn-primary btn-block"><?= e(t('save')) ?></button>
     </form>
 </div>
