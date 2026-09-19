@@ -74,11 +74,14 @@ document.addEventListener('DOMContentLoaded', function () {
     // Telegram's in-app WebView (especially on iOS) frequently makes window.print()
     // a silent no-op — there is no dedicated print API in the WebApp SDK to fall
     // back to, so the best we can do is still attempt it and show a hint pointing
-    // Telegram users at "Open in browser" if nothing happens.
-    var printBtn = document.getElementById('receipt-print-btn');
-    if (printBtn) {
-        printBtn.addEventListener('click', function () {
-            window.print();
+    // Telegram users at "Open in browser" if nothing happens. Shared by every
+    // print-to-PDF button in the app (the receipt, the reports print view, …).
+    var printBtns = document.querySelectorAll('.js-print-btn');
+    if (printBtns.length) {
+        printBtns.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                window.print();
+            });
         });
 
         var printHint = document.getElementById('telegram-print-hint');

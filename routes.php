@@ -34,6 +34,7 @@ $router->post('/profile', [ProfileController::class, 'update'], ['auth', 'csrf']
 $router->post('/profile/shop', [ProfileController::class, 'updateShop'], ['auth', 'role:owner', 'csrf']);
 
 $router->get('/superadmin/shops', [SuperAdminController::class, 'shops'], ['auth', 'role:super_admin']);
+$router->get('/superadmin/reports', [SuperAdminController::class, 'reports'], ['auth', 'role:super_admin']);
 $router->get('/superadmin/backup', [SuperAdminController::class, 'downloadBackup'], ['auth', 'role:super_admin']);
 $router->get('/superadmin/shops/create', [SuperAdminController::class, 'createForm'], ['auth', 'role:super_admin']);
 $router->post('/superadmin/shops', [SuperAdminController::class, 'store'], ['auth', 'role:super_admin', 'csrf']);
@@ -71,9 +72,10 @@ $router->get('/sales', [SaleController::class, 'index'], ['auth', 'permission:sa
 $router->get('/sales/new', [SaleController::class, 'newForm'], ['auth', 'permission:sales']);
 $router->post('/sales', [SaleController::class, 'store'], ['auth', 'permission:sales', 'csrf']);
 // Registered before the single-segment /sales/{id} route below, since that
-// route's {id} pattern would otherwise swallow "shift-report" as if it were a
-// sale id.
+// route's {id} pattern would otherwise swallow "shift-report" (and "export")
+// as if it were a sale id.
 $router->get('/sales/shift-report', [SaleController::class, 'shiftReport'], ['auth', 'permission:sales']);
+$router->get('/sales/export', [SaleController::class, 'exportCsv'], ['auth', 'permission:sales']);
 $router->get('/sales/{id}/refund', [SaleController::class, 'refundForm'], ['auth', 'permission:sales']);
 $router->post('/sales/{id}/refund', [SaleController::class, 'refundStore'], ['auth', 'permission:sales', 'csrf']);
 $router->get('/sales/{id}', [SaleController::class, 'receipt'], ['auth', 'permission:sales']);
@@ -94,6 +96,8 @@ $router->post('/expenses/{id}', [ExpenseController::class, 'update'], ['auth', '
 $router->post('/expenses/{id}/delete', [ExpenseController::class, 'delete'], ['auth', 'permission:expenses', 'csrf']);
 
 $router->get('/reports', [ReportController::class, 'index'], ['auth', 'permission:reports']);
+$router->get('/reports/print', [ReportController::class, 'print'], ['auth', 'permission:reports']);
+$router->get('/reports/export', [ReportController::class, 'exportCsv'], ['auth', 'permission:reports']);
 
 $router->get('/employees', [EmployeeController::class, 'index'], ['auth', 'role:owner']);
 $router->get('/employees/invite', [EmployeeController::class, 'inviteForm'], ['auth', 'role:owner']);

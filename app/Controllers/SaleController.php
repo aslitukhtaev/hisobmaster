@@ -22,11 +22,56 @@ class SaleController
     public function index(Request $request): void
     {
         $shopId = (int) Auth::shopId();
+        $from = (string) $request->input('from', '');
+        $to = (string) $request->input('to', '');
+        $filtered = $from !== '' && $to !== '' && $from <= $to;
 
         View::render('sales/index', [
-            'sales' => Sale::recentByShop($shopId),
+            'sales' => $filtered ? Sale::rangeByShop($shopId, $from, $to) : Sale::recentByShop($shopId),
             'today' => Sale::todaysSummary($shopId),
+            'from' => $from,
+            'to' => $to,
+            'filtered' => $filtered,
         ]);
+    }
+
+    /**
+     * CSV export of the sales list — the same rows recentByShop()/rangeByShop()
+     * would show on screen for the from/to filter currently in effect (see
+     * index() above), so the exported row count always matches what's on the
+     * page.
+     */
+    public function exportCsv(Request $request): void
+    {
+        $shopId = (int) Auth::shopId();
+        $from = (string) $request->input('from', '');
+        $to = (string) $request->input('to', '');
+        $filtered = $from !== '' && $to !== '' && $from <= $to;
+
+        $sales = $filtered ? Sale::rangeByShop($shopId, $from, $to) : Sale::recentByShop($shopId);
+
+        $filename = 'sotuvlar_' . ($filtered ? $from . '_' . $to : date('Y-m-d')) . '.csv';
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: no-store');
+
+        $out = fopen('php://output', 'w');
+        fwrite($out, "\xEF\xBB\xBF");
+
+        fputcsv($out, [t('sale_date'), t('cashier'), t('customer'), t('total'), t('payment_type')]);
+        foreach ($sales as $sale) {
+            fputcsv($out, [
+                substr((string) $sale['created_at'], 0, 16),
+                $sale['cashier_name'] ?? '',
+                $sale['customer_name'] ?? '',
+                number_format((float) $sale['total'], 2, '.', ''),
+                t('payment_' . $sale['payment_type']),
+            ]);
+        }
+
+        fclose($out);
+        exit;
     }
 
     public function newForm(Request $request): void

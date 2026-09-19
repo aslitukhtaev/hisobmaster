@@ -1,4 +1,7 @@
-<?php $pageTitle = t('expenses'); ?>
+<?php
+$pageTitle = t('expenses');
+$categoryTotal = array_sum(array_column($categoryBreakdown, 'total')) ?: 1;
+?>
 <section class="page-head page-head-row">
     <div>
         <h1><?= e(t('expenses')) ?></h1>
@@ -23,6 +26,28 @@
     </label>
     <button type="submit" class="btn btn-ghost"><?= e(t('filter_apply')) ?></button>
 </form>
+
+<?php if (!empty($categoryBreakdown)): ?>
+    <div class="card">
+        <h2><?= e(t('expense_category_breakdown_title')) ?></h2>
+        <div class="hbar-list">
+            <?php foreach ($categoryBreakdown as $index => $row):
+                $val = (float) $row['total'];
+                $pct = $categoryTotal > 0 ? round($val / $categoryTotal * 100) : 0;
+                $label = $row['category_name'] ?? t('no_category');
+                $color = 'var(--chart-' . (($index % 8) + 1) . ')';
+            ?>
+                <div class="hbar-row hbar-row-wide">
+                    <span class="hbar-label" title="<?= e($label) ?>"><?= e($label) ?></span>
+                    <div class="hbar-track">
+                        <div class="hbar-fill" style="width: <?= $val > 0 ? max(2, $pct) : 0 ?>%; background: <?= $color ?>;"></div>
+                    </div>
+                    <span class="hbar-value"><?= money($val) ?></span>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+<?php endif; ?>
 
 <?php if (empty($expenses)): ?>
     <div class="card"><p class="muted"><?= e(t('no_expenses_yet')) ?></p></div>

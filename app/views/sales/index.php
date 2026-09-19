@@ -13,6 +13,22 @@
     </div>
 </section>
 
+<form method="get" action="/sales" class="date-filter-bar">
+    <label class="field">
+        <span><?= e(t('from_date')) ?></span>
+        <input type="date" name="from" value="<?= e($from) ?>">
+    </label>
+    <label class="field">
+        <span><?= e(t('to_date')) ?></span>
+        <input type="date" name="to" value="<?= e($to) ?>">
+    </label>
+    <button type="submit" class="btn btn-ghost"><?= e(t('filter_apply')) ?></button>
+    <?php if ($filtered): ?>
+        <a href="/sales" class="btn btn-ghost"><?= e(t('reset_filter')) ?></a>
+    <?php endif; ?>
+    <a href="/sales/export<?= $filtered ? '?from=' . e($from) . '&amp;to=' . e($to) : '' ?>" class="btn btn-ghost"><?= e(t('export_csv_button')) ?></a>
+</form>
+
 <?php if (empty($sales)): ?>
     <div class="card"><p class="muted"><?= e(t('no_sales_yet')) ?></p></div>
 <?php else: ?>

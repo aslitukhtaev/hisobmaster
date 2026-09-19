@@ -422,4 +422,24 @@ return [
     'scan_unsupported' => "Brauzeringiz kamera orqali skanerlashni qo'llab-quvvatlamaydi",
     'scan_hint' => 'Kamerani shtrix-kodga qarating',
     'close' => 'Yopish',
+
+    // Reports: expense breakdown, period comparison, CSV/PDF export
+    'expense_category_breakdown_title' => "Xarajatlar toifalar bo'yicha",
+    'other_category' => 'Boshqa',
+    'no_expenses_in_period' => "Tanlangan davrda xarajat bo'lmagan.",
+    'export_csv_button' => "CSV'ga eksport qilish",
+    'print_report_button' => 'Chop etish / PDF',
+    'compare_previous_period' => 'Oldingi davr bilan solishtirish',
+    'period_comparison_title' => 'Davrlar taqqoslash',
+    'vs_current_period_label' => '— oldingi davr',
+    'comparison_metric_label' => "Ko'rsatkich",
+    'current_period_label' => 'Joriy davr',
+    'previous_period_label' => 'Oldingi davr',
+    'change_label' => "O'zgarish",
+    'reset_filter' => 'Barchasi',
+
+    // Super admin: consolidated cross-shop report
+    'consolidated_reports' => "Barcha do'konlar hisoboti",
+    'consolidated_reports_nav' => 'Hisobot',
+    'per_shop_breakdown_title' => "Do'konlar bo'yicha taqsimot",
 ];

@@ -17,7 +17,7 @@ $debtAmount = round((float) $sale['total'] - (float) $sale['paid_amount'], 2);
         <?php if ($canRefund): ?>
             <a href="/sales/<?= (int) $sale['id'] ?>/refund" class="btn btn-ghost"><?= e(t('refund_action')) ?></a>
         <?php endif; ?>
-        <button type="button" class="btn btn-primary" id="receipt-print-btn"><?= e(t('print')) ?></button>
+        <button type="button" class="btn btn-primary js-print-btn" id="receipt-print-btn"><?= e(t('print')) ?></button>
         <a href="/sales" class="btn btn-ghost"><?= e(t('back_to_list')) ?></a>
     </div>
 </section>

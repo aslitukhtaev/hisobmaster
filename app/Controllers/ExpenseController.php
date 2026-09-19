@@ -22,6 +22,7 @@ class ExpenseController
         View::render('expenses/index', [
             'expenses' => Expense::allByShop($shopId, $from, $to),
             'total' => Expense::totalByShop($shopId, $from, $to),
+            'categoryBreakdown' => Expense::categoryBreakdown($shopId, $from, $to),
             'from' => $from,
             'to' => $to,
         ]);

@@ -94,4 +94,36 @@ class Expense
 
         return (float) $stmt->fetchColumn();
     }
+
+    /**
+     * Total expense amount per category for the given period, sorted highest
+     * first. expense_date is a plain Tashkent calendar date entered by hand
+     * (not a UTC created_at timestamp), so a direct BETWEEN comparison is
+     * correct here exactly as in totalByShop()/allByShop() above — this does
+     * not need tashkent_day_bounds_utc(), which is only for UTC-stored
+     * created_at columns.
+     *
+     * Uncategorized expenses (category_id IS NULL) come back as one row with
+     * category_name = null; the caller labels that row itself (see
+     * t('no_category')).
+     *
+     * @return array<int, array{category_name: ?string, total: float}>
+     */
+    public static function categoryBreakdown(int $shopId, string $from, string $to): array
+    {
+        $stmt = Database::connect()->prepare(
+            'SELECT c.name AS category_name, COALESCE(SUM(e.amount), 0) AS total
+             FROM expenses e
+             LEFT JOIN categories c ON c.id = e.category_id
+             WHERE e.shop_id = ? AND e.expense_date BETWEEN ? AND ?
+             GROUP BY e.category_id
+             ORDER BY total DESC'
+        );
+        $stmt->execute([$shopId, $from, $to]);
+
+        return array_map(
+            static fn (array $row): array => ['category_name' => $row['category_name'], 'total' => (float) $row['total']],
+            $stmt->fetchAll()
+        );
+    }
 }
