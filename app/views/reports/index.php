@@ -39,6 +39,7 @@ $comparisonMetrics = [
         <p class="muted"><?= e($from) ?> — <?= e($to) ?></p>
     </div>
     <div class="row-actions">
+        <a href="/reports/leaderboard?from=<?= e($from) ?>&amp;to=<?= e($to) ?>" class="btn btn-ghost"><?= e(t('leaderboard_title')) ?></a>
         <a href="/reports/export?from=<?= e($from) ?>&amp;to=<?= e($to) ?>" class="btn btn-ghost"><?= e(t('export_csv_button')) ?></a>
         <a href="/reports/print?from=<?= e($from) ?>&amp;to=<?= e($to) ?>" class="btn btn-ghost"><?= e(t('print_report_button')) ?></a>
     </div>

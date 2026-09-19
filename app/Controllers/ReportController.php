@@ -151,6 +151,40 @@ class ReportController
     }
 
     /**
+     * The employee sales leaderboard: per-cashier ranking (revenue, sales
+     * count, net contribution) plus each employee's computed commission for
+     * the selected period. Gated by the same 'reports' permission as the
+     * rest of this controller — an employee can see this page at all only
+     * when the owner has granted them that permission, exactly like
+     * /reports itself.
+     *
+     * Commission figures are the sensitive part: the owner sees every row's
+     * commission, but a plain employee viewer only ever sees their OWN
+     * commission_rate/commission_amount — every other row's is redacted in
+     * the view (see reports/leaderboard.php), not filtered out of the data
+     * here, since the ranking itself (revenue/count/net contribution) is
+     * meant to be shop-wide and visible to the whole team.
+     */
+    public function leaderboard(Request $request): void
+    {
+        $shopId = (int) Auth::shopId();
+        $period = (string) $request->input('period', 'month');
+        $customFrom = (string) $request->input('from', '');
+        $customTo = (string) $request->input('to', '');
+
+        [$from, $to, $period] = $this->resolveRange($period, $customFrom, $customTo);
+
+        View::render('reports/leaderboard', [
+            'rows' => Report::cashierLeaderboard($shopId, $from, $to),
+            'period' => $period,
+            'from' => $from,
+            'to' => $to,
+            'isOwner' => Auth::isOwner(),
+            'viewerId' => (int) Auth::id(),
+        ]);
+    }
+
+    /**
      * @return array{0: string, 1: string, 2: string}
      */
     private function resolveRange(string $period, string $customFrom, string $customTo): array

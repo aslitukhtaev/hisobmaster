@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Controllers\ActivityLogController;
+use App\Controllers\AttendanceController;
 use App\Controllers\AuthController;
 use App\Controllers\CustomerController;
 use App\Controllers\DashboardController;
@@ -98,8 +99,15 @@ $router->post('/expenses/{id}/delete', [ExpenseController::class, 'delete'], ['a
 $router->get('/reports', [ReportController::class, 'index'], ['auth', 'permission:reports']);
 $router->get('/reports/print', [ReportController::class, 'print'], ['auth', 'permission:reports']);
 $router->get('/reports/export', [ReportController::class, 'exportCsv'], ['auth', 'permission:reports']);
+$router->get('/reports/leaderboard', [ReportController::class, 'leaderboard'], ['auth', 'permission:reports']);
+
+// Clock in/out: any logged-in shop user, not gated by a business-data
+// permission — see AttendanceController.
+$router->post('/attendance/clock-in', [AttendanceController::class, 'clockIn'], ['auth', 'csrf']);
+$router->post('/attendance/clock-out', [AttendanceController::class, 'clockOut'], ['auth', 'csrf']);
 
 $router->get('/employees', [EmployeeController::class, 'index'], ['auth', 'role:owner']);
+$router->get('/employees/attendance', [AttendanceController::class, 'history'], ['auth', 'role:owner']);
 $router->get('/employees/invite', [EmployeeController::class, 'inviteForm'], ['auth', 'role:owner']);
 $router->post('/employees/invite', [EmployeeController::class, 'createInvite'], ['auth', 'role:owner', 'csrf']);
 $router->post('/employees/invites/{id}/revoke', [EmployeeController::class, 'revokeInvite'], ['auth', 'role:owner', 'csrf']);

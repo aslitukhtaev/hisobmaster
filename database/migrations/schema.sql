@@ -25,6 +25,11 @@ CREATE TABLE IF NOT EXISTS users (
     status TEXT NOT NULL DEFAULT 'active',
     failed_login_attempts INTEGER NOT NULL DEFAULT 0,
     locked_until TEXT,
+    -- NULL means this employee isn't eligible for commission at all (distinct
+    -- from a rate of 0, which means "eligible, currently 0%"). A percentage
+    -- of their own sales revenue for a report period — see
+    -- Report::cashierLeaderboard(). Owner-only to set (see EmployeeController).
+    commission_rate REAL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_users_shop ON users(shop_id);
@@ -41,6 +46,25 @@ CREATE TABLE IF NOT EXISTS employee_invites (
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_invites_shop ON employee_invites(shop_id);
+
+-- One open-or-closed shift per row: clock_in is set the moment "Ishga
+-- keldim" is pressed, clock_out stays NULL until "Ishni tugatdim" is
+-- pressed. A row with clock_out IS NULL is that user's currently open
+-- shift — at most one at a time, enforced server-side in
+-- Attendance::clockIn() (see its docblock), not just by hiding the button.
+-- Both timestamps are stored exactly like every other created_at in this
+-- app (SQLite datetime('now'), i.e. UTC) and read back through
+-- tashkent_day_bounds_utc() for any period-range query.
+CREATE TABLE IF NOT EXISTS attendance (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shop_id INTEGER NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    clock_in TEXT NOT NULL,
+    clock_out TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_attendance_shop ON attendance(shop_id, clock_in);
+CREATE INDEX IF NOT EXISTS idx_attendance_user_open ON attendance(user_id, clock_out);
 
 CREATE TABLE IF NOT EXISTS categories (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

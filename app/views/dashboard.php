@@ -1,6 +1,7 @@
 <?php
 
 use App\Core\Auth;
+use App\Models\Attendance;
 use App\Models\DebtTransaction;
 use App\Models\Product;
 use App\Models\Sale;
@@ -33,15 +34,31 @@ $canCustomers = can('customers');
 $productCounts = ($shopId && $canProducts) ? Product::counts((int) $shopId) : null;
 $todaySales = ($shopId && $canSales) ? Sale::todaysSummary((int) $shopId) : null;
 $totalDebt = ($shopId && $canCustomers) ? DebtTransaction::totalDebtByShop((int) $shopId) : 0.0;
+
+// Clock-in/out: any logged-in shop user (owner or employee), not gated by a
+// business-data permission — see AttendanceController. Not shown for
+// super_admin, who has no shop_id and never works a shift.
+$openShift = $shopId ? Attendance::openShiftFor((int) Auth::id()) : null;
+$showAttendance = $shopId !== null;
 ?>
 <section class="page-head page-head-row">
     <div>
         <h1><?= e(t('welcome', ['name' => $user['full_name'] ?? ''])) ?></h1>
         <p class="muted"><?= e(t('system_running')) ?> — <?= e(t('app_name')) ?></p>
     </div>
-    <?php if ($canSales): ?>
-        <a href="/sales/new" class="btn btn-primary"><?= e(t('new_sale')) ?></a>
-    <?php endif; ?>
+    <div class="row-actions">
+        <?php if ($showAttendance): ?>
+            <form method="post" action="<?= $openShift ? '/attendance/clock-out' : '/attendance/clock-in' ?>" class="attendance-form">
+                <?= csrf_field() ?>
+                <button type="submit" class="btn <?= $openShift ? 'btn-ghost attendance-btn-dashboard clocked-in' : 'btn-primary' ?>">
+                    <?= e($openShift ? t('clock_out_button') : t('clock_in_button')) ?>
+                </button>
+            </form>
+        <?php endif; ?>
+        <?php if ($canSales): ?>
+            <a href="/sales/new" class="btn btn-primary"><?= e(t('new_sale')) ?></a>
+        <?php endif; ?>
+    </div>
 </section>
 
 <?php if ($todaySales || ($productCounts && $productCounts['total'] > 0)): ?>
