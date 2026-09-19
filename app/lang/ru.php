@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 return [
-    'app_name' => 'HisobMaster',
+    'app_name' => 'KassirON',
     'tagline' => 'Система учёта для магазина',
+    'toggle_theme' => 'Тёмная/светлая тема',
 
     // Auth
     'login' => 'Логин',
@@ -261,7 +262,7 @@ return [
     'permission_reports' => 'Просмотр отчётов',
 
     // Telegram
-    'telegram_welcome_message' => 'Здравствуйте! Нажмите кнопку ниже, чтобы войти в HisobMaster.',
+    'telegram_welcome_message' => 'Здравствуйте! Нажмите кнопку ниже, чтобы войти в KassirON.',
     'telegram_open_app_button' => '🛍 Открыть приложение',
 
     // Activity log

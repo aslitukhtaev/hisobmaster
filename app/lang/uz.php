@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 return [
-    'app_name' => 'HisobMaster',
+    'app_name' => 'KassirON',
     'tagline' => "Do'kon uchun hisob-kitob tizimi",
+    'toggle_theme' => 'Tungi/kunduzgi mavzu',
 
     // Auth
     'login' => 'Login',
@@ -261,7 +262,7 @@ return [
     'permission_reports' => 'Hisobotlarni ko\'rish',
 
     // Telegram
-    'telegram_welcome_message' => "Assalomu alaykum! HisobMaster tizimiga kirish uchun quyidagi tugmani bosing.",
+    'telegram_welcome_message' => "Assalomu alaykum! KassirON tizimiga kirish uchun quyidagi tugmani bosing.",
     'telegram_open_app_button' => "🛍 Ilovani ochish",
 
     // Activity log

@@ -23,7 +23,7 @@ if (is_file($envFile)) {
     }
 }
 
-$dbPath = BASE_PATH . '/' . (getenv('DB_PATH') ?: 'database/hisobmaster.db');
+$dbPath = BASE_PATH . '/' . (getenv('DB_PATH') ?: 'database/kassiron.db');
 $dbDir = dirname($dbPath);
 if (!is_dir($dbDir)) {
     mkdir($dbDir, 0775, true);

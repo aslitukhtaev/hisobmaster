@@ -1,12 +1,12 @@
 {
-  "name": "HisobMaster",
-  "short_name": "HisobMaster",
+  "name": "KassirON",
+  "short_name": "KassirON",
   "description": "Do'kon uchun hisob-kitob tizimi",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f4f5fb",
-  "theme_color": "#4f46e5",
+  "background_color": "#0a1a2b",
+  "theme_color": "#059669",
   "lang": "uz",
   "icons": [
     {

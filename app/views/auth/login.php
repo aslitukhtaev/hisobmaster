@@ -1,8 +1,8 @@
 <?php $pageTitle = t('login_button'); ?>
 <div class="auth-card">
     <div class="auth-brand">
-        <div class="auth-logo">HM</div>
-        <h1><?= e(t('app_name')) ?></h1>
+        <img class="auth-logo logo-for-light-theme" src="<?= asset('img/logo-dark.png') ?>" alt="<?= e(t('app_name')) ?>">
+        <img class="auth-logo logo-for-dark-theme" src="<?= asset('img/logo-light.png') ?>" alt="<?= e(t('app_name')) ?>">
         <p class="muted"><?= e(t('tagline')) ?></p>
     </div>
 

@@ -36,7 +36,7 @@ $totalDebt = ($shopId && $canCustomers) ? DebtTransaction::totalDebtByShop((int)
 <section class="page-head page-head-row">
     <div>
         <h1><?= e(t('welcome', ['name' => $user['full_name'] ?? ''])) ?></h1>
-        <p class="muted"><?= e(t('system_running')) ?> — HisobMaster</p>
+        <p class="muted"><?= e(t('system_running')) ?> — <?= e(t('app_name')) ?></p>
     </div>
     <?php if ($canSales): ?>
         <a href="/sales/new" class="btn btn-primary"><?= e(t('new_sale')) ?></a>

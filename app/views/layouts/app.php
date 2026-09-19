@@ -79,12 +79,23 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('kassiron-theme');
+                if (t === 'light' || t === 'dark') {
+                    document.documentElement.setAttribute('data-theme', t);
+                }
+            } catch (e) {}
+        })();
+    </script>
     <title><?= isset($pageTitle) ? e($pageTitle) . ' — ' . e(t('app_name')) : e(t('app_name')) ?></title>
     <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="<?= asset('img/icon-192.png') ?>" type="image/png">
     <link rel="apple-touch-icon" href="<?= asset('img/icon-192.png') ?>">
-    <meta name="theme-color" content="#4f46e5">
+    <meta name="theme-color" content="#059669" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#121e2e" media="(prefers-color-scheme: dark)">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -92,8 +103,8 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
     <div class="shell">
         <aside class="sidebar">
             <div class="brand">
-                <div class="brand-logo">HM</div>
-                <span class="brand-name"><?= e(t('app_name')) ?></span>
+                <img class="brand-logo logo-for-light-theme" src="<?= asset('img/logo-dark.png') ?>" alt="<?= e(t('app_name')) ?>">
+                <img class="brand-logo logo-for-dark-theme" src="<?= asset('img/logo-light.png') ?>" alt="<?= e(t('app_name')) ?>">
             </div>
             <nav class="side-nav">
                 <?php foreach ($navItems as $item): $active = $isActive($item['href']); ?>
@@ -117,6 +128,7 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
                     <?php if ($shopName !== ''): ?><span class="shop-name-label"><?= e($shopName) ?></span><?php endif; ?>
                 </div>
                 <div class="topbar-actions">
+                    <?php require BASE_PATH . '/app/views/partials/theme-toggle.php'; ?>
                     <?php require BASE_PATH . '/app/views/partials/lang-switcher.php'; ?>
                     <a href="/profile" class="user-chip">
                         <span class="user-avatar"><?= e(mb_substr((string) ($user['full_name'] ?? '?'), 0, 1)) ?></span>

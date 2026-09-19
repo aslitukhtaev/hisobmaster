@@ -1,4 +1,4 @@
-# HisobMaster
+# KassirON
 
 Kichik do'kon egalari uchun hisob-kitob tizimi: mahsulotlar (tannarx/sotish narxi), sotuvlar va termo-chek, qarzdorlar bilan chuqur ishlash, xarajatlar, sof foyda va eng ko'p sotilgan mahsulotlar bo'yicha hisobotlar, xodimlar (bir martalik referal-havola orqali qo'shiladi, granular huquqlar bilan). Tizim to'liq PHP'da yozilgan, ma'lumotlar bazasi — SQLite (`.db` fayl). Veb-saytda va Telegram bot WebApp'ida bir xil ishlaydi.
 

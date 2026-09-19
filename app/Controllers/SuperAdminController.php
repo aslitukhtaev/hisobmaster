@@ -18,14 +18,14 @@ class SuperAdminController
 
     public function downloadBackup(Request $request): void
     {
-        $path = BASE_PATH . '/' . env('DB_PATH', 'database/hisobmaster.db');
+        $path = BASE_PATH . '/' . env('DB_PATH', 'database/kassiron.db');
 
         if (!is_file($path)) {
             flash('error', t('backup_not_found'));
             redirect('/superadmin/shops');
         }
 
-        $filename = 'hisobmaster-backup-' . date('Y-m-d-His') . '.db';
+        $filename = 'kassiron-backup-' . date('Y-m-d-His') . '.db';
 
         header('Content-Type: application/octet-stream');
         header('Content-Disposition: attachment; filename="' . $filename . '"');

@@ -2,7 +2,7 @@
 <section class="page-head page-head-row">
     <div>
         <h1><?= e(t('welcome', ['name' => $user['full_name'] ?? ''])) ?></h1>
-        <p class="muted"><?= e(t('system_running')) ?> — HisobMaster</p>
+        <p class="muted"><?= e(t('system_running')) ?> — <?= e(t('app_name')) ?></p>
     </div>
     <a href="/superadmin/shops/create" class="btn btn-primary"><?= e(t('create_shop')) ?></a>
 </section>

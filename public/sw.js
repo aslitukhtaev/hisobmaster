@@ -1,4 +1,4 @@
-var CACHE_NAME = 'hisobmaster-static-v1';
+var CACHE_NAME = 'kassiron-static-v2';
 var STATIC_ASSETS = [
     '/assets/css/app.css',
     '/assets/js/app.js',
