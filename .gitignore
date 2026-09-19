@@ -6,3 +6,4 @@
 /telegram/bot_config.php
 .DS_Store
 *.log
+/.claude/
