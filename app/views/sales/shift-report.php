@@ -42,7 +42,7 @@
                         <th><?= e(t('payment_naqd')) ?></th>
                         <th><?= e(t('payment_karta')) ?></th>
                         <th><?= e(t('payment_qarz')) ?></th>
-                        <th><?= e(t('refund_action')) ?></th>
+                        <th><?= e(t('refunds_total_label')) ?></th>
                         <th><?= e(t('net_cash_short_label')) ?></th>
                     </tr>
                 </thead>
@@ -53,7 +53,7 @@
                         <td data-label="<?= e(t('payment_naqd')) ?>"><?= money((float) $row['naqd']) ?></td>
                         <td data-label="<?= e(t('payment_karta')) ?>"><?= money((float) $row['karta']) ?></td>
                         <td data-label="<?= e(t('payment_qarz')) ?>"><?= money((float) $row['qarz']) ?></td>
-                        <td data-label="<?= e(t('refund_action')) ?>"><?= money((float) $row['refunds']) ?></td>
+                        <td data-label="<?= e(t('refunds_total_label')) ?>"><?= money((float) $row['refunds']) ?></td>
                         <td data-label="<?= e(t('net_cash_short_label')) ?>"><?= money((float) $row['net_cash']) ?></td>
                     </tr>
                 <?php endforeach; ?>
