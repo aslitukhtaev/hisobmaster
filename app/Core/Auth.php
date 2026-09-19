@@ -6,16 +6,35 @@ namespace App\Core;
 
 class Auth
 {
+    private const MAX_LOGIN_ATTEMPTS = 5;
+    private const LOCKOUT_MINUTES = 15;
+
     private static ?array $user = null;
     private static bool $loaded = false;
+    private static bool $lockedOut = false;
 
     public static function attempt(string $login, string $password): bool
     {
-        $stmt = Database::connect()->prepare('SELECT * FROM users WHERE login = ? AND status = ?');
+        self::$lockedOut = false;
+
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare('SELECT * FROM users WHERE login = ? AND status = ?');
         $stmt->execute([$login, 'active']);
         $user = $stmt->fetch();
 
+        // Lockout must be checked before touching the password, and must behave the same
+        // whether the login exists or not, so a locked account can't be told apart from a
+        // wrong login/password from the outside — the only extra bit revealed at this stage
+        // is a distinct locked-out message shown to the user submitting the form.
+        if ($user !== false && self::isCurrentlyLocked($user)) {
+            self::$lockedOut = true;
+            return false;
+        }
+
         if (!$user || !password_verify($password, $user['password_hash'])) {
+            if ($user !== false) {
+                self::registerFailedAttempt((int) $user['id'], (int) $user['failed_login_attempts']);
+            }
             return false;
         }
 
@@ -23,12 +42,59 @@ class Auth
             return false;
         }
 
+        self::resetFailedAttempts((int) $user['id']);
+
         session_regenerate_id(true);
         $_SESSION['user_id'] = (int) $user['id'];
         self::$user = $user;
         self::$loaded = true;
 
         return true;
+    }
+
+    /**
+     * True when the last attempt() call failed specifically because the account is locked out.
+     */
+    public static function wasLockedOut(): bool
+    {
+        return self::$lockedOut;
+    }
+
+    private static function isCurrentlyLocked(array $user): bool
+    {
+        if (empty($user['locked_until'])) {
+            return false;
+        }
+
+        // Compare against the database's own clock (SQLite datetime('now') is UTC) rather than
+        // PHP's date(), so the check stays correct regardless of PHP's configured timezone.
+        $stmt = Database::connect()->query("SELECT datetime('now') AS now");
+        $now = $stmt->fetchColumn();
+
+        return $user['locked_until'] > $now;
+    }
+
+    private static function registerFailedAttempt(int $userId, int $currentAttempts): void
+    {
+        $pdo = Database::connect();
+        $attempts = $currentAttempts + 1;
+
+        if ($attempts >= self::MAX_LOGIN_ATTEMPTS) {
+            $pdo->prepare(
+                "UPDATE users SET failed_login_attempts = 0, locked_until = datetime('now', '+" . self::LOCKOUT_MINUTES . " minutes')
+                 WHERE id = ?"
+            )->execute([$userId]);
+            return;
+        }
+
+        $pdo->prepare('UPDATE users SET failed_login_attempts = ? WHERE id = ?')->execute([$attempts, $userId]);
+    }
+
+    private static function resetFailedAttempts(int $userId): void
+    {
+        $pdo = Database::connect();
+        $pdo->prepare('UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?')
+            ->execute([$userId]);
     }
 
     public static function logout(): void

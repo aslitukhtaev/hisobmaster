@@ -32,7 +32,7 @@ class AuthController
             redirect('/');
         }
 
-        flash('error', t('login_failed'));
+        flash('error', Auth::wasLockedOut() ? t('login_locked') : t('login_failed'));
         keep_old(['login' => $login]);
         redirect('/login');
     }

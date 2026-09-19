@@ -37,6 +37,20 @@ $schema = file_get_contents(__DIR__ . '/migrations/schema.sql');
 $pdo->exec($schema);
 echo "Sxema muvaffaqiyatli yaratildi/yangilandi: {$dbPath}\n";
 
+// Eski bazalarda users jadvali allaqachon mavjud bo'lishi mumkin (CREATE TABLE IF NOT EXISTS
+// ularni o'zgartirmaydi), shuning uchun yangi ustunlarni mavjudligini tekshirib, kerak bo'lsa qo'shamiz.
+$userColumns = array_column($pdo->query('PRAGMA table_info(users)')->fetchAll(PDO::FETCH_ASSOC), 'name');
+
+if (!in_array('failed_login_attempts', $userColumns, true)) {
+    $pdo->exec('ALTER TABLE users ADD COLUMN failed_login_attempts INTEGER NOT NULL DEFAULT 0');
+    echo "users jadvaliga failed_login_attempts ustuni qo'shildi.\n";
+}
+
+if (!in_array('locked_until', $userColumns, true)) {
+    $pdo->exec('ALTER TABLE users ADD COLUMN locked_until TEXT');
+    echo "users jadvaliga locked_until ustuni qo'shildi.\n";
+}
+
 $adminLogin = getenv('SUPER_ADMIN_LOGIN') ?: 'admin';
 $adminPassword = getenv('SUPER_ADMIN_PASSWORD') ?: 'change-me-please';
 

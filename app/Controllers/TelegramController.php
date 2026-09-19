@@ -11,8 +11,14 @@ class TelegramController
     public function webhook(Request $request): void
     {
         $secret = (string) env('TELEGRAM_WEBHOOK_SECRET', '');
-        $incomingSecret = $_SERVER['HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN'] ?? '';
+        $incomingSecret = (string) ($_SERVER['HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN'] ?? '');
 
+        // TELEGRAM_WEBHOOK_SECRET sozlangan bo'lsa (bo'sh bo'lmasa), Telegram yuborgan
+        // sarlavha undan farq qilishi mumkin emas — hash_equals() bilan doimiy vaqtda solishtiramiz.
+        // $secret hech qachon bo'sh qatorga solishtirilmaydi (chap tomon uchun ham), shuning uchun
+        // bu yerda "bo'sh == bo'sh" degan yolg'on moslik yuzaga kelmaydi.
+        // Sozlanmagan bo'lsa (bo'sh), tekshiruv o'tkazib yuboriladi — bu README'da ko'rsatilgan,
+        // qabul qilingan xavf (bot integratsiyasi ixtiyoriy).
         if ($secret !== '' && !hash_equals($secret, $incomingSecret)) {
             http_response_code(403);
             return;
