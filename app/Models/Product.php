@@ -113,6 +113,13 @@ class Product
      */
     public static function lowStock(int $shopId, ?float $shopDefaultThreshold): array
     {
+        // A product with any active variant tracks its real stock at the
+        // variant level — its own stock_qty is always 0/unused (see
+        // Sale::create()) — so it must never be matched by the shop-wide
+        // default-threshold fallback below, which would otherwise flag every
+        // such product as "out of stock" regardless of how much stock its
+        // variants actually have. An explicit per-product threshold (set
+        // deliberately by the owner) is still honored either way.
         $sql = 'SELECT p.*, c.name AS category_name
                 FROM products p
                 LEFT JOIN categories c ON c.id = p.category_id
@@ -122,7 +129,11 @@ class Product
         $params = [$shopId, 'active'];
 
         if ($shopDefaultThreshold !== null) {
-            $sql .= ' OR (p.low_stock_threshold IS NULL AND p.stock_qty <= ?)';
+            $sql .= " OR (p.low_stock_threshold IS NULL AND p.stock_qty <= ?
+                          AND NOT EXISTS (
+                              SELECT 1 FROM product_variants pv
+                              WHERE pv.product_id = p.id AND pv.status = 'active'
+                          ))";
             $params[] = $shopDefaultThreshold;
         }
 
