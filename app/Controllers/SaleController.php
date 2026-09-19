@@ -124,8 +124,30 @@ class SaleController
             ];
         }, $activeProducts);
 
-        $customersJson = array_map(static function (array $c): array {
-            return ['id' => (int) $c['id'], 'name' => $c['full_name'], 'phone' => $c['phone']];
+        // allByShop() keeps the dropdown's existing alphabetical order; the
+        // current balance/credit_limit are looked up separately (from
+        // allWithBalance(), which already joins each customer's latest
+        // debt_transactions balance — see Customer::allWithBalance()) and
+        // merged in by id, so this doesn't change who's listed or in what
+        // order, only what each option additionally carries for sale.js's
+        // credit-limit warning.
+        $balanceById = [];
+        foreach (Customer::allWithBalance($shopId, false) as $c) {
+            $balanceById[(int) $c['id']] = [
+                'balance' => (float) ($c['balance'] ?? 0),
+                'creditLimit' => $c['credit_limit'] !== null ? (float) $c['credit_limit'] : null,
+            ];
+        }
+
+        $customersJson = array_map(static function (array $c) use ($balanceById): array {
+            $extra = $balanceById[(int) $c['id']] ?? ['balance' => 0.0, 'creditLimit' => null];
+            return [
+                'id' => (int) $c['id'],
+                'name' => $c['full_name'],
+                'phone' => $c['phone'],
+                'balance' => $extra['balance'],
+                'creditLimit' => $extra['creditLimit'],
+            ];
         }, Customer::allByShop($shopId));
 
         View::render('sales/new', [

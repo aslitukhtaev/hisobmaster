@@ -145,6 +145,21 @@ CREATE TABLE IF NOT EXISTS customers (
     full_name TEXT NOT NULL,
     phone TEXT,
     note TEXT,
+    -- NULL means no credit limit configured — the owner can carry this
+    -- customer's debt balance as high as they like. When set, it's the max
+    -- debt_transactions balance_after this customer should be allowed to
+    -- reach; enforcement is a client-side confirm-to-override warning in the
+    -- POS flow (see sale.js), never a hard server-side block (see
+    -- SaleController::newForm()/Sale::create() comments).
+    credit_limit REAL,
+    -- A single next-payment-due calendar date for this customer's running
+    -- debt balance (like expenses.expense_date — a plain hand-set date, not
+    -- a UTC created_at, so it's compared directly rather than through
+    -- tashkent_day_bounds_utc()). One running balance has no natural
+    -- per-transaction due date, so this deliberately tracks just one
+    -- "pay by" date for the customer as a whole rather than one per
+    -- debt_transactions row.
+    debt_due_date TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_customers_shop ON customers(shop_id);

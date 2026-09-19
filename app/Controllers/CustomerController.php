@@ -10,6 +10,8 @@ use App\Core\View;
 use App\Models\ActivityLog;
 use App\Models\Customer;
 use App\Models\DebtTransaction;
+use App\Models\Sale;
+use App\Models\Shop;
 
 class CustomerController
 {
@@ -60,10 +62,37 @@ class CustomerController
             redirect('/customers');
         }
 
+        $balance = DebtTransaction::currentBalance((int) $id);
+
+        // Composed here (not in the view) so the exact wording that will be
+        // sent through the owner's own SMS/WhatsApp/Telegram share links (see
+        // customers/show.php + debt-reminder.js) comes from one place. Only
+        // built when there's actually a debt to remind about.
+        $reminderMessage = '';
+        if ($balance > 0) {
+            $shop = Shop::find($shopId);
+            $shopName = $shop['name'] ?? t('app_name');
+
+            $reminderMessage = !empty($customer['debt_due_date'])
+                ? t('debt_reminder_message_with_due', [
+                    'shop' => $shopName,
+                    'customer' => $customer['full_name'],
+                    'amount' => money($balance),
+                    'due_date' => $customer['debt_due_date'],
+                ])
+                : t('debt_reminder_message_no_due', [
+                    'shop' => $shopName,
+                    'customer' => $customer['full_name'],
+                    'amount' => money($balance),
+                ]);
+        }
+
         View::render('customers/show', [
             'customer' => $customer,
-            'balance' => DebtTransaction::currentBalance((int) $id),
+            'balance' => $balance,
             'history' => DebtTransaction::historyByCustomer((int) $id),
+            'purchases' => Sale::byCustomer((int) $id, $shopId),
+            'reminderMessage' => $reminderMessage,
         ]);
     }
 
@@ -93,14 +122,44 @@ class CustomerController
         $fullName = trim((string) $request->input('full_name', ''));
         $phone = trim((string) $request->input('phone', ''));
         $note = trim((string) $request->input('note', ''));
+        $creditLimitInput = trim((string) $request->input('credit_limit', ''));
+        $debtDueDateInput = trim((string) $request->input('debt_due_date', ''));
+
+        $old = [
+            'full_name' => $fullName,
+            'phone' => $phone,
+            'note' => $note,
+            'credit_limit' => $creditLimitInput,
+            'debt_due_date' => $debtDueDateInput,
+        ];
 
         if ($fullName === '') {
             flash('error', t('fill_required_fields'));
-            keep_old(['full_name' => $fullName, 'phone' => $phone, 'note' => $note]);
+            keep_old($old);
             redirect("/customers/{$id}/edit");
         }
 
-        Customer::update((int) $id, $shopId, $fullName, $phone !== '' ? $phone : null, $note !== '' ? $note : null);
+        $creditLimit = null;
+        if ($creditLimitInput !== '') {
+            if (!is_numeric($creditLimitInput) || (float) $creditLimitInput < 0) {
+                flash('error', t('credit_limit_invalid'));
+                keep_old($old);
+                redirect("/customers/{$id}/edit");
+            }
+            $creditLimit = (float) $creditLimitInput;
+        }
+
+        $debtDueDate = $debtDueDateInput !== '' ? $debtDueDateInput : null;
+
+        Customer::update(
+            (int) $id,
+            $shopId,
+            $fullName,
+            $phone !== '' ? $phone : null,
+            $note !== '' ? $note : null,
+            $creditLimit,
+            $debtDueDate
+        );
 
         flash('success', t('customer_updated'));
         redirect("/customers/{$id}");

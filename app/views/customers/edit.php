@@ -17,6 +17,18 @@
             <span><?= e(t('note')) ?> (<?= e(t('optional')) ?>)</span>
             <input type="text" name="note" value="<?= e(old('note', $customer['note'] ?? '')) ?>">
         </label>
+        <hr class="divider">
+        <label class="field">
+            <span><?= e(t('credit_limit_label')) ?> (<?= e(t('optional')) ?>)</span>
+            <input type="number" name="credit_limit" min="0" step="0.01" inputmode="decimal"
+                   value="<?= e(old('credit_limit', $customer['credit_limit'] !== null ? (string) $customer['credit_limit'] : '')) ?>">
+            <span class="muted"><?= e(t('credit_limit_hint')) ?></span>
+        </label>
+        <label class="field">
+            <span><?= e(t('debt_due_date_label')) ?> (<?= e(t('optional')) ?>)</span>
+            <input type="date" name="debt_due_date"
+                   value="<?= e(old('debt_due_date', $customer['debt_due_date'] ?? '')) ?>">
+        </label>
         <button type="submit" class="btn btn-primary btn-block"><?= e(t('save')) ?></button>
     </form>
 </div>

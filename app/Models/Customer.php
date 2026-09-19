@@ -87,11 +87,21 @@ class Customer
             || str_contains($e->getMessage(), 'UNIQUE constraint failed');
     }
 
-    public static function update(int $id, int $shopId, string $fullName, ?string $phone, ?string $note): void
-    {
+    public static function update(
+        int $id,
+        int $shopId,
+        string $fullName,
+        ?string $phone,
+        ?string $note,
+        ?float $creditLimit = null,
+        ?string $debtDueDate = null
+    ): void {
         Database::connect()
-            ->prepare('UPDATE customers SET full_name = ?, phone = ?, note = ? WHERE id = ? AND shop_id = ?')
-            ->execute([$fullName, $phone, $note, $id, $shopId]);
+            ->prepare(
+                'UPDATE customers SET full_name = ?, phone = ?, note = ?, credit_limit = ?, debt_due_date = ?
+                 WHERE id = ? AND shop_id = ?'
+            )
+            ->execute([$fullName, $phone, $note, $creditLimit, $debtDueDate, $id, $shopId]);
     }
 
     /**
