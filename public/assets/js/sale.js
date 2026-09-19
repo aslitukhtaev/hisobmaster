@@ -140,12 +140,12 @@
                             '<div class="cart-row-price">' + escapeHtml(formatMoney(product.price)) + ' / ' + escapeHtml(product.unit) + '</div>' +
                         '</div>' +
                         '<div class="qty-stepper">' +
-                            '<button type="button" data-action="dec" data-id="' + id + '">−</button>' +
+                            '<button type="button" data-action="dec" data-id="' + id + '" aria-label="' + escapeHtml(i18n.decreaseQty || '') + '">−</button>' +
                             '<span>' + escapeHtml(formatQty(qty)) + '</span>' +
-                            '<button type="button" data-action="inc" data-id="' + id + '">+</button>' +
+                            '<button type="button" data-action="inc" data-id="' + id + '" aria-label="' + escapeHtml(i18n.increaseQty || '') + '">+</button>' +
                         '</div>' +
                         '<div class="cart-row-subtotal">' + escapeHtml(formatMoney(lineTotal)) + '</div>' +
-                        '<button type="button" class="cart-remove" data-action="remove" data-id="' + id + '">✕</button>' +
+                        '<button type="button" class="cart-remove" data-action="remove" data-id="' + id + '" aria-label="' + escapeHtml(i18n.removeFromCart || '') + '">✕</button>' +
                     '</div>'
                 );
             });

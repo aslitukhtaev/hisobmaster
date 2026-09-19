@@ -11,10 +11,11 @@ $debtAmount = (float) $sale['total'] - (float) $sale['paid_amount'];
         <h1><?= e(t('receipt_title')) ?> #<?= (int) $sale['id'] ?></h1>
     </div>
     <div class="row-actions">
-        <button type="button" class="btn btn-primary" onclick="window.print()"><?= e(t('print')) ?></button>
+        <button type="button" class="btn btn-primary" id="receipt-print-btn"><?= e(t('print')) ?></button>
         <a href="/sales" class="btn btn-ghost"><?= e(t('back_to_list')) ?></a>
     </div>
 </section>
+<p class="muted no-print" id="telegram-print-hint" style="display:none;"><?= e(t('telegram_print_hint')) ?></p>
 
 <div class="receipt <?= $widthClass ?>">
     <div class="receipt-header">

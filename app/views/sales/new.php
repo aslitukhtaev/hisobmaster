@@ -11,6 +11,7 @@
 <?php else: ?>
 <div class="pos-layout">
     <div class="pos-products">
+        <label class="sr-only" for="product-search"><?= e(t('search_products_placeholder')) ?></label>
         <input type="text" id="product-search" class="pos-search" placeholder="<?= e(t('search_products_placeholder')) ?>" autofocus>
         <div id="product-list" class="pos-product-list"></div>
     </div>
@@ -92,6 +93,9 @@ if (!is_array($oldCart)) {
         noResults: <?= json_encode(t('no_products_found'), JSON_UNESCAPED_UNICODE) ?>,
         debtRemainingLabel: <?= json_encode(t('debt_remaining_label'), JSON_UNESCAPED_UNICODE) ?>,
         stockLimitReached: <?= json_encode(t('stock_limit_reached'), JSON_UNESCAPED_UNICODE) ?>,
+        decreaseQty: <?= json_encode(t('decrease_qty'), JSON_UNESCAPED_UNICODE) ?>,
+        increaseQty: <?= json_encode(t('increase_qty'), JSON_UNESCAPED_UNICODE) ?>,
+        removeFromCart: <?= json_encode(t('remove_from_cart'), JSON_UNESCAPED_UNICODE) ?>,
         currency: "so'm"
     };
     window.HM_OLD_CART = <?= json_encode($oldCart, JSON_UNESCAPED_UNICODE) ?>;

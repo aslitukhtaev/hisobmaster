@@ -17,14 +17,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var themeToggle = document.getElementById('theme-toggle');
     if (themeToggle) {
-        themeToggle.addEventListener('click', function () {
-            var root = document.documentElement;
-            var current = root.getAttribute('data-theme');
-            if (!current) {
-                current = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        function effectiveTheme() {
+            var current = document.documentElement.getAttribute('data-theme');
+            if (current) {
+                return current;
             }
-            var next = current === 'dark' ? 'light' : 'dark';
-            root.setAttribute('data-theme', next);
+            return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+
+        themeToggle.setAttribute('aria-pressed', effectiveTheme() === 'dark' ? 'true' : 'false');
+
+        themeToggle.addEventListener('click', function () {
+            var next = effectiveTheme() === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            themeToggle.setAttribute('aria-pressed', next === 'dark' ? 'true' : 'false');
             try {
                 localStorage.setItem('kassiron-theme', next);
             } catch (e) {}
@@ -34,13 +40,50 @@ document.addEventListener('DOMContentLoaded', function () {
     var moreToggle = document.getElementById('more-nav-toggle');
     var drawer = document.getElementById('mobile-drawer');
     if (moreToggle && drawer) {
-        moreToggle.addEventListener('click', function () {
+        var drawerSheet = drawer.querySelector('.mobile-drawer-sheet');
+
+        function openDrawer() {
             drawer.classList.add('open');
-        });
+            moreToggle.setAttribute('aria-expanded', 'true');
+            if (drawerSheet) {
+                drawerSheet.focus();
+            }
+        }
+
+        function closeDrawer() {
+            drawer.classList.remove('open');
+            moreToggle.setAttribute('aria-expanded', 'false');
+            moreToggle.focus();
+        }
+
+        moreToggle.addEventListener('click', openDrawer);
+
         drawer.addEventListener('click', function (e) {
             if (e.target === drawer) {
-                drawer.classList.remove('open');
+                closeDrawer();
             }
         });
+
+        drawer.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeDrawer();
+            }
+        });
+    }
+
+    // Telegram's in-app WebView (especially on iOS) frequently makes window.print()
+    // a silent no-op — there is no dedicated print API in the WebApp SDK to fall
+    // back to, so the best we can do is still attempt it and show a hint pointing
+    // Telegram users at "Open in browser" if nothing happens.
+    var printBtn = document.getElementById('receipt-print-btn');
+    if (printBtn) {
+        printBtn.addEventListener('click', function () {
+            window.print();
+        });
+
+        var printHint = document.getElementById('telegram-print-hint');
+        if (printHint && document.documentElement.classList.contains('in-telegram')) {
+            printHint.style.display = 'block';
+        }
     }
 });

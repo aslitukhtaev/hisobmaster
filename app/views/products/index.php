@@ -18,7 +18,8 @@
 <?php endif; ?>
 
 <form method="get" action="/products" class="search-bar">
-    <input type="text" name="q" placeholder="<?= e(t('search_products_placeholder')) ?>" value="<?= e($search) ?>">
+    <label class="sr-only" for="product-search-q"><?= e(t('search_products_placeholder')) ?></label>
+    <input type="text" id="product-search-q" name="q" placeholder="<?= e(t('search_products_placeholder')) ?>" value="<?= e($search) ?>">
     <button type="submit" class="btn btn-ghost btn-sm"><?= e(t('search')) ?></button>
 </form>
 

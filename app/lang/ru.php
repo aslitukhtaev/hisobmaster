@@ -157,6 +157,11 @@ return [
     'sum' => 'Сумма',
     'debt_amount' => 'Сумма долга',
     'thank_you_note' => 'Спасибо за покупку!',
+    'decrease_qty' => 'Уменьшить количество',
+    'increase_qty' => 'Увеличить количество',
+    'remove_from_cart' => 'Удалить из корзины',
+    'close_menu' => 'Закрыть меню',
+    'telegram_print_hint' => 'Если печать не работает, выберите "Открыть в браузере" в меню Telegram.',
 
     // Shop settings
     'shop_settings' => 'Настройки магазина',

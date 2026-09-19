@@ -157,6 +157,11 @@ return [
     'sum' => 'Summa',
     'debt_amount' => 'Qarz summasi',
     'thank_you_note' => 'Xaridingiz uchun rahmat!',
+    'decrease_qty' => 'Miqdorni kamaytirish',
+    'increase_qty' => 'Miqdorni oshirish',
+    'remove_from_cart' => 'Savatdan o\'chirish',
+    'close_menu' => 'Menyuni yopish',
+    'telegram_print_hint' => "Agar chop etish ishlamasa, Telegram menyusidan \"Brauzerda ochish\"ni tanlang.",
 
     // Shop settings
     'shop_settings' => "Do'kon sozlamalari",

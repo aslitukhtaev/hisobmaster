@@ -154,15 +154,15 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
                     </a>
                 <?php endforeach; ?>
                 <?php if (count($navItems) > 4): ?>
-                    <button type="button" class="bottom-link" id="more-nav-toggle">
+                    <button type="button" class="bottom-link" id="more-nav-toggle" aria-expanded="false" aria-controls="mobile-drawer">
                         <span class="bottom-icon"><?= $icon('more') ?></span>
                         <span class="bottom-label"><?= e(t('more_menu')) ?></span>
                     </button>
                 <?php endif; ?>
             </nav>
 
-            <div class="mobile-drawer" id="mobile-drawer">
-                <div class="mobile-drawer-sheet">
+            <div class="mobile-drawer" id="mobile-drawer" role="dialog" aria-modal="true" aria-label="<?= e(t('more_menu')) ?>">
+                <div class="mobile-drawer-sheet" tabindex="-1">
                     <?php foreach ($navItems as $item): $active = $isActive($item['href']); ?>
                         <a href="<?= e($item['accessible'] ? $item['href'] : '#') ?>" class="drawer-link <?= $active ? 'active' : ($item['accessible'] ? '' : 'disabled') ?>">
                             <span class="side-icon"><?= $icon($item['icon']) ?></span>
