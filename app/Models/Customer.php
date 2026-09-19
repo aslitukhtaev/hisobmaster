@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Core\Database;
+use PDOException;
 
 class Customer
 {
@@ -49,7 +50,41 @@ class Customer
             }
         }
 
-        return self::create($shopId, $fullName, $phone);
+        // Two concurrent requests for the same new phone number (e.g. two sales
+        // submitted at nearly the same time) can both pass the SELECT above
+        // before either INSERTs. Rather than trying to lock our way around that,
+        // we rely on the UNIQUE(shop_id, phone) index (see schema.sql) to reject
+        // the loser's INSERT, and fall back to re-selecting the row the winner
+        // just created.
+        try {
+            return self::create($shopId, $fullName, $phone);
+        } catch (PDOException $e) {
+            if ($phone === null || !self::isUniqueViolation($e)) {
+                throw $e;
+            }
+
+            $stmt = Database::connect()->prepare(
+                'SELECT id FROM customers WHERE shop_id = ? AND phone = ? LIMIT 1'
+            );
+            $stmt->execute([$shopId, $phone]);
+            $id = $stmt->fetchColumn();
+
+            if ($id === false) {
+                // Constraint failed but the row isn't there (shouldn't happen) —
+                // rethrow rather than silently returning a bogus id.
+                throw $e;
+            }
+
+            return (int) $id;
+        }
+    }
+
+    private static function isUniqueViolation(PDOException $e): bool
+    {
+        // SQLite's PDO driver reports a UNIQUE constraint failure as SQLSTATE
+        // 23000, with "UNIQUE constraint failed" in the driver message.
+        return $e->getCode() === '23000'
+            || str_contains($e->getMessage(), 'UNIQUE constraint failed');
     }
 
     public static function update(int $id, int $shopId, string $fullName, ?string $phone, ?string $note): void
