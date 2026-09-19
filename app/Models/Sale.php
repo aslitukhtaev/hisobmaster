@@ -28,8 +28,11 @@ class Sale
             throw new RuntimeException('empty_cart');
         }
 
-        $pdo = Database::connect();
-        $pdo->beginTransaction();
+        // BEGIN IMMEDIATE grabs SQLite's write lock for the whole sale up front, so a
+        // concurrent sale on another terminal can't interleave with the stock
+        // decrement below (see Database::beginImmediate() and the stock-decrement
+        // comment further down for why a plain beginTransaction() isn't enough).
+        $pdo = Database::beginImmediate();
 
         try {
             $subtotal = 0.0;
@@ -47,9 +50,9 @@ class Sale
                     throw new RuntimeException('invalid_qty');
                 }
 
-                if ($qty > (float) $product['stock_qty']) {
-                    throw new RuntimeException('insufficient_stock');
-                }
+                // NOTE: no stock_qty check here — that would just be a second,
+                // equally racy read-then-write. The authoritative check is the
+                // atomic conditional UPDATE in the loop below.
 
                 $unitPrice = (float) $product['sell_price'];
                 $costPrice = (float) $product['cost_price'];
@@ -86,8 +89,13 @@ class Sale
                 'INSERT INTO sale_items (sale_id, product_id, product_name, qty, unit_price, cost_price_snapshot, subtotal)
                  VALUES (?, ?, ?, ?, ?, ?, ?)'
             );
+            // Atomic conditional decrement: the WHERE clause re-checks stock_qty in
+            // the same statement that decrements it, so the check-and-write is one
+            // indivisible step instead of a separate read followed by a write. Two
+            // concurrent sales of the last unit can now never both succeed — only
+            // one UPDATE will match a row and affect it.
             $stockStmt = $pdo->prepare(
-                'UPDATE products SET stock_qty = stock_qty - ? WHERE id = ? AND shop_id = ?'
+                'UPDATE products SET stock_qty = stock_qty - ? WHERE id = ? AND shop_id = ? AND stock_qty >= ?'
             );
 
             foreach ($resolvedItems as $item) {
@@ -100,7 +108,16 @@ class Sale
                     $item['cost_price_snapshot'],
                     $item['subtotal'],
                 ]);
-                $stockStmt->execute([$item['qty'], $item['product_id'], $shopId]);
+
+                $stockStmt->execute([$item['qty'], $item['product_id'], $shopId, $item['qty']]);
+
+                if ($stockStmt->rowCount() !== 1) {
+                    // Someone else already sold this stock between our read above and
+                    // this write. Fail the whole sale (caught below, which rolls back
+                    // everything — the sale row and any earlier line items too) rather
+                    // than oversell.
+                    throw new RuntimeException('insufficient_stock:' . $item['product_name']);
+                }
             }
 
             $debtAmount = round($total - $paidAmount, 2);
@@ -160,11 +177,19 @@ class Sale
     public static function todaysSummary(int $shopId): array
     {
         $pdo = Database::connect();
+
+        // created_at is stored as SQLite's datetime('now'), which is always UTC.
+        // "Today" has to mean the Tashkent calendar day (bootstrap.php sets PHP's
+        // default timezone to Asia/Tashkent), so we compute that day's boundaries
+        // in PHP and convert them to the matching UTC range here, rather than
+        // asking SQLite's own (UTC) date('now') what day it is.
+        [$startUtc, $endUtc] = tashkent_day_bounds_utc(date('Y-m-d'));
+
         $stmt = $pdo->prepare(
             "SELECT COUNT(*) AS cnt, COALESCE(SUM(total), 0) AS revenue
-             FROM sales WHERE shop_id = ? AND date(created_at) = date('now') AND status = 'completed'"
+             FROM sales WHERE shop_id = ? AND created_at >= ? AND created_at < ? AND status = 'completed'"
         );
-        $stmt->execute([$shopId]);
+        $stmt->execute([$shopId, $startUtc, $endUtc]);
         $row = $stmt->fetch();
 
         return [

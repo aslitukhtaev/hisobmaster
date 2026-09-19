@@ -4,6 +4,8 @@
     var products = window.HM_PRODUCTS || [];
     var customers = window.HM_CUSTOMERS || [];
     var i18n = window.HM_I18N || {};
+    var oldCart = window.HM_OLD_CART || [];
+    var oldSale = window.HM_OLD_SALE || {};
 
     var cart = new Map(); // product_id -> qty
     var paymentType = 'naqd';
@@ -273,7 +275,58 @@
         completeBtnEl.disabled = true;
     });
 
+    // After a validation failure the server redirects back here with the
+    // submitted cart/discount/payment/customer state flashed via old() — restore
+    // it so the cashier doesn't have to rebuild the cart from scratch.
+    function restoreOldState() {
+        if (Array.isArray(oldCart)) {
+            oldCart.forEach(function (row) {
+                var id = parseInt(row.product_id, 10);
+                var qty = parseFloat(row.qty);
+                if (!isNaN(id) && !isNaN(qty) && qty > 0 && productById(id)) {
+                    cart.set(id, qty);
+                }
+            });
+        }
+
+        if (oldSale.discount !== undefined && oldSale.discount !== '') {
+            var restoredDiscount = parseFloat(oldSale.discount);
+            if (!isNaN(restoredDiscount)) {
+                discount = restoredDiscount;
+                discountInputEl.value = restoredDiscount;
+            }
+        }
+
+        if (oldSale.paymentType) {
+            setPaymentType(oldSale.paymentType);
+        }
+
+        if (oldSale.customerId) {
+            customerSelectEl.value = oldSale.customerId;
+        }
+        updateCustomerFields();
+
+        if (!oldSale.customerId) {
+            if (oldSale.customerName) {
+                newCustomerNameEl.value = oldSale.customerName;
+                document.getElementById('customer-name-field').value = oldSale.customerName;
+            }
+            if (oldSale.customerPhone) {
+                newCustomerPhoneEl.value = oldSale.customerPhone;
+                document.getElementById('customer-phone-field').value = oldSale.customerPhone;
+            }
+        }
+
+        if (oldSale.paidAmount !== undefined && oldSale.paidAmount !== '') {
+            var restoredPaid = parseFloat(oldSale.paidAmount);
+            if (!isNaN(restoredPaid)) {
+                paidAmountInputEl.value = restoredPaid;
+            }
+        }
+    }
+
     populateCustomerSelect();
     renderProducts();
+    restoreOldState();
     renderCart();
 })();

@@ -135,7 +135,7 @@ return [
     'empty_cart' => 'Savat bo\'sh',
     'invalid_product' => 'Mahsulotlardan biri topilmadi yoki nofaol',
     'invalid_qty' => 'Miqdor noto\'g\'ri kiritilgan',
-    'insufficient_stock' => 'Ombordagi qoldiq yetarli emas',
+    'insufficient_stock' => 'Ombordagi qoldiq yetarli emas: :product',
     'customer_required_for_debt' => 'Qarzga sotish uchun mijozni tanlang yoki qo\'shing',
     'sale_completed' => 'Sotuv muvaffaqiyatli yakunlandi',
     'sale_not_found' => 'Sotuv topilmadi',

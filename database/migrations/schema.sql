@@ -76,6 +76,13 @@ CREATE TABLE IF NOT EXISTS customers (
 );
 CREATE INDEX IF NOT EXISTS idx_customers_shop ON customers(shop_id);
 CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(shop_id, phone);
+-- Enforces one customer per (shop, phone) at the database level, so two
+-- concurrent findOrCreate() calls for the same new phone number can no longer
+-- both insert a duplicate row (Customer::findOrCreate() catches the resulting
+-- constraint violation and re-selects the winner's row). NULL phones are
+-- exempt (SQLite treats NULLs as distinct in a UNIQUE index), so walk-in
+-- customers without a phone number are unaffected.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_shop_phone_unique ON customers(shop_id, phone);
 
 CREATE TABLE IF NOT EXISTS sales (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -65,8 +65,32 @@ class SaleController
         $cartRaw = (string) $request->input('cart', '[]');
         $cart = json_decode($cartRaw, true);
 
+        $paymentType = (string) $request->input('payment_type', 'naqd');
+        if (!in_array($paymentType, ['naqd', 'karta', 'qarz'], true)) {
+            $paymentType = 'naqd';
+        }
+
+        $discount = (float) $request->input('discount', 0);
+        $paidAmount = (float) $request->input('paid_amount', 0);
+        $customerIdInput = trim((string) $request->input('customer_id', ''));
+        $customerName = trim((string) $request->input('customer_name', ''));
+        $customerPhone = trim((string) $request->input('customer_phone', ''));
+
+        // Kept across every redirect-back-with-error below so the cashier never
+        // has to re-build the cart from scratch after a validation failure.
+        $old = [
+            'cart' => $cartRaw,
+            'payment_type' => $paymentType,
+            'discount' => (string) $discount,
+            'paid_amount' => (string) $paidAmount,
+            'customer_id' => $customerIdInput,
+            'customer_name' => $customerName,
+            'customer_phone' => $customerPhone,
+        ];
+
         if (!is_array($cart) || empty($cart)) {
-            flash('error', t('cart_empty'));
+            flash('error', t('empty_cart'));
+            keep_old($old);
             redirect('/sales/new');
         }
 
@@ -78,20 +102,8 @@ class SaleController
             $items[] = ['product_id' => (int) $row['product_id'], 'qty' => (float) $row['qty']];
         }
 
-        $paymentType = (string) $request->input('payment_type', 'naqd');
-        if (!in_array($paymentType, ['naqd', 'karta', 'qarz'], true)) {
-            $paymentType = 'naqd';
-        }
-
-        $discount = (float) $request->input('discount', 0);
-        $paidAmount = (float) $request->input('paid_amount', 0);
-
         $customerId = null;
         if ($paymentType === 'qarz') {
-            $customerIdInput = trim((string) $request->input('customer_id', ''));
-            $customerName = trim((string) $request->input('customer_name', ''));
-            $customerPhone = trim((string) $request->input('customer_phone', ''));
-
             if ($customerIdInput !== '') {
                 $existing = Customer::find((int) $customerIdInput, $shopId);
                 $customerId = $existing ? (int) $existing['id'] : null;
@@ -100,6 +112,7 @@ class SaleController
             if ($customerId === null) {
                 if ($customerName === '') {
                     flash('error', t('customer_required_for_debt'));
+                    keep_old($old);
                     redirect('/sales/new');
                 }
                 $customerId = Customer::findOrCreate($shopId, $customerName, $customerPhone !== '' ? $customerPhone : null);
@@ -109,7 +122,12 @@ class SaleController
         try {
             $saleId = Sale::create($shopId, $cashierId, $items, $paymentType, $discount, $paidAmount, $customerId);
         } catch (RuntimeException $e) {
-            flash('error', t($e->getMessage()));
+            // Sale::create() throws either a plain translation key (e.g.
+            // 'insufficient_stock') or 'insufficient_stock:Product name' when it
+            // needs to name the product that ran out — see Sale::create().
+            [$errorKey, $errorProduct] = array_pad(explode(':', $e->getMessage(), 2), 2, null);
+            flash('error', $errorProduct !== null ? t($errorKey, ['product' => $errorProduct]) : t($errorKey));
+            keep_old($old);
             redirect('/sales/new');
         }
 

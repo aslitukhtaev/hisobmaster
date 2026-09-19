@@ -88,6 +88,36 @@ function old(string $key, string $default = ''): string
     return (string) ($data[$key] ?? $default);
 }
 
+/**
+ * Converts a calendar day (or day range), read as Asia/Tashkent local time, into
+ * the matching UTC datetime bounds [start, endExclusive) for filtering a
+ * UTC-stored `created_at` column.
+ *
+ * `created_at` columns are all stored via SQLite's `datetime('now')`, which is
+ * always UTC. PHP's default timezone is Asia/Tashkent (set in bootstrap.php),
+ * so "today" or a report's "from/to" range are Tashkent calendar dates — but
+ * SQLite's own `date()`/`datetime('now')` know nothing about that timezone, so
+ * comparing a Tashkent-local date directly against `date(created_at)` (a UTC
+ * date) mis-buckets sales made near midnight Tashkent time (UTC+5). Computing
+ * the range boundary in PHP and comparing against the raw UTC `created_at`
+ * value sidesteps that entirely.
+ *
+ * @return array{0: string, 1: string} [utc_start, utc_end_exclusive] as 'Y-m-d H:i:s'
+ */
+function tashkent_day_bounds_utc(string $fromYmd, ?string $toYmd = null): array
+{
+    $tashkent = new DateTimeZone('Asia/Tashkent');
+    $utc = new DateTimeZone('UTC');
+
+    $start = new DateTimeImmutable($fromYmd . ' 00:00:00', $tashkent);
+    $end = (new DateTimeImmutable(($toYmd ?? $fromYmd) . ' 00:00:00', $tashkent))->modify('+1 day');
+
+    return [
+        $start->setTimezone($utc)->format('Y-m-d H:i:s'),
+        $end->setTimezone($utc)->format('Y-m-d H:i:s'),
+    ];
+}
+
 function money(float $amount, string $currency = "so'm"): string
 {
     return number_format($amount, 0, '.', ' ') . ' ' . $currency;

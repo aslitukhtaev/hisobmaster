@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Core\Database;
+use Throwable;
 
 class DebtTransaction
 {
@@ -19,6 +20,26 @@ class DebtTransaction
         return $balance !== false ? (float) $balance : 0.0;
     }
 
+    /**
+     * Reads the customer's current balance and inserts the next ledger row with
+     * the resulting balance_after.
+     *
+     * SQLite has no row-level `SELECT ... FOR UPDATE`, so this read-then-insert
+     * is instead made safe with a `BEGIN IMMEDIATE` transaction (see
+     * Database::beginImmediate()): that grabs SQLite's write lock up front, so a
+     * concurrent call for the same customer (e.g. a payment recorded at the same
+     * moment as a new credit sale) blocks until this one commits, instead of
+     * both reading the same stale balance and racing to insert — which would
+     * otherwise silently drop one of the two updates (a lost update on
+     * balance_after).
+     *
+     * When record() is called from inside a transaction that's already open
+     * (Sale::create() wraps the whole sale, including its debt row, in one
+     * BEGIN IMMEDIATE), it just participates in that transaction instead of
+     * trying to start a second one — PDO/SQLite doesn't support nesting
+     * transactions, and the outer BEGIN IMMEDIATE already holds the write lock
+     * this method needs.
+     */
     public static function record(
         int $shopId,
         int $customerId,
@@ -27,13 +48,31 @@ class DebtTransaction
         float $amount,
         int $createdBy
     ): void {
-        $current = self::currentBalance($customerId);
-        $balanceAfter = $type === 'qarz' ? $current + $amount : $current - $amount;
+        $pdo = Database::connect();
+        $ownsTransaction = !$pdo->inTransaction();
 
-        Database::connect()->prepare(
-            'INSERT INTO debt_transactions (shop_id, customer_id, sale_id, type, amount, balance_after, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?)'
-        )->execute([$shopId, $customerId, $saleId, $type, $amount, $balanceAfter, $createdBy]);
+        if ($ownsTransaction) {
+            Database::beginImmediate();
+        }
+
+        try {
+            $current = self::currentBalance($customerId);
+            $balanceAfter = $type === 'qarz' ? $current + $amount : $current - $amount;
+
+            $pdo->prepare(
+                'INSERT INTO debt_transactions (shop_id, customer_id, sale_id, type, amount, balance_after, created_by)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
+            )->execute([$shopId, $customerId, $saleId, $type, $amount, $balanceAfter, $createdBy]);
+
+            if ($ownsTransaction) {
+                $pdo->commit();
+            }
+        } catch (Throwable $e) {
+            if ($ownsTransaction) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
     }
 
     public static function historyByCustomer(int $customerId): array

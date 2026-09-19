@@ -135,7 +135,7 @@ return [
     'empty_cart' => 'Корзина пуста',
     'invalid_product' => 'Один из товаров не найден или неактивен',
     'invalid_qty' => 'Указано некорректное количество',
-    'insufficient_stock' => 'Недостаточно товара на складе',
+    'insufficient_stock' => 'Недостаточно товара на складе: :product',
     'customer_required_for_debt' => 'Для продажи в долг выберите или добавьте клиента',
     'sale_completed' => 'Продажа успешно завершена',
     'sale_not_found' => 'Продажа не найдена',
