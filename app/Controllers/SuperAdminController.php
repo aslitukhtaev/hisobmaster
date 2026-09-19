@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Core\Request;
 use App\Core\View;
+use App\Models\Report;
 use App\Models\Shop;
 use App\Models\User;
 
@@ -14,6 +15,34 @@ class SuperAdminController
     public function shops(Request $request): void
     {
         View::render('superadmin/shops/index', ['shops' => Shop::all()]);
+    }
+
+    /**
+     * Cross-shop consolidated report: total revenue/net-profit/sales-count
+     * across every shop for the selected period, plus a per-shop breakdown.
+     * Built on Report::allShopsSummary()/perShopSummary() — new methods that
+     * aggregate across shops rather than filtering to one shop_id — so it
+     * never touches the single-shop-scoped methods every other report page
+     * relies on. Gated by the 'role:super_admin' middleware in routes.php,
+     * same as every other /superadmin/* route.
+     */
+    public function reports(Request $request): void
+    {
+        $period = (string) $request->input('period', 'month');
+        $customFrom = (string) $request->input('from', '');
+        $customTo = (string) $request->input('to', '');
+
+        [$from, $to, $period] = Report::resolvePeriod($period, $customFrom, $customTo);
+
+        $allShops = Report::allShopsSummary($from, $to);
+
+        View::render('superadmin/reports', [
+            'totals' => $allShops['totals'],
+            'byShop' => $allShops['by_shop'],
+            'period' => $period,
+            'from' => $from,
+            'to' => $to,
+        ]);
     }
 
     public function downloadBackup(Request $request): void

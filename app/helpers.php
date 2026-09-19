@@ -123,6 +123,21 @@ function money(float $amount, string $currency = "so'm"): string
     return number_format($amount, 0, '.', ' ') . ' ' . $currency;
 }
 
+/**
+ * Percentage change from $previous to $current, for the reports page's
+ * period-comparison indicator. Null when $previous is zero — "up/down by
+ * some percent of zero" is undefined, so the caller shows a plain "new"
+ * state instead of a misleading number.
+ */
+function percent_change(float $previous, float $current): ?float
+{
+    if (abs($previous) < 0.00001) {
+        return null;
+    }
+
+    return ($current - $previous) / abs($previous) * 100;
+}
+
 function format_qty(float $value): string
 {
     if (floor($value) == $value) {

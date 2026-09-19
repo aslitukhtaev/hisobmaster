@@ -5,9 +5,54 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Core\Database;
+use DateTimeImmutable;
 
 class Report
 {
+    /**
+     * @return array{0: string, 1: string, 2: string} [from, to, period]
+     */
+    public static function resolvePeriod(string $period, string $customFrom, string $customTo): array
+    {
+        if ($customFrom !== '' && $customTo !== '' && $customFrom <= $customTo) {
+            return [$customFrom, $customTo, 'custom'];
+        }
+
+        $today = new DateTimeImmutable('today');
+        $dayOfWeek = (int) $today->format('N'); // 1 (Monday) .. 7 (Sunday)
+        $monday = $today->modify('-' . ($dayOfWeek - 1) . ' days');
+
+        return match ($period) {
+            'today' => [$today->format('Y-m-d'), $today->format('Y-m-d'), 'today'],
+            'week' => [$monday->format('Y-m-d'), $today->format('Y-m-d'), 'week'],
+            default => [$today->format('Y-m-01'), $today->format('Y-m-d'), 'month'],
+        };
+    }
+
+    /**
+     * The immediately preceding period of the same length in days, e.g. "this
+     * month" (1st..19th, 19 days) compares against the preceding 19 days
+     * ending the day before `from`. $from/$to are Tashkent calendar dates
+     * (Y-m-d) exactly like every other range in this class — this only shifts
+     * those two calendar dates backwards; the actual Tashkent->UTC conversion
+     * for querying still happens exclusively inside tashkent_day_bounds_utc(),
+     * called from summary() (or any other method here) with these shifted
+     * dates exactly as it would with the original ones.
+     *
+     * @return array{0: string, 1: string} [prevFrom, prevTo]
+     */
+    public static function previousPeriod(string $from, string $to): array
+    {
+        $fromDate = new DateTimeImmutable($from);
+        $toDate = new DateTimeImmutable($to);
+        $days = (int) $fromDate->diff($toDate)->days + 1;
+
+        $prevTo = $fromDate->modify('-1 day');
+        $prevFrom = $prevTo->modify('-' . ($days - 1) . ' days');
+
+        return [$prevFrom->format('Y-m-d'), $prevTo->format('Y-m-d')];
+    }
+
     public static function summary(int $shopId, string $from, string $to): array
     {
         $pdo = Database::connect();
@@ -235,8 +280,8 @@ class Report
         }
 
         $result = [];
-        $current = new \DateTimeImmutable($from);
-        $end = new \DateTimeImmutable($to);
+        $current = new DateTimeImmutable($from);
+        $end = new DateTimeImmutable($to);
         $dayLimit = 62; // safety cap so an accidental huge range can't loop forever
 
         while ($current <= $end && count($result) < $dayLimit) {
@@ -244,6 +289,112 @@ class Report
             $result[] = ['date' => $key, 'revenue' => $byDate[$key] ?? 0.0];
             $current = $current->modify('+1 day');
         }
+
+        return $result;
+    }
+
+    /**
+     * Super-admin cross-shop rollup for the given period: one row per shop
+     * (revenue/cogs/expenses/net_profit/sales_count, same shape as summary())
+     * plus the sum of all of them. This is a *new* method that aggregates
+     * across every shop rather than filtering to one shop_id — it does not
+     * touch summary()/topProducts()/paymentBreakdown()/dailyRevenue()/
+     * shiftReport() above, whose $shopId-scoped signatures other pages already
+     * depend on.
+     *
+     * @return array{totals: array{sales_count: int, revenue: float, cogs: float, expenses: float, net_profit: float}, by_shop: array<int, array>}
+     */
+    public static function allShopsSummary(string $from, string $to): array
+    {
+        $byShop = self::perShopSummary($from, $to);
+
+        $totals = ['sales_count' => 0, 'revenue' => 0.0, 'cogs' => 0.0, 'expenses' => 0.0, 'net_profit' => 0.0];
+        foreach ($byShop as $row) {
+            $totals['sales_count'] += $row['sales_count'];
+            $totals['revenue'] += $row['revenue'];
+            $totals['cogs'] += $row['cogs'];
+            $totals['expenses'] += $row['expenses'];
+            $totals['net_profit'] += $row['net_profit'];
+        }
+
+        return ['totals' => $totals, 'by_shop' => $byShop];
+    }
+
+    /**
+     * Per-shop breakdown for the period, one row per shop that exists (even
+     * one with zero activity), sorted by revenue descending. Three grouped
+     * queries (sales, sale_items/cogs, expenses) rather than one join across
+     * sales+sale_items+expenses — joining sale_items to sales would multiply
+     * the sales-side SUM/COUNT by however many line items each sale has,
+     * exactly the trap summary() avoids for a single shop by running the same
+     * two queries separately.
+     *
+     * @return array<int, array{shop_id: int, shop_name: string, sales_count: int, revenue: float, cogs: float, expenses: float, net_profit: float}>
+     */
+    public static function perShopSummary(string $from, string $to): array
+    {
+        [$startUtc, $endUtc] = tashkent_day_bounds_utc($from, $to);
+        $pdo = Database::connect();
+
+        $salesByShop = [];
+        $stmt = $pdo->prepare(
+            "SELECT shop_id, COUNT(*) AS cnt, COALESCE(SUM(total), 0) AS revenue
+             FROM sales
+             WHERE status = 'completed' AND created_at >= ? AND created_at < ?
+             GROUP BY shop_id"
+        );
+        $stmt->execute([$startUtc, $endUtc]);
+        foreach ($stmt->fetchAll() as $row) {
+            $salesByShop[(int) $row['shop_id']] = ['cnt' => (int) $row['cnt'], 'revenue' => (float) $row['revenue']];
+        }
+
+        $cogsByShop = [];
+        $stmt = $pdo->prepare(
+            "SELECT s.shop_id, COALESCE(SUM(si.qty * si.cost_price_snapshot), 0) AS cogs
+             FROM sale_items si
+             INNER JOIN sales s ON s.id = si.sale_id
+             WHERE s.status = 'completed' AND s.created_at >= ? AND s.created_at < ?
+             GROUP BY s.shop_id"
+        );
+        $stmt->execute([$startUtc, $endUtc]);
+        foreach ($stmt->fetchAll() as $row) {
+            $cogsByShop[(int) $row['shop_id']] = (float) $row['cogs'];
+        }
+
+        // expense_date is a plain Tashkent calendar date (see Expense::totalByShop()),
+        // not a UTC created_at timestamp, so it's compared directly against
+        // $from/$to rather than through tashkent_day_bounds_utc().
+        $expensesByShop = [];
+        $stmt = $pdo->prepare(
+            'SELECT shop_id, COALESCE(SUM(amount), 0) AS total
+             FROM expenses
+             WHERE expense_date BETWEEN ? AND ?
+             GROUP BY shop_id'
+        );
+        $stmt->execute([$from, $to]);
+        foreach ($stmt->fetchAll() as $row) {
+            $expensesByShop[(int) $row['shop_id']] = (float) $row['total'];
+        }
+
+        $result = [];
+        foreach (Shop::all() as $shop) {
+            $shopId = (int) $shop['id'];
+            $revenue = $salesByShop[$shopId]['revenue'] ?? 0.0;
+            $cogs = $cogsByShop[$shopId] ?? 0.0;
+            $expenses = $expensesByShop[$shopId] ?? 0.0;
+
+            $result[] = [
+                'shop_id' => $shopId,
+                'shop_name' => (string) $shop['name'],
+                'sales_count' => $salesByShop[$shopId]['cnt'] ?? 0,
+                'revenue' => $revenue,
+                'cogs' => $cogs,
+                'expenses' => $expenses,
+                'net_profit' => $revenue - $cogs - $expenses,
+            ];
+        }
+
+        usort($result, static fn (array $a, array $b): int => $b['revenue'] <=> $a['revenue']);
 
         return $result;
     }

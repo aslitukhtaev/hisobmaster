@@ -268,6 +268,29 @@ class Sale
         return $stmt->fetchAll();
     }
 
+    /**
+     * Every completed-or-not sale in a Tashkent calendar date range, newest
+     * first — used by the sales list's optional date filter and its CSV
+     * export, so both read off the same rows. Unlike recentByShop() this has
+     * no LIMIT, since a date range is already a bounded window.
+     */
+    public static function rangeByShop(int $shopId, string $from, string $to): array
+    {
+        [$startUtc, $endUtc] = tashkent_day_bounds_utc($from, $to);
+
+        $stmt = Database::connect()->prepare(
+            'SELECT s.*, u.full_name AS cashier_name, c.full_name AS customer_name
+             FROM sales s
+             LEFT JOIN users u ON u.id = s.cashier_id
+             LEFT JOIN customers c ON c.id = s.customer_id
+             WHERE s.shop_id = ? AND s.created_at >= ? AND s.created_at < ?
+             ORDER BY s.created_at DESC, s.id DESC'
+        );
+        $stmt->execute([$shopId, $startUtc, $endUtc]);
+
+        return $stmt->fetchAll();
+    }
+
     public static function todaysSummary(int $shopId): array
     {
         $pdo = Database::connect();

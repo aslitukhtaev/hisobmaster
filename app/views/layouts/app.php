@@ -18,6 +18,7 @@ if (Auth::isSuperAdmin()) {
     $navItems = [
         ['href' => '/', 'label' => t('dashboard'), 'icon' => 'home', 'implemented' => true, 'permission' => null],
         ['href' => '/superadmin/shops', 'label' => t('shops'), 'icon' => 'shop', 'implemented' => true, 'permission' => null],
+        ['href' => '/superadmin/reports', 'label' => t('consolidated_reports_nav'), 'icon' => 'chart', 'implemented' => true, 'permission' => null],
         ['href' => '/profile', 'label' => t('profile'), 'icon' => 'user', 'implemented' => true, 'permission' => null],
     ];
 } else {

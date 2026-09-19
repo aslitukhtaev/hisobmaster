@@ -422,4 +422,24 @@ return [
     'scan_unsupported' => 'Ваш браузер не поддерживает сканирование через камеру',
     'scan_hint' => 'Наведите камеру на штрихкод',
     'close' => 'Закрыть',
+
+    // Reports: expense breakdown, period comparison, CSV/PDF export
+    'expense_category_breakdown_title' => 'Расходы по категориям',
+    'other_category' => 'Прочее',
+    'no_expenses_in_period' => 'За выбранный период расходов не было.',
+    'export_csv_button' => 'Экспорт в CSV',
+    'print_report_button' => 'Печать / PDF',
+    'compare_previous_period' => 'Сравнить с предыдущим периодом',
+    'period_comparison_title' => 'Сравнение периодов',
+    'vs_current_period_label' => '— предыдущий период',
+    'comparison_metric_label' => 'Показатель',
+    'current_period_label' => 'Текущий период',
+    'previous_period_label' => 'Предыдущий период',
+    'change_label' => 'Изменение',
+    'reset_filter' => 'Все',
+
+    // Super admin: consolidated cross-shop report
+    'consolidated_reports' => 'Сводный отчёт по магазинам',
+    'consolidated_reports_nav' => 'Отчёт',
+    'per_shop_breakdown_title' => 'Разбивка по магазинам',
 ];
