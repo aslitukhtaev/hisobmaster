@@ -36,6 +36,14 @@
     // making a split.
     var lastEditedField = 'naqd';
 
+    // Set by applyPayments() whenever the selected existing customer has a
+    // credit_limit configured and this sale's debt remainder would push
+    // their balance above it. Read by the form's submit handler to require
+    // an explicit confirm() before letting the sale through — the shop owner
+    // can still override (e.g. for a trusted regular), this is a warning, not
+    // a hard block (see Feature 2 in the customer/debt backlog).
+    var creditLimitExceeded = false;
+
     var productListEl = document.getElementById('product-list');
     var searchEl = document.getElementById('product-search');
     var cartListEl = document.getElementById('cart-list');
@@ -356,7 +364,27 @@
 
         var remaining = Math.max(0, Math.round((total - naqdAmount - kartaAmount) * 100) / 100);
         debtFieldsEl.style.display = remaining > 0 ? 'block' : 'none';
-        debtRemainingLabelEl.textContent = (i18n.debtRemainingLabel || 'Debt: :amount').replace(':amount', formatMoney(remaining));
+
+        var labelText = (i18n.debtRemainingLabel || 'Debt: :amount').replace(':amount', formatMoney(remaining));
+        creditLimitExceeded = false;
+
+        var selectedId = customerSelectEl.value ? parseInt(customerSelectEl.value, 10) : null;
+        var selectedCustomer = selectedId ? customers.find(function (c) { return c.id === selectedId; }) : null;
+
+        if (remaining > 0 && selectedCustomer && selectedCustomer.creditLimit !== null && selectedCustomer.creditLimit !== undefined) {
+            var projectedBalance = Math.round((selectedCustomer.balance + remaining) * 100) / 100;
+            labelText += ' · ' + (i18n.creditLimitPosLabel || 'Credit limit: :amount').replace(':amount', formatMoney(selectedCustomer.creditLimit));
+
+            if (projectedBalance > selectedCustomer.creditLimit + 0.005) {
+                creditLimitExceeded = true;
+                labelText += ' — ' + (i18n.creditLimitExceededWarning || 'Exceeds limit: new balance :amount > limit :limit')
+                    .replace(':amount', formatMoney(projectedBalance))
+                    .replace(':limit', formatMoney(selectedCustomer.creditLimit));
+            }
+        }
+
+        debtRemainingLabelEl.textContent = labelText;
+        debtRemainingLabelEl.classList.toggle('credit-limit-exceeded', creditLimitExceeded);
     }
 
     function setPreset(preset) {
@@ -482,7 +510,13 @@
         renderCart();
     });
 
-    customerSelectEl.addEventListener('change', updateCustomerFields);
+    customerSelectEl.addEventListener('change', function () {
+        updateCustomerFields();
+        // Re-run so the debt/credit-limit label picks up the newly selected
+        // customer's balance/creditLimit (it doesn't touch the cart/payment
+        // state itself, just recomputes derived display + creditLimitExceeded).
+        renderCart();
+    });
 
     newCustomerNameEl.addEventListener('input', function () {
         document.getElementById('customer-name-field').value = newCustomerNameEl.value;
@@ -493,6 +527,10 @@
 
     saleFormEl.addEventListener('submit', function (e) {
         if (cart.size === 0) {
+            e.preventDefault();
+            return;
+        }
+        if (creditLimitExceeded && !confirm(i18n.confirmExceedCreditLimit || 'This sale exceeds the customer\'s credit limit. Continue?')) {
             e.preventDefault();
             return;
         }

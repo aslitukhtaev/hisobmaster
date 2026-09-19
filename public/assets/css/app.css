@@ -137,6 +137,10 @@ p { margin: 0; }
 .btn-ghost:hover { background: var(--bg); }
 .btn-sm { padding: 7px 12px; font-size: .85rem; }
 .btn-block { width: 100%; }
+/* An <a>-as-button with no href (see debt-reminder.js: SMS/WhatsApp links
+   with no phone number on the customer) — :disabled doesn't apply to
+   anchors, so this is the aria-disabled equivalent. */
+.btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; pointer-events: none; }
 
 /* ---------- Forms ---------- */
 .field { display: flex; flex-direction: column; gap: 6px; font-size: .88rem; color: var(--muted); font-weight: 600; }
@@ -653,6 +657,8 @@ img.logo-for-dark-theme { display: none; }
 .radio-pill:has(input:checked) { background: var(--primary-light); border-color: var(--primary); color: var(--primary-dark); }
 
 #debt-fields { margin-bottom: 14px; padding-top: 10px; border-top: 1px dashed var(--border); }
+/* Credit-limit-exceeded warning inside #debt-remaining-label (see sale.js) */
+.credit-limit-exceeded { color: var(--danger); font-weight: 700; }
 
 @media (min-width: 900px) {
     .pos-layout { flex-direction: row; align-items: flex-start; }

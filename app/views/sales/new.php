@@ -111,6 +111,9 @@ if (!is_array($oldCart)) {
     window.HM_I18N = {
         noResults: <?= json_encode(t('no_products_found'), JSON_UNESCAPED_UNICODE) ?>,
         debtRemainingLabel: <?= json_encode(t('debt_remaining_label'), JSON_UNESCAPED_UNICODE) ?>,
+        creditLimitPosLabel: <?= json_encode(t('credit_limit_pos_label'), JSON_UNESCAPED_UNICODE) ?>,
+        creditLimitExceededWarning: <?= json_encode(t('credit_limit_exceeded_warning'), JSON_UNESCAPED_UNICODE) ?>,
+        confirmExceedCreditLimit: <?= json_encode(t('confirm_exceed_credit_limit'), JSON_UNESCAPED_UNICODE) ?>,
         stockLimitReached: <?= json_encode(t('stock_limit_reached'), JSON_UNESCAPED_UNICODE) ?>,
         decreaseQty: <?= json_encode(t('decrease_qty'), JSON_UNESCAPED_UNICODE) ?>,
         increaseQty: <?= json_encode(t('increase_qty'), JSON_UNESCAPED_UNICODE) ?>,

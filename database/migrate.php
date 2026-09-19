@@ -80,6 +80,20 @@ if (!in_array('variant_label', $saleItemColumns, true)) {
     echo "sale_items jadvaliga variant_label ustuni qo'shildi.\n";
 }
 
+// Mijoz/qarz backlog: kredit limiti (credit_limit) va qarzni to'lash muddati
+// (debt_due_date) ustunlari — eski bazalarda bu ustunlar bo'lmasligi mumkin.
+$customerColumns = array_column($pdo->query('PRAGMA table_info(customers)')->fetchAll(PDO::FETCH_ASSOC), 'name');
+
+if (!in_array('credit_limit', $customerColumns, true)) {
+    $pdo->exec('ALTER TABLE customers ADD COLUMN credit_limit REAL');
+    echo "customers jadvaliga credit_limit ustuni qo'shildi.\n";
+}
+
+if (!in_array('debt_due_date', $customerColumns, true)) {
+    $pdo->exec('ALTER TABLE customers ADD COLUMN debt_due_date TEXT');
+    echo "customers jadvaliga debt_due_date ustuni qo'shildi.\n";
+}
+
 $adminLogin = getenv('SUPER_ADMIN_LOGIN') ?: 'admin';
 $adminPassword = getenv('SUPER_ADMIN_PASSWORD') ?: 'change-me-please';
 

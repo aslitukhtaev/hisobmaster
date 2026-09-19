@@ -291,6 +291,26 @@ class Sale
         return $stmt->fetchAll();
     }
 
+    /**
+     * Every sale tied to one customer (paid-in-full naqd/karta sales included,
+     * not just the ones that left a debt_transactions row), newest first —
+     * the customer detail page's "purchase history" section. This is
+     * distinct from the debt ledger: a customer can have sales here that
+     * never touch debt_transactions at all.
+     */
+    public static function byCustomer(int $customerId, int $shopId): array
+    {
+        $stmt = Database::connect()->prepare(
+            'SELECT s.*, (SELECT COUNT(*) FROM sale_items si WHERE si.sale_id = s.id) AS item_count
+             FROM sales s
+             WHERE s.customer_id = ? AND s.shop_id = ?
+             ORDER BY s.created_at DESC, s.id DESC'
+        );
+        $stmt->execute([$customerId, $shopId]);
+
+        return $stmt->fetchAll();
+    }
+
     public static function todaysSummary(int $shopId): array
     {
         $pdo = Database::connect();
