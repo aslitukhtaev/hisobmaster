@@ -30,6 +30,10 @@ CREATE TABLE IF NOT EXISTS users (
     -- of their own sales revenue for a report period — see
     -- Report::cashierLeaderboard(). Owner-only to set (see EmployeeController).
     commission_rate REAL,
+    -- Set the first time this user dismisses the one-time dashboard
+    -- onboarding banner (see DashboardController::dismissOnboarding()); NULL
+    -- until then, so the banner shows exactly once per account.
+    onboarding_seen_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_users_shop ON users(shop_id);

@@ -2,6 +2,7 @@
 /database/*.db-journal
 /database/*.db-wal
 /database/*.db-shm
+/database/backups/
 /.env
 /telegram/bot_config.php
 .DS_Store

@@ -83,6 +83,19 @@ class User
         return $stmt->fetchAll();
     }
 
+    /**
+     * Owner + employees of a shop (never super_admin, who has no shop_id) —
+     * for the activity log's "by user" filter dropdown.
+     */
+    public static function allByShop(int $shopId): array
+    {
+        $stmt = Database::connect()->prepare(
+            "SELECT * FROM users WHERE shop_id = ? AND role IN ('owner', 'employee') ORDER BY full_name"
+        );
+        $stmt->execute([$shopId]);
+        return $stmt->fetchAll();
+    }
+
     public static function findEmployee(int $id, int $shopId): ?array
     {
         $stmt = Database::connect()->prepare(
@@ -114,5 +127,12 @@ class User
         Database::connect()
             ->prepare('UPDATE users SET commission_rate = ? WHERE id = ?')
             ->execute([$rate, $id]);
+    }
+
+    public static function markOnboardingSeen(int $id): void
+    {
+        Database::connect()
+            ->prepare("UPDATE users SET onboarding_seen_at = datetime('now') WHERE id = ?")
+            ->execute([$id]);
     }
 }

@@ -19,6 +19,8 @@ if (Auth::isSuperAdmin()) {
         ['href' => '/', 'label' => t('dashboard'), 'icon' => 'home', 'implemented' => true, 'permission' => null],
         ['href' => '/superadmin/shops', 'label' => t('shops'), 'icon' => 'shop', 'implemented' => true, 'permission' => null],
         ['href' => '/superadmin/reports', 'label' => t('consolidated_reports_nav'), 'icon' => 'chart', 'implemented' => true, 'permission' => null],
+        ['href' => '/superadmin/backups', 'label' => t('backups_nav'), 'icon' => 'gear', 'implemented' => true, 'permission' => null],
+        ['href' => '/help', 'label' => t('help_nav'), 'icon' => 'help', 'implemented' => true, 'permission' => null],
         ['href' => '/profile', 'label' => t('profile'), 'icon' => 'user', 'implemented' => true, 'permission' => null],
     ];
 } else {
@@ -37,6 +39,7 @@ if (Auth::isSuperAdmin()) {
         $navItems[] = ['href' => '/activity', 'label' => t('activity_log'), 'icon' => 'clock', 'implemented' => true, 'permission' => null];
     }
 
+    $navItems[] = ['href' => '/help', 'label' => t('help_nav'), 'icon' => 'help', 'implemented' => true, 'permission' => null];
     $navItems[] = ['href' => '/profile', 'label' => t('profile'), 'icon' => 'user', 'implemented' => true, 'permission' => null];
 }
 
@@ -60,6 +63,7 @@ $icon = static function (string $name): string {
         'clock' => '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
         'more' => '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
         'truck' => '<rect x="2.5" y="7" width="12" height="9"/><path d="M14.5 10h4l3 3.5V16h-7z"/><circle cx="7" cy="18.5" r="1.6"/><circle cx="17" cy="18.5" r="1.6"/>',
+        'help' => '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.5 2.5 0 1 1 3.7 2.4c-.8.5-1.2 1-1.2 2"/><circle cx="12" cy="16.7" r=".1" stroke-width="2.4"/>',
     ];
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' . ($paths[$name] ?? '') . '</svg>';
 };

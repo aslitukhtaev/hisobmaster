@@ -169,6 +169,7 @@ p { margin: 0; }
 .alert { border-radius: var(--radius-sm); padding: 12px 14px; font-size: .9rem; margin-bottom: 14px; font-weight: 500; }
 .alert-error { background: var(--danger-bg); color: var(--danger); }
 .alert-success { background: var(--success-bg); color: var(--success); }
+.alert-info { background: var(--primary-light); color: var(--primary-dark); }
 
 /* ---------- Auth layout ---------- */
 .auth-body { min-height: 100vh; display: flex; flex-direction: column; }
@@ -390,6 +391,9 @@ img.logo-for-dark-theme { display: none; }
     font: inherit; padding: 10px 12px; border: 1px solid var(--border);
     border-radius: var(--radius-sm); background: var(--surface); color: var(--text);
 }
+.date-filter-bar select { min-width: 160px; }
+.date-filter-bar .field-grow { flex: 1 1 220px; }
+.date-filter-bar .field-actions { display: flex; gap: 8px; flex: 0 0 auto; }
 
 /* ---------- Net profit hero tile ---------- */
 .net-profit-tile {
@@ -805,3 +809,30 @@ img.logo-for-dark-theme { display: none; }
 /* ---------- Product variant management (edit page) ---------- */
 .variant-row-card { margin-bottom: 12px; }
 .variant-row-card form { margin: 0; }
+
+/* ---------- Dashboard onboarding banner ---------- */
+.onboarding-banner {
+    display: flex; align-items: flex-start; gap: 14px;
+    background: var(--primary-light); border: 1px solid var(--primary);
+    border-radius: var(--radius); padding: 16px 18px; margin-bottom: 18px;
+}
+.onboarding-banner-icon { font-size: 1.6rem; flex-shrink: 0; line-height: 1; }
+.onboarding-banner-body { flex: 1; min-width: 0; }
+.onboarding-banner-title { font-weight: 700; color: var(--primary-dark); margin-bottom: 4px; }
+.onboarding-banner-text { color: var(--text); font-size: .9rem; margin-bottom: 10px; }
+.onboarding-banner-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---------- Help / FAQ accordion ---------- */
+.faq-card { padding: 6px 0; }
+.faq-item {
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+}
+.faq-item:last-child { border-bottom: none; }
+.faq-item summary {
+    cursor: pointer; font-weight: 600; list-style: none;
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after { content: '+'; color: var(--muted); font-weight: 400; font-size: 1.2rem; flex-shrink: 0; }
+.faq-item[open] summary::after { content: '−'; }
+.faq-item p { margin: 10px 0 0; color: var(--muted); font-size: .9rem; line-height: 1.5; }

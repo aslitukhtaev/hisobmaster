@@ -5,7 +5,7 @@
         <p class="muted"><?= count($shops) ?> <?= e(t('shops_count_label')) ?></p>
     </div>
     <div class="row-actions">
-        <a href="/superadmin/backup" class="btn btn-ghost"><?= e(t('download_backup')) ?></a>
+        <a href="/superadmin/backups" class="btn btn-ghost"><?= e(t('backups_nav')) ?></a>
         <a href="/superadmin/shops/create" class="btn btn-primary"><?= e(t('create_shop')) ?></a>
     </div>
 </section>

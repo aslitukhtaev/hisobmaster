@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Core\Request;
 use App\Core\View;
+use App\Models\Backup;
 use App\Models\Report;
 use App\Models\Shop;
 use App\Models\User;
@@ -62,6 +63,52 @@ class SuperAdminController
         header('Cache-Control: no-store');
         readfile($path);
         exit;
+    }
+
+    /**
+     * The backups list/manage page. See App\Models\Backup's class doc
+     * comment for the honest distinction between the cron script and the
+     * opportunistic dashboard fallback — this page states the same thing
+     * to the super admin rather than calling either one "automatic".
+     */
+    public function backups(Request $request): void
+    {
+        View::render('superadmin/backups', ['backups' => Backup::list()]);
+    }
+
+    public function createBackup(Request $request): void
+    {
+        Backup::create();
+        flash('success', t('backup_created'));
+        redirect('/superadmin/backups');
+    }
+
+    public function downloadBackupFile(Request $request, string $filename): void
+    {
+        $path = Backup::path($filename);
+
+        if ($path === null) {
+            flash('error', t('backup_not_found'));
+            redirect('/superadmin/backups');
+        }
+
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . filesize($path));
+        header('Cache-Control: no-store');
+        readfile($path);
+        exit;
+    }
+
+    public function deleteBackupFile(Request $request, string $filename): void
+    {
+        if (Backup::delete($filename)) {
+            flash('success', t('backup_deleted'));
+        } else {
+            flash('error', t('backup_not_found'));
+        }
+
+        redirect('/superadmin/backups');
     }
 
     public function createForm(Request $request): void

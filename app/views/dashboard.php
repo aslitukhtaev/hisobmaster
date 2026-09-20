@@ -41,6 +41,22 @@ $totalDebt = ($shopId && $canCustomers) ? DebtTransaction::totalDebtByShop((int)
 $openShift = $shopId ? Attendance::openShiftFor((int) Auth::id()) : null;
 $showAttendance = $shopId !== null;
 ?>
+<?php if ($showOnboarding): ?>
+<div class="onboarding-banner">
+    <div class="onboarding-banner-icon">👋</div>
+    <div class="onboarding-banner-body">
+        <div class="onboarding-banner-title"><?= e(t('onboarding_welcome_title')) ?></div>
+        <p class="onboarding-banner-text"><?= e(t('onboarding_welcome_body')) ?></p>
+        <div class="onboarding-banner-actions">
+            <a href="/help" class="btn btn-ghost btn-sm"><?= e(t('onboarding_help_link')) ?></a>
+            <form method="post" action="/onboarding/dismiss">
+                <?= csrf_field() ?>
+                <button type="submit" class="btn btn-primary btn-sm"><?= e(t('onboarding_dismiss_button')) ?></button>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 <section class="page-head page-head-row">
     <div>
         <h1><?= e(t('welcome', ['name' => $user['full_name'] ?? ''])) ?></h1>

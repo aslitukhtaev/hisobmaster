@@ -9,6 +9,7 @@ use App\Controllers\CustomerController;
 use App\Controllers\DashboardController;
 use App\Controllers\EmployeeController;
 use App\Controllers\ExpenseController;
+use App\Controllers\HelpController;
 use App\Controllers\JoinController;
 use App\Controllers\LocaleController;
 use App\Controllers\ProductController;
@@ -29,6 +30,9 @@ $router->post('/logout', [AuthController::class, 'logout'], ['auth', 'csrf']);
 $router->post('/lang/{lang}', [LocaleController::class, 'switch']);
 
 $router->get('/', [DashboardController::class, 'index'], ['auth']);
+$router->post('/onboarding/dismiss', [DashboardController::class, 'dismissOnboarding'], ['auth', 'csrf']);
+
+$router->get('/help', [HelpController::class, 'index'], ['auth']);
 
 $router->get('/profile', [ProfileController::class, 'show'], ['auth']);
 $router->post('/profile', [ProfileController::class, 'update'], ['auth', 'csrf']);
@@ -37,6 +41,10 @@ $router->post('/profile/shop', [ProfileController::class, 'updateShop'], ['auth'
 $router->get('/superadmin/shops', [SuperAdminController::class, 'shops'], ['auth', 'role:super_admin']);
 $router->get('/superadmin/reports', [SuperAdminController::class, 'reports'], ['auth', 'role:super_admin']);
 $router->get('/superadmin/backup', [SuperAdminController::class, 'downloadBackup'], ['auth', 'role:super_admin']);
+$router->get('/superadmin/backups', [SuperAdminController::class, 'backups'], ['auth', 'role:super_admin']);
+$router->post('/superadmin/backups/create', [SuperAdminController::class, 'createBackup'], ['auth', 'role:super_admin', 'csrf']);
+$router->get('/superadmin/backups/{filename}/download', [SuperAdminController::class, 'downloadBackupFile'], ['auth', 'role:super_admin']);
+$router->post('/superadmin/backups/{filename}/delete', [SuperAdminController::class, 'deleteBackupFile'], ['auth', 'role:super_admin', 'csrf']);
 $router->get('/superadmin/shops/create', [SuperAdminController::class, 'createForm'], ['auth', 'role:super_admin']);
 $router->post('/superadmin/shops', [SuperAdminController::class, 'store'], ['auth', 'role:super_admin', 'csrf']);
 $router->get('/superadmin/shops/{id}/created', [SuperAdminController::class, 'created'], ['auth', 'role:super_admin']);
@@ -121,3 +129,4 @@ $router->post('/join/{token}', [JoinController::class, 'register'], ['guest', 'c
 $router->post('/telegram/webhook', [TelegramController::class, 'webhook'], []);
 
 $router->get('/activity', [ActivityLogController::class, 'index'], ['auth', 'role:owner']);
+$router->get('/activity/export', [ActivityLogController::class, 'exportCsv'], ['auth', 'role:owner']);
