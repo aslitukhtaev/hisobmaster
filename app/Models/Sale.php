@@ -177,21 +177,14 @@ class Sale
             }
 
             if ($qarzAmount > 0 && $customerId !== null) {
-                DebtTransaction::record($shopId, $customerId, $saleId, 'qarz', $qarzAmount, $cashierId);
+                DebtTransaction::record($shopId, $customerId, $saleId, 'qarz', $qarzAmount, $cashierId, nested: true);
             }
 
-            $pdo->commit();
+            Database::commit($pdo);
 
             return $saleId;
         } catch (\Throwable $e) {
-            // Guarded: if the transaction was already ended (e.g. by the
-            // nested DebtTransaction::record() call above, or SQLite
-            // implicitly aborting it under contention), rollBack() itself
-            // would throw "There is no active transaction" and mask the
-            // real error with a confusing, untranslatable one.
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
+            Database::rollback($pdo);
             throw $e;
         }
     }

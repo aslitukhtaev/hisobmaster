@@ -53,9 +53,7 @@ class Attendance
             $stmt->execute([$userId]);
 
             if ($stmt->fetch()) {
-                if ($pdo->inTransaction()) {
-                    $pdo->rollBack();
-                }
+                Database::rollback($pdo);
                 return null;
             }
 
@@ -64,17 +62,11 @@ class Attendance
             )->execute([$shopId, $userId]);
             $id = (int) $pdo->lastInsertId();
 
-            $pdo->commit();
+            Database::commit($pdo);
 
             return self::find($id);
         } catch (Throwable $e) {
-            // Guarded: commit()/an earlier statement can leave no transaction
-            // open (e.g. SQLite implicitly aborting it under contention), in
-            // which case rollBack() itself would throw "There is no active
-            // transaction" and mask the real error with a confusing one.
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
+            Database::rollback($pdo);
             throw $e;
         }
     }

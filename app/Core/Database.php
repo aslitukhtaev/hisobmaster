@@ -41,10 +41,17 @@ class Database
      * the reserved (write) lock right away, so a concurrent connection trying to
      * start its own write transaction blocks until this one commits or rolls
      * back, instead of both connections reading the same state and racing to
-     * write based on it (a lost update). Commit/roll back with the normal
-     * $pdo->commit() / $pdo->rollBack() — PDO's sqlite driver tracks the
-     * transaction from the raw `BEGIN IMMEDIATE` exec just as it would from its
-     * own beginTransaction().
+     * write based on it (a lost update).
+     *
+     * Commit/roll back with Database::commit()/Database::rollback() below, NOT
+     * PDO's own commit()/rollBack() — on at least one real target environment
+     * (PHP 8.3 under LiteSpeed's lsphp SAPI), PDO::commit() throws "There is no
+     * active transaction" for a transaction started this way, because PDO's
+     * core gates commit()/rollBack() on an internal flag that only
+     * PDO::beginTransaction() sets, not a raw `BEGIN IMMEDIATE` exec — even
+     * though SQLite itself genuinely has the transaction open. Going straight
+     * to SQL for all three (BEGIN/COMMIT/ROLLBACK) sidesteps that gate
+     * entirely instead of depending on it.
      */
     public static function beginImmediate(): PDO
     {
@@ -52,5 +59,25 @@ class Database
         $pdo->exec('BEGIN IMMEDIATE');
 
         return $pdo;
+    }
+
+    public static function commit(PDO $pdo): void
+    {
+        $pdo->exec('COMMIT');
+    }
+
+    /**
+     * Silently a no-op when there's nothing to roll back (e.g. the failure
+     * happened before BEGIN IMMEDIATE even ran) — callers use this from a
+     * catch block that re-throws the original exception regardless, so a
+     * rollback failure here must never mask it with a different one.
+     */
+    public static function rollback(PDO $pdo): void
+    {
+        try {
+            $pdo->exec('ROLLBACK');
+        } catch (\Throwable $e) {
+            // Nothing to roll back — ignored, see doc comment above.
+        }
     }
 }

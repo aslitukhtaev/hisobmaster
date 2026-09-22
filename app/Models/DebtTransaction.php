@@ -35,10 +35,15 @@ class DebtTransaction
      *
      * When record() is called from inside a transaction that's already open
      * (Sale::create() wraps the whole sale, including its debt row, in one
-     * BEGIN IMMEDIATE), it just participates in that transaction instead of
-     * trying to start a second one — PDO/SQLite doesn't support nesting
-     * transactions, and the outer BEGIN IMMEDIATE already holds the write lock
-     * this method needs.
+     * BEGIN IMMEDIATE; Refund::create() does the same for a refund's debt
+     * adjustment), pass $nested = true so it just participates in that
+     * transaction instead of trying to start a second one — PDO/SQLite
+     * doesn't support nesting transactions, and the outer BEGIN IMMEDIATE
+     * already holds the write lock this method needs. This is an explicit
+     * flag from the caller rather than auto-detected via
+     * `$pdo->inTransaction()`, since that call is not a reliable signal for
+     * a transaction opened by a raw `BEGIN IMMEDIATE` on every PHP/PDO build
+     * this app targets (see Database::commit()/rollback()'s doc comment).
      */
     public static function record(
         int $shopId,
@@ -46,14 +51,10 @@ class DebtTransaction
         ?int $saleId,
         string $type,
         float $amount,
-        int $createdBy
+        int $createdBy,
+        bool $nested = false
     ): void {
-        $pdo = Database::connect();
-        $ownsTransaction = !$pdo->inTransaction();
-
-        if ($ownsTransaction) {
-            Database::beginImmediate();
-        }
+        $pdo = $nested ? Database::connect() : Database::beginImmediate();
 
         try {
             $current = self::currentBalance($customerId);
@@ -64,12 +65,12 @@ class DebtTransaction
                  VALUES (?, ?, ?, ?, ?, ?, ?)'
             )->execute([$shopId, $customerId, $saleId, $type, $amount, $balanceAfter, $createdBy]);
 
-            if ($ownsTransaction) {
-                $pdo->commit();
+            if (!$nested) {
+                Database::commit($pdo);
             }
         } catch (Throwable $e) {
-            if ($ownsTransaction && $pdo->inTransaction()) {
-                $pdo->rollBack();
+            if (!$nested) {
+                Database::rollback($pdo);
             }
             throw $e;
         }

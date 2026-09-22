@@ -98,13 +98,11 @@ class Purchase
                 }
             }
 
-            $pdo->commit();
+            Database::commit($pdo);
 
             return $purchaseId;
         } catch (Throwable $e) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
+            Database::rollback($pdo);
             throw $e;
         }
     }

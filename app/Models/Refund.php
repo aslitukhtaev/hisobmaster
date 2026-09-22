@@ -151,13 +151,11 @@ class Refund
 
             self::adjustDebtForRefund($shopId, $sale, $totalAmount, $userId);
 
-            $pdo->commit();
+            Database::commit($pdo);
 
             return $refundId;
         } catch (Throwable $e) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
+            Database::rollback($pdo);
             throw $e;
         }
     }
@@ -200,7 +198,7 @@ class Refund
 
         $debtPortion = round($refundTotalAmount * ($qarzPortion / $saleTotal), 2);
         if ($debtPortion > 0) {
-            DebtTransaction::record($shopId, (int) $sale['customer_id'], (int) $sale['id'], 'refund', $debtPortion, $userId);
+            DebtTransaction::record($shopId, (int) $sale['customer_id'], (int) $sale['id'], 'refund', $debtPortion, $userId, nested: true);
         }
     }
 
