@@ -181,3 +181,21 @@ function t(string $key, array $params = []): string
 {
     return trans($key, $params);
 }
+
+/**
+ * Writes an unexpected (non-translation-key) exception to PHP's own error
+ * log — the user only ever sees a generic translated message
+ * ('unexpected_error'), so this is the only record of what actually broke.
+ * Temporary/diagnostic use is exactly the same call as any other use.
+ */
+function log_exception(\Throwable $e): void
+{
+    error_log(sprintf(
+        '[KassirON] %s: %s in %s:%d%s',
+        get_class($e),
+        $e->getMessage(),
+        $e->getFile(),
+        $e->getLine(),
+        "\n" . $e->getTraceAsString()
+    ));
+}

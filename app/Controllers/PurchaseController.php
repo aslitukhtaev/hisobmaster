@@ -84,6 +84,7 @@ class PurchaseController
         try {
             Purchase::create($shopId, $userId, $supplierId, $items, $note !== '' ? $note : null, $updateCostPrice);
         } catch (PDOException $e) {
+            log_exception($e);
             flash('error', t('unexpected_error'));
             redirect('/purchases/create');
         } catch (RuntimeException $e) {

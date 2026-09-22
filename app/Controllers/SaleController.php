@@ -224,6 +224,7 @@ class SaleController
             // never shown to the user verbatim, since PDOException extends
             // RuntimeException and would otherwise fall into the branch below
             // and get treated as one of Sale::create()'s own translation keys.
+            log_exception($e);
             flash('error', t('unexpected_error'));
             keep_old($old);
             redirect('/sales/new');
@@ -334,6 +335,7 @@ class SaleController
         try {
             $refundId = Refund::create($shopId, (int) $id, $userId, $lines, $reason !== '' ? $reason : null);
         } catch (PDOException $e) {
+            log_exception($e);
             flash('error', t('unexpected_error'));
             redirect("/sales/{$id}/refund");
         } catch (RuntimeException $e) {
