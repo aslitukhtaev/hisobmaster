@@ -134,6 +134,7 @@ return [
     'complete_sale' => 'Sotuvni yakunlash',
     'no_active_products_for_sale' => 'Sotish uchun faol mahsulot yo\'q. Avval mahsulot qo\'shing.',
     'empty_cart' => 'Savat bo\'sh',
+    'unexpected_error' => "Kutilmagan xatolik yuz berdi. Iltimos, birozdan so'ng qayta urinib ko'ring.",
     'invalid_product' => 'Mahsulotlardan biri topilmadi yoki nofaol',
     'invalid_qty' => 'Miqdor noto\'g\'ri kiritilgan',
     'insufficient_stock' => 'Ombordagi qoldiq yetarli emas: :product',

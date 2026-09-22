@@ -102,7 +102,9 @@ class Purchase
 
             return $purchaseId;
         } catch (Throwable $e) {
-            $pdo->rollBack();
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             throw $e;
         }
     }

@@ -10,6 +10,7 @@ use App\Core\View;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Supplier;
+use PDOException;
 use RuntimeException;
 
 class PurchaseController
@@ -82,6 +83,9 @@ class PurchaseController
 
         try {
             Purchase::create($shopId, $userId, $supplierId, $items, $note !== '' ? $note : null, $updateCostPrice);
+        } catch (PDOException $e) {
+            flash('error', t('unexpected_error'));
+            redirect('/purchases/create');
         } catch (RuntimeException $e) {
             flash('error', t($e->getMessage()));
             redirect('/purchases/create');

@@ -15,6 +15,7 @@ use App\Models\Refund;
 use App\Models\Report;
 use App\Models\Sale;
 use App\Models\Shop;
+use PDOException;
 use RuntimeException;
 
 class SaleController
@@ -218,6 +219,14 @@ class SaleController
 
         try {
             $saleId = Sale::create($shopId, $cashierId, $items, $naqdAmount, $kartaAmount, $discount, $customerId);
+        } catch (PDOException $e) {
+            // A raw driver-level failure (e.g. a lock-contention edge case) —
+            // never shown to the user verbatim, since PDOException extends
+            // RuntimeException and would otherwise fall into the branch below
+            // and get treated as one of Sale::create()'s own translation keys.
+            flash('error', t('unexpected_error'));
+            keep_old($old);
+            redirect('/sales/new');
         } catch (RuntimeException $e) {
             // Sale::create() throws either a plain translation key (e.g.
             // 'insufficient_stock') or 'insufficient_stock:Product name' when it
@@ -324,6 +333,9 @@ class SaleController
 
         try {
             $refundId = Refund::create($shopId, (int) $id, $userId, $lines, $reason !== '' ? $reason : null);
+        } catch (PDOException $e) {
+            flash('error', t('unexpected_error'));
+            redirect("/sales/{$id}/refund");
         } catch (RuntimeException $e) {
             flash('error', t($e->getMessage()));
             redirect("/sales/{$id}/refund");

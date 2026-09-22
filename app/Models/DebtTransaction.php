@@ -68,7 +68,7 @@ class DebtTransaction
                 $pdo->commit();
             }
         } catch (Throwable $e) {
-            if ($ownsTransaction) {
+            if ($ownsTransaction && $pdo->inTransaction()) {
                 $pdo->rollBack();
             }
             throw $e;
