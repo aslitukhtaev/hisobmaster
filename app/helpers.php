@@ -198,4 +198,24 @@ function log_exception(\Throwable $e): void
         $e->getLine(),
         "\n" . $e->getTraceAsString()
     ));
+
+    // TEMPORARY (remove once the production "There is no active transaction"
+    // bug is root-caused): this host's PHP error_log isn't reachable from
+    // the hosting panel or the account's own ~/logs, so this mirrors the
+    // same detail into database/ — never web-served (only public/ is, same
+    // as .env and the .db file), readable only via the account's own SSH
+    // shell.
+    @file_put_contents(
+        BASE_PATH . '/database/debug.log',
+        sprintf(
+            "[%s] %s: %s in %s:%d\n%s\n\n",
+            date('Y-m-d H:i:s'),
+            get_class($e),
+            $e->getMessage(),
+            $e->getFile(),
+            $e->getLine(),
+            $e->getTraceAsString()
+        ),
+        FILE_APPEND | LOCK_EX
+    );
 }
