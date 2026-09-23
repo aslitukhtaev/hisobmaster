@@ -116,9 +116,9 @@ $showAttendance = $shopId !== null;
     <div class="low-stock-tile-body">
         <div class="low-stock-tile-title"><?= e(t('low_stock_alert_title')) ?></div>
         <div class="muted">
-            <?= (int) $lowStockCounts['low'] ?> <?= e(t('low_stock_count_label')) ?>
+            <?= e(count_label((int) $lowStockCounts['low'], 'low_stock_count_label')) ?>
             <?php if ($lowStockCounts['out'] > 0): ?>
-                · <?= (int) $lowStockCounts['out'] ?> <?= e(t('out_of_stock_count_label')) ?>
+                · <?= e(count_label((int) $lowStockCounts['out'], 'out_of_stock_count_label')) ?>
             <?php endif; ?>
         </div>
     </div>

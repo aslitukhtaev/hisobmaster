@@ -8,7 +8,7 @@
 </section>
 
 <form method="post" action="/sales/<?= (int) $sale['id'] ?>/refund" class="stack" id="refund-form"
-      onsubmit="return confirm('<?= e(t('confirm_refund')) ?>');">
+      data-confirm="<?= e(t('confirm_refund')) ?>">
     <?= csrf_field() ?>
 
     <div class="card table-card">
@@ -26,14 +26,16 @@
                 <tbody>
                 <?php foreach ($lines as $line): $remaining = (float) $line['remaining_qty']; ?>
                     <tr data-unit-price="<?= (float) $line['unit_price'] ?>">
-                        <td data-label="<?= e(t('product_name')) ?>"><?= e($line['product_name']) ?><?= !empty($line['variant_label']) ? ' — ' . e($line['variant_label']) : '' ?></td>
+                        <td data-label="<?= e(t('product_name')) ?>" class="cell-wrap"><?= e($line['product_name']) ?><?= !empty($line['variant_label']) ? ' — ' . e($line['variant_label']) : '' ?></td>
                         <td data-label="<?= e(t('sold_qty_label')) ?>"><?= e(format_qty((float) $line['qty'])) ?></td>
                         <td data-label="<?= e(t('already_refunded_label')) ?>"><?= e(format_qty((float) $line['refunded_qty'])) ?></td>
                         <td data-label="<?= e(t('remaining_qty_label')) ?>"><?= e(format_qty($remaining)) ?></td>
                         <td data-label="<?= e(t('refund_qty_label')) ?>">
                             <?php if ($remaining > 0): ?>
+                                <?php $wholeOnly = !unit_allows_fraction($line['unit'] ?? null) && is_whole_number($remaining); ?>
                                 <input type="number" class="refund-qty-input" name="qty[<?= (int) $line['id'] ?>]"
-                                       min="0" max="<?= $remaining ?>" step="0.01" value="0" inputmode="decimal"
+                                       min="0" max="<?= $remaining ?>" step="<?= $wholeOnly ? '1' : 'any' ?>" value="0"
+                                       inputmode="<?= $wholeOnly ? 'numeric' : 'decimal' ?>" data-whole="<?= $wholeOnly ? '1' : '0' ?>"
                                        aria-label="<?= e(t('refund_qty_label')) ?> — <?= e($line['product_name']) ?>">
                             <?php else: ?>
                                 <span class="muted">—</span>
@@ -53,10 +55,11 @@
 
     <div class="cart-total-row">
         <span><?= e(t('estimated_refund_total_label')) ?></span>
-        <strong id="refund-total-preview">0 so'm</strong>
+        <strong id="refund-total-preview">0 <?= e(t('currency_symbol')) ?></strong>
     </div>
 
     <button type="submit" class="btn btn-primary btn-block" id="refund-submit-btn" disabled><?= e(t('refund_action')) ?></button>
 </form>
 
+<script nonce="<?= e(csp_nonce()) ?>">window.HM_CURRENCY = <?= json_encode(t('currency_symbol'), JSON_UNESCAPED_UNICODE) ?>;</script>
 <script src="<?= asset('js/refund.js') ?>" defer></script>

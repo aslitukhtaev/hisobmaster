@@ -88,6 +88,14 @@ class ProductVariant
         ]);
     }
 
+    /** Purchase flow's "update cost price" for a variant line (see Purchase::create()). */
+    public static function updateCostPrice(int $id, int $shopId, float $costPrice): void
+    {
+        Database::connect()
+            ->prepare('UPDATE product_variants SET cost_price = ? WHERE id = ? AND shop_id = ?')
+            ->execute([$costPrice, $id, $shopId]);
+    }
+
     public static function setStatus(int $id, int $shopId, string $status): void
     {
         Database::connect()

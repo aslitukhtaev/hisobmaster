@@ -74,8 +74,7 @@ class ExpenseController
         $expense = Expense::find((int) $id, $shopId);
 
         if (!$expense) {
-            flash('error', t('expense_not_found'));
-            redirect('/expenses');
+            abort_404();
         }
 
         View::render('expenses/edit', [
@@ -150,6 +149,26 @@ class ExpenseController
 
         if (!is_numeric($amount) || (float) $amount <= 0) {
             flash('error', t('values_must_be_positive'));
+            keep_old($old);
+            return null;
+        }
+
+        if (!valid_money($amount, false)) {
+            flash('error', t('amount_too_large'));
+            keep_old($old);
+            return null;
+        }
+
+        // A real calendar date, and not one that hasn't happened yet: an
+        // expense dated 2030 would silently skew every future report.
+        $parsedDate = \DateTimeImmutable::createFromFormat('!Y-m-d', $expenseDate);
+        if ($parsedDate === false || $parsedDate->format('Y-m-d') !== $expenseDate || $expenseDate < '2000-01-01') {
+            flash('error', t('expense_date_invalid'));
+            keep_old($old);
+            return null;
+        }
+        if ($expenseDate > date('Y-m-d')) {
+            flash('error', t('expense_date_future'));
             keep_old($old);
             return null;
         }

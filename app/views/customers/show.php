@@ -59,10 +59,11 @@ $isOverdue = $dueDate !== null && $dueDate !== '' && $dueDate < date('Y-m-d') &&
         <p class="muted" id="reminder-copy-status" role="status" aria-live="polite"></p>
     </div>
 </div>
-<script>
+<script nonce="<?= e(csp_nonce()) ?>">
     window.HM_REMINDER = {
         message: <?= json_encode($reminderMessage, JSON_UNESCAPED_UNICODE) ?>,
         phone: <?= json_encode($customer['phone'] ?? '', JSON_UNESCAPED_UNICODE) ?>,
+        phoneIntl: <?= json_encode(phone_digits_international($customer['phone'] ?? ''), JSON_UNESCAPED_UNICODE) ?>,
         copiedLabel: <?= json_encode(t('message_copied'), JSON_UNESCAPED_UNICODE) ?>,
         copyFailedLabel: <?= json_encode(t('copy_failed'), JSON_UNESCAPED_UNICODE) ?>
     };

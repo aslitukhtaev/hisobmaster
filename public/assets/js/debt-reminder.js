@@ -18,8 +18,14 @@
         return textEl ? textEl.value : (data.message || '');
     }
 
-    function digitsOnly(phone) {
-        return String(phone || '').replace(/[^0-9]/g, '');
+    // wa.me needs the full international number without "+". Phones are
+    // stored as +998XXXXXXXXX now (normalize_phone()), but one saved
+    // earlier may be a bare 9-digit local number, which WhatsApp would
+    // treat as a foreign one — so it gets Uzbekistan's 998 (the server
+    // already sends this as phoneIntl; this is the fallback).
+    function internationalDigits(phone) {
+        var digits = String(phone || '').replace(/[^0-9]/g, '');
+        return digits.length === 9 ? '998' + digits : digits;
     }
 
     // iOS's SMS composer only accepts a "&body=" separator after the number;
@@ -46,12 +52,12 @@
     function updateLinks() {
         var message = currentMessage();
         var encoded = encodeURIComponent(message);
-        var phoneDigits = digitsOnly(data.phone);
+        var phoneDigits = data.phoneIntl || internationalDigits(data.phone);
 
         if (smsBtn) {
             if (data.phone) {
                 var sep = isIOS() ? '&' : '?';
-                smsBtn.href = 'sms:' + encodeURIComponent(data.phone) + sep + 'body=' + encoded;
+                smsBtn.href = 'sms:' + encodeURIComponent(phoneDigits ? '+' + phoneDigits : data.phone) + sep + 'body=' + encoded;
                 setDisabled(smsBtn, false);
             } else {
                 setDisabled(smsBtn, true);

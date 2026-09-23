@@ -46,6 +46,14 @@ class CustomerController
             redirect('/customers/create');
         }
 
+        $normalizedPhone = normalize_phone($phone);
+        if ($normalizedPhone === null) {
+            flash('error', t('phone_invalid'));
+            keep_old(['full_name' => $fullName, 'phone' => $phone, 'note' => $note]);
+            redirect('/customers/create');
+        }
+        $phone = $normalizedPhone;
+
         $id = Customer::create($shopId, $fullName, $phone !== '' ? $phone : null, $note !== '' ? $note : null);
 
         flash('success', t('customer_created'));
@@ -58,8 +66,7 @@ class CustomerController
         $customer = Customer::find((int) $id, $shopId);
 
         if (!$customer) {
-            flash('error', t('customer_not_found'));
-            redirect('/customers');
+            abort_404();
         }
 
         $balance = DebtTransaction::currentBalance((int) $id);
@@ -102,8 +109,7 @@ class CustomerController
         $customer = Customer::find((int) $id, $shopId);
 
         if (!$customer) {
-            flash('error', t('customer_not_found'));
-            redirect('/customers');
+            abort_404();
         }
 
         View::render('customers/edit', ['customer' => $customer]);
@@ -139,9 +145,17 @@ class CustomerController
             redirect("/customers/{$id}/edit");
         }
 
+        $normalizedPhone = normalize_phone($phone);
+        if ($normalizedPhone === null) {
+            flash('error', t('phone_invalid'));
+            keep_old($old);
+            redirect("/customers/{$id}/edit");
+        }
+        $phone = $normalizedPhone;
+
         $creditLimit = null;
         if ($creditLimitInput !== '') {
-            if (!is_numeric($creditLimitInput) || (float) $creditLimitInput < 0) {
+            if (!valid_money($creditLimitInput)) {
                 flash('error', t('credit_limit_invalid'));
                 keep_old($old);
                 redirect("/customers/{$id}/edit");
@@ -175,7 +189,8 @@ class CustomerController
             redirect('/customers');
         }
 
-        $amount = (float) $request->input('amount', 0);
+        $amountRaw = $request->input('amount', 0);
+        $amount = is_numeric($amountRaw) && valid_money($amountRaw) ? (float) $amountRaw : 0.0;
         $balance = DebtTransaction::currentBalance((int) $id);
 
         if ($amount <= 0) {

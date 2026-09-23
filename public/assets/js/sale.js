@@ -7,9 +7,11 @@
     var oldCart = window.HM_OLD_CART || [];
     var oldSale = window.HM_OLD_SALE || {};
 
-    // Units a product can be sold in fractional amounts of (checked
-    // case-insensitively). Anything else ("dona", "pcs", ...) stays whole-unit
-    // only, exactly like before.
+    var canDiscount = window.HM_CAN_DISCOUNT !== false;
+
+    // Whether a product may be sold in fractional amounts comes from the
+    // server (unit_allows_fraction(), the same rule Sale::create() enforces);
+    // this list is only the fallback for a product row without that flag.
     var FRACTIONAL_UNITS = ['kg', 'litr', 'l', 'metr', 'm'];
     var FRACTIONAL_STEP = 0.1;
 
@@ -61,6 +63,15 @@
     var saleFormEl = document.getElementById('sale-form');
     var naqdAmountInputEl = document.getElementById('naqd-amount-input');
     var kartaAmountInputEl = document.getElementById('karta-amount-input');
+    var changeRowEl = document.getElementById('change-row');
+    var changeAmountEl = document.getElementById('change-amount');
+    var discountErrorEl = document.getElementById('discount-error');
+    var formErrorEl = document.getElementById('sale-form-error');
+
+    // Set by renderCart() when the discount would leave nothing (or less
+    // than nothing) to pay — Sale::create() rejects that, so the form does
+    // too instead of letting the cashier find out after a round trip.
+    var discountTooLarge = false;
 
     function escapeHtml(str) {
         var div = document.createElement('div');
@@ -86,6 +97,19 @@
 
     function isFractionalUnit(unit) {
         return FRACTIONAL_UNITS.indexOf(String(unit || '').toLowerCase()) !== -1;
+    }
+
+    function isFractionalProduct(product) {
+        return typeof product.fractional === 'boolean' ? product.fractional : isFractionalUnit(product.unit);
+    }
+
+    function showFormError(message) {
+        if (!formErrorEl) {
+            alert(message);
+            return;
+        }
+        formErrorEl.textContent = message;
+        formErrorEl.hidden = !message;
     }
 
     function productById(id) {
@@ -120,6 +144,7 @@
             variant: variant,
             name: variant ? (product.name + ' — ' + variant.label) : product.name,
             unit: product.unit,
+            fractional: isFractionalProduct(product),
             price: variant ? variant.price : product.price,
             stock: variant ? variant.stock : product.stock
         };
@@ -130,10 +155,84 @@
         if (!q) {
             return products;
         }
+        function has(value) {
+            return value !== null && value !== undefined && String(value).toLowerCase().indexOf(q) !== -1;
+        }
         return products.filter(function (p) {
-            return p.name.toLowerCase().indexOf(q) !== -1 ||
-                (p.barcode && String(p.barcode).toLowerCase().indexOf(q) !== -1);
+            return has(p.name) || has(p.barcode) || (p.variants || []).some(function (v) {
+                return has(v.label) || has(v.barcode);
+            });
         });
+    }
+
+    /**
+     * The one product/variant whose barcode is exactly `code` — what a
+     * hardware scanner types (followed by Enter) or the camera reads.
+     * Barcodes are unique per shop (Product::barcodeTaken()), so there is at
+     * most one. A variant-bearing product's own barcode resolves to its only
+     * variant when it has just one; with several it can't pick for the
+     * cashier and returns null (the filtered list then shows the choices).
+     */
+    function findByExactBarcode(code) {
+        var q = String(code || '').trim();
+        if (!q) {
+            return null;
+        }
+        for (var i = 0; i < products.length; i++) {
+            var p = products[i];
+            var variants = p.variants || [];
+            for (var j = 0; j < variants.length; j++) {
+                if (variants[j].barcode && String(variants[j].barcode) === q) {
+                    return { productId: p.id, variantId: variants[j].id };
+                }
+            }
+            if (p.barcode && String(p.barcode) === q) {
+                if (variants.length === 0) {
+                    return { productId: p.id, variantId: null };
+                }
+                if (variants.length === 1) {
+                    return { productId: p.id, variantId: variants[0].id };
+                }
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Enter in the search box / a camera scan: an exact barcode goes straight
+     * into the cart; otherwise a single unambiguous match (a plain product,
+     * or a product with exactly one variant) does. Anything else leaves the
+     * filtered list on screen to pick from.
+     */
+    function addFromSearch() {
+        var query = searchEl.value;
+        var target = findByExactBarcode(query);
+
+        if (!target) {
+            var matches = filterProducts(query);
+            if (matches.length === 1) {
+                var only = matches[0];
+                var vs = only.variants || [];
+                if (vs.length === 0) {
+                    target = { productId: only.id, variantId: null };
+                } else if (vs.length === 1) {
+                    target = { productId: only.id, variantId: vs[0].id };
+                }
+            } else if (matches.length === 0 && String(query || '').trim() !== '') {
+                productListEl.innerHTML = '<p class="muted">' +
+                    escapeHtml((i18n.scanNotFound || '').replace(':code', String(query).trim())) + '</p>';
+                searchEl.select();
+                return;
+            }
+        }
+
+        if (target) {
+            addToCart(target.productId, target.variantId);
+            searchEl.value = '';
+            renderProducts();
+            searchEl.focus();
+        }
     }
 
     function renderProducts() {
@@ -212,7 +311,7 @@
         if (!resolved) {
             return;
         }
-        var step = isFractionalUnit(resolved.unit) ? FRACTIONAL_STEP : 1;
+        var step = resolved.fractional ? FRACTIONAL_STEP : 1;
         var next = roundQty(entry.qty + direction * step);
 
         if (next <= 0) {
@@ -235,7 +334,7 @@
         if (!resolved) {
             return;
         }
-        var next = roundQty(qty);
+        var next = resolved.fractional ? roundQty(qty) : Math.round(qty);
         if (next <= 0) {
             cart.delete(key);
         } else {
@@ -260,6 +359,9 @@
     }
 
     function discountAmount(subtotal) {
+        if (!canDiscount) {
+            return 0;
+        }
         if (discountMode === 'percent') {
             var pct = Math.max(0, Math.min(100, parseFloat(discountInputEl.value) || 0));
             return Math.round(subtotal * pct / 100 * 100) / 100;
@@ -271,10 +373,9 @@
         if (cart.size === 0) {
             cartListEl.innerHTML = '';
             cartEmptyMsgEl.style.display = 'block';
-            completeBtnEl.disabled = true;
         } else {
             cartEmptyMsgEl.style.display = 'none';
-            completeBtnEl.disabled = false;
+            showFormError('');
 
             var rows = [];
             cart.forEach(function (entry, key) {
@@ -284,7 +385,7 @@
                 }
                 var qty = entry.qty;
                 var lineTotal = resolved.price * qty;
-                var fractional = isFractionalUnit(resolved.unit);
+                var fractional = resolved.fractional;
                 var qtyControl = fractional
                     ? '<input type="number" class="qty-direct-input" data-key="' + key + '" min="0.01" max="' + resolved.stock + '" step="0.01" value="' + qty + '" inputmode="decimal" aria-label="' + escapeHtml(i18n.editQty || '') + ' — ' + escapeHtml(resolved.name) + '">'
                     : '<span>' + escapeHtml(formatQty(qty)) + '</span>';
@@ -310,6 +411,10 @@
 
         var subtotal = cartSubtotal();
         discount = discountAmount(subtotal);
+        discountTooLarge = discount > 0 && discount >= subtotal - 0.005;
+        if (discountErrorEl) {
+            discountErrorEl.hidden = !discountTooLarge;
+        }
         var total = Math.max(0, Math.round((subtotal - discount) * 100) / 100);
         cartTotalEl.textContent = formatMoney(total);
         document.getElementById('discount-field').value = discount;
@@ -333,8 +438,11 @@
     // Keeps naqd/karta amounts consistent with the live total and with each
     // other: a preset re-syncs its field to the current total on every
     // render (so the common single-payment case just tracks the cart as it
-    // changes); free/custom edits are clamped so naqd+karta never exceed the
-    // total, and whatever's left over becomes the qarz (debt) remainder.
+    // changes); free/custom edits are clamped so the card amount never
+    // exceeds what's left, and whatever's left over becomes the qarz (debt)
+    // remainder. Cash is the exception: the customer may hand over more than
+    // is owed, so a typed naqd amount above the total is kept as-is and the
+    // difference is shown as change (Sale::create() applies the same rule).
     function applyPayments(total) {
         if (activePreset === 'naqd') {
             naqdAmount = total;
@@ -349,8 +457,15 @@
             kartaAmount = Math.max(0, Math.min(kartaAmount, total));
             naqdAmount = Math.max(0, Math.min(naqdAmount, Math.round((total - kartaAmount) * 100) / 100));
         } else {
-            naqdAmount = Math.max(0, Math.min(naqdAmount, total));
-            kartaAmount = Math.max(0, Math.min(kartaAmount, Math.round((total - naqdAmount) * 100) / 100));
+            naqdAmount = Math.max(0, naqdAmount);
+            kartaAmount = Math.max(0, Math.min(kartaAmount, Math.round((total - Math.min(naqdAmount, total)) * 100) / 100));
+        }
+
+        var naqdApplied = Math.max(0, Math.min(naqdAmount, Math.round((total - kartaAmount) * 100) / 100));
+        var change = Math.max(0, Math.round((naqdAmount - naqdApplied) * 100) / 100);
+        if (changeRowEl) {
+            changeRowEl.hidden = !(change > 0 && cart.size > 0);
+            changeAmountEl.textContent = formatMoney(change);
         }
 
         naqdAmountInputEl.value = naqdAmount;
@@ -362,7 +477,7 @@
             btn.classList.toggle('active', btn.getAttribute('data-preset') === activePreset);
         });
 
-        var remaining = Math.max(0, Math.round((total - naqdAmount - kartaAmount) * 100) / 100);
+        var remaining = Math.max(0, Math.round((total - naqdApplied - kartaAmount) * 100) / 100);
         debtFieldsEl.style.display = remaining > 0 ? 'block' : 'none';
 
         var labelText = (i18n.debtRemainingLabel || 'Debt: :amount').replace(':amount', formatMoney(remaining));
@@ -434,17 +549,12 @@
     searchEl.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            var matches = filterProducts(searchEl.value);
-            // Enter-to-add only applies to a single unambiguous plain-product
-            // match; a product with variants still needs an explicit tap on
-            // the variant the cashier means.
-            if (matches.length === 1 && (!matches[0].variants || matches[0].variants.length === 0)) {
-                addToCart(matches[0].id, null);
-                searchEl.value = '';
-                renderProducts();
-            }
+            addFromSearch();
         }
     });
+    // Camera scans (barcode-scan.js) land here the same way a hardware
+    // scanner's "code + Enter" does.
+    searchEl.addEventListener('barcode-scanned', addFromSearch);
 
     cartListEl.addEventListener('click', function (e) {
         var btn = e.target.closest('button[data-action]');
@@ -483,7 +593,7 @@
             }
             discountMode = mode;
             discountInputEl.value = 0;
-            discountInputEl.setAttribute('max', mode === 'percent' ? '100' : '');
+            discountInputEl.setAttribute('max', mode === 'percent' ? '99.99' : discountInputEl.getAttribute('data-max-amount') || '');
             document.querySelectorAll('.discount-mode-btn').forEach(function (b) {
                 b.classList.toggle('active', b === btn);
             });
@@ -528,6 +638,14 @@
     saleFormEl.addEventListener('submit', function (e) {
         if (cart.size === 0) {
             e.preventDefault();
+            showFormError(i18n.emptyCart || 'Cart is empty');
+            searchEl.focus();
+            return;
+        }
+        if (discountTooLarge) {
+            e.preventDefault();
+            showFormError(i18n.discountTooLarge || 'Discount is too large');
+            discountInputEl.focus();
             return;
         }
         if (creditLimitExceeded && !confirm(i18n.confirmExceedCreditLimit || 'This sale exceeds the customer\'s credit limit. Continue?')) {

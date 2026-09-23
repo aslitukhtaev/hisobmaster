@@ -4,7 +4,7 @@
         <?= csrf_field() ?>
         <label class="field">
             <span><?= e(t('amount')) ?></span>
-            <input type="number" step="0.01" min="0.01" inputmode="decimal" name="amount" required autofocus
+            <input type="number" step="0.01" min="0.01" max="<?= MONEY_MAX ?>" inputmode="decimal" name="amount" required autofocus
                    value="<?= e(old('amount', isset($expense['amount']) ? (string) $expense['amount'] : '')) ?>">
         </label>
         <label class="field">
@@ -19,7 +19,7 @@
         </label>
         <label class="field">
             <span><?= e(t('expense_date_label')) ?></span>
-            <input type="date" name="expense_date" required
+            <input type="date" name="expense_date" required min="2000-01-01" max="<?= e(date('Y-m-d')) ?>"
                    value="<?= e(old('expense_date', $expense['expense_date'] ?? date('Y-m-d'))) ?>">
         </label>
         <label class="field">

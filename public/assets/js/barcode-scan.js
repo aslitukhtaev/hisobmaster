@@ -98,6 +98,9 @@
                     targetInput.value = value;
                     targetInput.dispatchEvent(new Event('input', { bubbles: true }));
                     targetInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    // Lets a page act on a completed scan the way it would on
+                    // a hardware scanner's Enter (the POS adds the item).
+                    targetInput.dispatchEvent(new CustomEvent('barcode-scanned', { bubbles: true, detail: { code: value } }));
                     close();
                     return;
                 }

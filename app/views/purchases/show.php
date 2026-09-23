@@ -39,7 +39,7 @@
             <tbody>
             <?php foreach ($items as $item): ?>
                 <tr>
-                    <td><?= e($item['product_name']) ?></td>
+                    <td class="cell-wrap"><?= e($item['product_name']) ?><?= !empty($item['variant_label']) ? ' — ' . e($item['variant_label']) : '' ?></td>
                     <td data-label="<?= e(t('qty_short')) ?>"><?= e(format_qty((float) $item['qty'])) ?> <?= e($item['unit']) ?></td>
                     <td data-label="<?= e(t('unit_cost_label')) ?>"><?= money((float) $item['unit_cost']) ?></td>
                     <td data-label="<?= e(t('sum')) ?>"><?= money((float) $item['subtotal']) ?></td>

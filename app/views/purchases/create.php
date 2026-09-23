@@ -55,7 +55,7 @@
 
         <div class="cart-total-row">
             <span><?= e(t('total')) ?></span>
-            <strong id="purchase-total">0 so'm</strong>
+            <strong id="purchase-total">0 <?= e(t('currency_symbol')) ?></strong>
         </div>
 
         <input type="hidden" name="items" id="purchase-items-field" value="[]">
@@ -63,13 +63,13 @@
     </form>
 </div>
 
-<script>
+<script nonce="<?= e(csp_nonce()) ?>">
     window.HM_PURCHASE_PRODUCTS = <?= $productsJson ?>;
     window.HM_PURCHASE_I18N = {
         removeRow: <?= json_encode(t('remove_row'), JSON_UNESCAPED_UNICODE) ?>,
         packsLabel: <?= json_encode(t('packs_label'), JSON_UNESCAPED_UNICODE) ?>,
         packHint: <?= json_encode(t('pack_size_example'), JSON_UNESCAPED_UNICODE) ?>,
-        currency: "so'm"
+        currency: <?= json_encode(t('currency_symbol'), JSON_UNESCAPED_UNICODE) ?>
     };
 </script>
 <script src="<?= asset('js/purchase.js') ?>" defer></script>

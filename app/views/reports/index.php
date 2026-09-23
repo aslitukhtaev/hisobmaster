@@ -229,7 +229,7 @@ $comparisonMetrics = [
                 <tbody>
                 <?php foreach ($topProducts as $row): ?>
                     <tr>
-                        <td><?= e($row['product_name']) ?></td>
+                        <td class="cell-wrap"><?= e($row['product_name']) ?></td>
                         <td data-label="<?= e(t('qty_sold')) ?>"><?= e(format_qty((float) $row['qty_sold'])) ?></td>
                         <td data-label="<?= e(t('revenue')) ?>"><?= money((float) $row['revenue']) ?></td>
                     </tr>

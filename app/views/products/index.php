@@ -3,8 +3,8 @@
     <div>
         <h1><?= e(t('products')) ?></h1>
         <p class="muted">
-            <?= (int) $counts['total'] ?> <?= e(t('products_count_label')) ?> ·
-            <?= (int) $counts['active'] ?> <?= e(t('active_label')) ?>
+            <?= e(count_label((int) $counts['total'], 'products_count_label')) ?> ·
+            <?= e(count_label((int) $counts['active'], 'active_count_label')) ?>
         </p>
     </div>
     <div class="row-actions">
@@ -61,20 +61,25 @@
                     $effectiveThreshold = $product['low_stock_threshold'] !== null
                         ? (float) $product['low_stock_threshold']
                         : $shopDefaultThreshold;
-                    $isLowStock = $effectiveThreshold !== null && (float) $product['stock_qty'] <= $effectiveThreshold;
+                    $stock = (float) $product['effective_stock'];
+                    $variantCount = (int) $product['variant_count'];
+                    $isLowStock = $effectiveThreshold !== null && $stock <= $effectiveThreshold;
                 ?>
                     <tr>
-                        <td><?= e($product['name']) ?></td>
+                        <td class="cell-wrap"><?= e($product['name']) ?></td>
                         <td class="muted" data-label="<?= e(t('category')) ?>"><?= e($product['category_name'] ?? '—') ?></td>
                         <?php if (can('prices')): ?>
                             <td data-label="<?= e(t('cost_price')) ?>"><?= money((float) $product['cost_price']) ?></td>
                         <?php endif; ?>
                         <td data-label="<?= e(t('sell_price')) ?>"><?= money((float) $product['sell_price']) ?></td>
                         <td data-label="<?= e(t('stock_qty')) ?>">
-                            <?= e(format_qty((float) $product['stock_qty'])) ?> <?= e($product['unit']) ?>
+                            <?= e(format_qty($stock)) ?> <?= e($product['unit']) ?>
+                            <?php if ($variantCount > 0): ?>
+                                <span class="muted stock-variant-note"><?= e(t('variants_count_label', ['count' => $variantCount])) ?></span>
+                            <?php endif; ?>
                             <?php if ($isLowStock): ?>
                                 <span class="stock-low-badge" title="<?= e(t('low_stock_badge_title')) ?>">
-                                    <?= e((float) $product['stock_qty'] <= 0 ? t('out_of_stock_badge') : t('low_stock_badge')) ?>
+                                    <?= e($stock <= 0 ? t('out_of_stock_badge') : t('low_stock_badge')) ?>
                                 </span>
                             <?php endif; ?>
                         </td>
@@ -87,7 +92,7 @@
                             <div class="row-actions">
                                 <a href="/products/<?= (int) $product['id'] ?>/edit" class="btn btn-ghost btn-sm"><?= e(t('edit')) ?></a>
                                 <form method="post" action="/products/<?= (int) $product['id'] ?>/toggle-status"
-                                      onsubmit="return confirm('<?= e($product['status'] === 'active' ? t('confirm_deactivate') : t('confirm_activate_product')) ?>');">
+                                      data-confirm="<?= e($product['status'] === 'active' ? t('confirm_deactivate') : t('confirm_activate_product')) ?>">
                                     <?= csrf_field() ?>
                                     <button type="submit" class="btn btn-ghost btn-sm">
                                         <?= e($product['status'] === 'active' ? t('deactivate') : t('toggle_activate')) ?>

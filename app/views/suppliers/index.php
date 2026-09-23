@@ -2,7 +2,7 @@
 <section class="page-head page-head-row">
     <div>
         <h1><?= e(t('suppliers')) ?></h1>
-        <p class="muted"><?= count($suppliers) ?> <?= e(t('suppliers_count_label')) ?></p>
+        <p class="muted"><?= e(count_label(count($suppliers), 'suppliers_count_label')) ?></p>
     </div>
     <div class="row-actions">
         <a href="/purchases" class="btn btn-ghost"><?= e(t('purchase_history')) ?></a>
@@ -33,7 +33,7 @@
                 <tbody>
                 <?php foreach ($suppliers as $supplier): ?>
                     <tr>
-                        <td><?= e($supplier['name']) ?></td>
+                        <td class="cell-wrap"><?= e($supplier['name']) ?></td>
                         <td data-label="<?= e(t('phone')) ?>" class="muted"><?= e($supplier['phone'] ?? '—') ?></td>
                         <td data-label="<?= e(t('address')) ?>" class="muted"><?= e($supplier['address'] ?? '—') ?></td>
                         <td data-label="<?= e(t('actions')) ?>">

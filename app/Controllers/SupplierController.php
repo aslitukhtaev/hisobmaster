@@ -46,8 +46,7 @@ class SupplierController
         $supplier = Supplier::find((int) $id, $shopId);
 
         if (!$supplier) {
-            flash('error', t('supplier_not_found'));
-            redirect('/suppliers');
+            abort_404();
         }
 
         View::render('suppliers/edit', ['supplier' => $supplier]);
@@ -89,6 +88,14 @@ class SupplierController
             keep_old(['name' => $name, 'phone' => $phone, 'address' => $address, 'note' => $note]);
             return null;
         }
+
+        $normalizedPhone = normalize_phone($phone);
+        if ($normalizedPhone === null) {
+            flash('error', t('phone_invalid'));
+            keep_old(['name' => $name, 'phone' => $phone, 'address' => $address, 'note' => $note]);
+            return null;
+        }
+        $phone = $normalizedPhone;
 
         return [
             'name' => $name,

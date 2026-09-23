@@ -68,6 +68,20 @@ $debtAmount = round((float) $sale['total'] - (float) $sale['paid_amount'], 2);
         <div class="receipt-line"><span><?= e(t('payment_type')) ?></span><span><?= e(t('payment_' . $sale['payment_type'])) ?></span></div>
     <?php endif; ?>
 
+    <?php
+    $cashReceived = isset($sale['cash_received']) && $sale['cash_received'] !== null ? (float) $sale['cash_received'] : 0.0;
+    if ($cashReceived > 0):
+        $naqdPaid = 0.0;
+        foreach ($payments as $payment) {
+            if ($payment['payment_type'] === 'naqd') {
+                $naqdPaid += (float) $payment['amount'];
+            }
+        }
+    ?>
+        <div class="receipt-line"><span><?= e(t('cash_received_label')) ?></span><span><?= money($cashReceived) ?></span></div>
+        <div class="receipt-line"><span><?= e(t('change_due')) ?></span><span><?= money(max(0.0, $cashReceived - $naqdPaid)) ?></span></div>
+    <?php endif; ?>
+
     <?php if ($debtAmount > 0): ?>
         <?php if (count($payments) <= 1): ?>
             <div class="receipt-line"><span><?= e(t('paid_now')) ?></span><span><?= money((float) $sale['paid_amount']) ?></span></div>

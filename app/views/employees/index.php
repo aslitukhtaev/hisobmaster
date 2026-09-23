@@ -2,7 +2,7 @@
 <section class="page-head page-head-row">
     <div>
         <h1><?= e(t('employees')) ?></h1>
-        <p class="muted"><?= count($employees) ?> <?= e(t('employees_count_label')) ?></p>
+        <p class="muted"><?= e(count_label(count($employees), 'employees_count_label')) ?></p>
     </div>
     <div class="row-actions">
         <a href="/employees/attendance" class="btn btn-ghost"><?= e(t('attendance_history_title')) ?></a>
@@ -18,7 +18,7 @@
         <div class="invite-row">
             <span class="muted"><?= e(t('expires_at_label')) ?>: <?= e(local_datetime($invite['expires_at'])) ?></span>
             <form method="post" action="/employees/invites/<?= (int) $invite['id'] ?>/revoke"
-                  onsubmit="return confirm('<?= e(t('confirm_revoke_invite')) ?>');">
+                  data-confirm="<?= e(t('confirm_revoke_invite')) ?>">
                 <?= csrf_field() ?>
                 <button type="submit" class="btn btn-ghost btn-sm"><?= e(t('revoke_invite')) ?></button>
             </form>
@@ -74,7 +74,7 @@
                             <div class="row-actions">
                                 <a href="/employees/<?= (int) $employee['id'] ?>/edit" class="btn btn-ghost btn-sm"><?= e(t('edit_permissions')) ?></a>
                                 <form method="post" action="/employees/<?= (int) $employee['id'] ?>/toggle-status"
-                                      onsubmit="return confirm('<?= e($employee['status'] === 'active' ? t('confirm_block_employee') : t('confirm_activate_employee')) ?>');">
+                                      data-confirm="<?= e($employee['status'] === 'active' ? t('confirm_block_employee') : t('confirm_activate_employee')) ?>">
                                     <?= csrf_field() ?>
                                     <button type="submit" class="btn btn-ghost btn-sm">
                                         <?= e($employee['status'] === 'active' ? t('toggle_block') : t('toggle_activate')) ?>

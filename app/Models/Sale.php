@@ -48,8 +48,12 @@ class Sale
                     throw new RuntimeException('invalid_product');
                 }
 
-                if ($qty <= 0) {
+                if ($qty <= 0 || $qty > QTY_MAX) {
                     throw new RuntimeException('invalid_qty');
+                }
+
+                if (!qty_fits_unit($qty, $product['unit'])) {
+                    throw new RuntimeException('qty_must_be_whole_product:' . $product['name']);
                 }
 
                 $variant = null;
@@ -91,16 +95,31 @@ class Sale
                 ];
             }
 
-            $discount = max(0.0, min($discount, $subtotal));
+            // A discount has to leave something to pay: 100% (or more than
+            // the cart is worth) is never a discount, it's a giveaway, and a
+            // negative one would be a hidden surcharge.
+            if ($discount < 0 || !is_finite($discount)) {
+                throw new RuntimeException('invalid_discount');
+            }
+            if ($discount > 0 && $discount >= $subtotal - 0.005) {
+                throw new RuntimeException('discount_too_large');
+            }
+            $discount = round($discount, 2);
             $total = round($subtotal - $discount, 2);
 
             // naqd/karta are whatever the cashier explicitly collected up front;
             // qarz is never entered directly — it's always just what's left of
             // the total once naqd+karta are accounted for (clamped so the three
-            // can never add up to more than the total).
-            $naqdAmount = max(0.0, min($naqdAmount, $total));
-            $kartaAmount = max(0.0, min($kartaAmount, round($total - $naqdAmount, 2)));
+            // can never add up to more than the total). A card payment is
+            // always exact, so it's applied first; cash may be more than
+            // what's left (the customer hands over a bigger note) — only the
+            // needed part counts as naqd and the rest is change, remembered in
+            // cash_received so the receipt can show it.
+            $cashTendered = max(0.0, $naqdAmount);
+            $kartaAmount = max(0.0, min($kartaAmount, $total));
+            $naqdAmount = max(0.0, min($cashTendered, round($total - $kartaAmount, 2)));
             $qarzAmount = max(0.0, round($total - $naqdAmount - $kartaAmount, 2));
+            $cashReceived = $cashTendered > $naqdAmount + 0.005 ? round($cashTendered, 2) : null;
 
             if ($qarzAmount > 0 && $customerId === null) {
                 throw new RuntimeException('customer_required_for_debt');
@@ -114,10 +133,10 @@ class Sale
             $status = 'completed';
 
             $stmt = $pdo->prepare(
-                'INSERT INTO sales (shop_id, cashier_id, customer_id, total, discount, payment_type, paid_amount, status)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO sales (shop_id, cashier_id, customer_id, total, discount, payment_type, paid_amount, status, cash_received)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
-            $stmt->execute([$shopId, $cashierId, $customerId, $total, $discount, $paymentType, $paidAmount, $status]);
+            $stmt->execute([$shopId, $cashierId, $customerId, $total, $discount, $paymentType, $paidAmount, $status, $cashReceived]);
             $saleId = (int) $pdo->lastInsertId();
 
             $paymentStmt = $pdo->prepare(

@@ -38,6 +38,14 @@ class ProfileController
             redirect('/profile');
         }
 
+        $normalizedPhone = normalize_phone($phone);
+        if ($normalizedPhone === null) {
+            flash('error', t('phone_invalid'));
+            keep_old($old);
+            redirect('/profile');
+        }
+        $phone = $normalizedPhone;
+
         if (User::loginExists($login, $userId)) {
             flash('error', t('login_taken'));
             keep_old($old);

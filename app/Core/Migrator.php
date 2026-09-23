@@ -22,7 +22,7 @@ use Throwable;
  */
 final class Migrator
 {
-    public const VERSION = 2;
+    public const VERSION = 3;
 
     public static function ensureUpToDate(PDO $pdo): void
     {
@@ -45,7 +45,10 @@ final class Migrator
 
         $pdo->exec('BEGIN IMMEDIATE');
         try {
-            self::apply($pdo, $log);
+            // Read inside the lock, so a request that lost the race sees the
+            // version the winner already wrote and skips one-time steps.
+            $fromVersion = (int) $pdo->query('PRAGMA user_version')->fetchColumn();
+            self::apply($pdo, $log, $fromVersion);
             $pdo->exec('PRAGMA user_version = ' . self::VERSION);
             $pdo->exec('COMMIT');
         } catch (Throwable $e) {
@@ -58,7 +61,7 @@ final class Migrator
         }
     }
 
-    private static function apply(PDO $pdo, callable $log): void
+    private static function apply(PDO $pdo, callable $log, int $fromVersion): void
     {
         $pdo->exec((string) file_get_contents(BASE_PATH . '/database/migrations/schema.sql'));
 
@@ -83,7 +86,47 @@ final class Migrator
             'debt_due_date' => 'TEXT',
         ]);
 
+        self::addColumns($pdo, $log, 'sales', [
+            // Cash the customer handed over when it was more than the naqd
+            // share of the total (so the receipt can show the change).
+            'cash_received' => 'REAL',
+        ]);
+        self::addColumns($pdo, $log, 'purchase_items', [
+            'variant_id' => 'INTEGER REFERENCES product_variants(id)',
+            'variant_label' => 'TEXT',
+        ]);
+
         self::backfillRefundPayments($pdo, $log);
+
+        if ($fromVersion < 3) {
+            self::grantDiscountPermission($pdo, $log);
+        }
+    }
+
+    /**
+     * Giving a discount became its own employee permission in version 3.
+     * Until then every employee who could sell could also discount, so
+     * those employees keep that ability (the owner can take it away on the
+     * employee's page); new employees only get it when it's ticked.
+     */
+    private static function grantDiscountPermission(PDO $pdo, callable $log): void
+    {
+        $rows = $pdo->query("SELECT id, permissions_json FROM users WHERE role = 'employee'")->fetchAll(PDO::FETCH_ASSOC);
+        $update = $pdo->prepare('UPDATE users SET permissions_json = ? WHERE id = ?');
+        $granted = 0;
+
+        foreach ($rows as $row) {
+            $permissions = json_decode((string) ($row['permissions_json'] ?? '[]'), true) ?: [];
+            if (in_array('sales', $permissions, true) && !in_array('discount', $permissions, true)) {
+                $permissions[] = 'discount';
+                $update->execute([json_encode(array_values($permissions)), $row['id']]);
+                $granted++;
+            }
+        }
+
+        if ($granted > 0) {
+            $log("$granted ta xodimga chegirma berish ruxsati qo'shildi.");
+        }
     }
 
     /**

@@ -59,10 +59,10 @@ class ActivityLogController
         // UTF-8 BOM so Excel opens Uzbek/Cyrillic text correctly.
         fwrite($out, "\xEF\xBB\xBF");
 
-        fputcsv($out, [t('sale_date'), t('full_name_label'), t('activity_description')]);
+        csv_row($out, [t('sale_date'), t('full_name_label'), t('activity_description')]);
         foreach ($entries as $entry) {
             $meta = json_decode($entry['meta_json'] ?? '[]', true) ?: [];
-            fputcsv($out, [
+            csv_row($out, [
                 local_datetime($entry['created_at']),
                 $entry['user_name'] ?? '—',
                 t('activity_' . $entry['action'], $meta),

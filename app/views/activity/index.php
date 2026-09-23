@@ -85,7 +85,7 @@ $queryFor = static function (array $overrides = []) use ($filters): string {
                     <tr>
                         <td><?= e(local_datetime($entry['created_at'])) ?></td>
                         <td data-label="<?= e(t('full_name_label')) ?>" class="muted"><?= e($entry['user_name'] ?? '—') ?></td>
-                        <td data-label="<?= e(t('activity_description')) ?>"><?= e(t('activity_' . $entry['action'], $meta)) ?></td>
+                        <td data-label="<?= e(t('activity_description')) ?>" class="cell-wrap-wide"><?= e(t('activity_' . $entry['action'], $meta)) ?></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>

@@ -16,7 +16,10 @@
         return;
     }
 
-    // Each row: { productId: number|'', qty: number, packs: number, unitCost: number }
+    // Each row: { key: 'p12'|'v34'|'', productId, variantId, qty, packs, unitCost }.
+    // A product with active variants is only offered through its variants
+    // (grouped under the product name), exactly like the POS — stock is kept
+    // per variant, so the purchase has to add it to a specific one.
     var rows = [];
     var nextRowId = 1;
 
@@ -35,8 +38,38 @@
         return products.find(function (p) { return p.id === id; });
     }
 
+    // key -> { productId, variantId, costPrice }
+    var targets = {};
+    products.forEach(function (p) {
+        if (p.variants && p.variants.length) {
+            p.variants.forEach(function (v) {
+                targets['v' + v.id] = { productId: p.id, variantId: v.id, costPrice: v.cost_price };
+            });
+        } else {
+            targets['p' + p.id] = { productId: p.id, variantId: null, costPrice: p.cost_price };
+        }
+    });
+
+    function productOptions(selectedKey) {
+        return '<option value="">—</option>' + products.map(function (p) {
+            if (p.variants && p.variants.length) {
+                return '<optgroup label="' + escapeHtml(p.name) + '">' + p.variants.map(function (v) {
+                    var key = 'v' + v.id;
+                    return '<option value="' + key + '"' + (selectedKey === key ? ' selected' : '') + '>' +
+                        escapeHtml(p.name + ' — ' + v.label) + '</option>';
+                }).join('') + '</optgroup>';
+            }
+            var key = 'p' + p.id;
+            return '<option value="' + key + '"' + (selectedKey === key ? ' selected' : '') + '>' + escapeHtml(p.name) + '</option>';
+        }).join('');
+    }
+
+    function isFractional(product) {
+        return product ? !!product.fractional : true;
+    }
+
     function addRow() {
-        rows.push({ id: nextRowId++, productId: '', qty: 0, packs: 0, unitCost: 0 });
+        rows.push({ id: nextRowId++, key: '', productId: '', variantId: null, qty: 0, packs: 0, unitCost: 0 });
         render();
     }
 
@@ -50,9 +83,8 @@
             var product = row.productId !== '' ? productById(row.productId) : null;
             var packSize = product && product.pack_size ? product.pack_size : null;
 
-            var options = '<option value="">—</option>' + products.map(function (p) {
-                return '<option value="' + p.id + '"' + (row.productId === p.id ? ' selected' : '') + '>' + escapeHtml(p.name) + '</option>';
-            }).join('');
+            var options = productOptions(row.key);
+            var qtyStep = isFractional(product) ? 'any' : '1';
 
             var packsCell = '';
             if (packSize) {
@@ -68,7 +100,7 @@
                 '<tr data-row="' + row.id + '">' +
                     '<td><select class="item-product" data-row="' + row.id + '">' + options + '</select></td>' +
                     '<td>' +
-                        '<input type="number" class="item-qty" data-row="' + row.id + '" min="0" step="0.01" inputmode="decimal" value="' + (row.qty || '') + '">' +
+                        '<input type="number" class="item-qty" data-row="' + row.id + '" min="0" step="' + qtyStep + '" inputmode="decimal" value="' + (row.qty || '') + '">' +
                         packsCell +
                     '</td>' +
                     '<td><input type="number" class="item-unit-cost" data-row="' + row.id + '" min="0" step="0.01" inputmode="decimal" value="' + (row.unitCost || '') + '"></td>' +
@@ -96,7 +128,7 @@
             var subtotal = (row.qty || 0) * (row.unitCost || 0);
             total += subtotal;
             if (row.productId !== '' && row.qty > 0) {
-                validItems.push({ product_id: row.productId, qty: row.qty, unit_cost: row.unitCost || 0 });
+                validItems.push({ product_id: row.productId, variant_id: row.variantId, qty: row.qty, unit_cost: row.unitCost || 0 });
             }
         });
 
@@ -115,10 +147,16 @@
         }
 
         if (e.target.classList.contains('item-product')) {
-            row.productId = e.target.value !== '' ? parseInt(e.target.value, 10) : '';
-            var product = row.productId !== '' ? productById(row.productId) : null;
-            if (product && !row.unitCost) {
-                row.unitCost = product.cost_price || 0;
+            var target = targets[e.target.value] || null;
+            row.key = target ? e.target.value : '';
+            row.productId = target ? target.productId : '';
+            row.variantId = target ? target.variantId : null;
+            if (target && !row.unitCost) {
+                row.unitCost = target.costPrice || 0;
+            }
+            var picked = target ? productById(target.productId) : null;
+            if (picked && !isFractional(picked)) {
+                row.qty = Math.round(row.qty || 0);
             }
             render();
             return;
@@ -135,6 +173,13 @@
             // in the row is updated surgically instead, same as the packs
             // branch below.
             row.qty = parseFloat(e.target.value) || 0;
+            var qtyProduct = row.productId !== '' ? productById(row.productId) : null;
+            if (qtyProduct && !isFractional(qtyProduct) && row.qty !== Math.round(row.qty)) {
+                // Counted units are bought in whole pieces (the server
+                // rejects 2.5 dona too).
+                row.qty = Math.round(row.qty);
+                e.target.value = row.qty || '';
+            }
             row.packs = 0;
             var packsInput = bodyEl.querySelector('tr[data-row="' + rowId + '"] .item-packs');
             if (packsInput) {

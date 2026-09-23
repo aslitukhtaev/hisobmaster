@@ -8,18 +8,37 @@ use App\Core\Database;
 
 class Product
 {
+    /**
+     * Correlated subqueries giving, per product row "p", how many active
+     * variants it has and their combined stock. A product with at least one
+     * active variant is sold only through its variants (see Sale::create()),
+     * so everywhere stock is shown or compared its "effective" stock is the
+     * variants' total, not its own (unused) stock_qty.
+     */
+    private const VARIANT_AGGREGATES = "
+        (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = p.id AND pv.status = 'active') AS variant_count,
+        (SELECT COALESCE(SUM(pv.stock_qty), 0) FROM product_variants pv WHERE pv.product_id = p.id AND pv.status = 'active') AS variant_stock";
+
+    private const EFFECTIVE_STOCK = "
+        CASE WHEN EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.id AND pv.status = 'active')
+             THEN (SELECT COALESCE(SUM(pv.stock_qty), 0) FROM product_variants pv WHERE pv.product_id = p.id AND pv.status = 'active')
+             ELSE p.stock_qty END";
+
     public static function allByShop(int $shopId, ?string $search = null): array
     {
-        $sql = 'SELECT p.*, c.name AS category_name
+        $sql = 'SELECT p.*, c.name AS category_name, ' . self::VARIANT_AGGREGATES . ', ' . self::EFFECTIVE_STOCK . ' AS effective_stock
                 FROM products p
                 LEFT JOIN categories c ON c.id = p.category_id
                 WHERE p.shop_id = ?';
         $params = [$shopId];
 
         if ($search !== null && $search !== '') {
-            $sql .= ' AND (p.name LIKE ? OR p.barcode LIKE ?)';
-            $params[] = '%' . $search . '%';
-            $params[] = '%' . $search . '%';
+            // A variant's own barcode/label finds its product too.
+            $sql .= ' AND (p.name LIKE ? OR p.barcode LIKE ? OR EXISTS (
+                          SELECT 1 FROM product_variants pv
+                          WHERE pv.product_id = p.id AND (pv.barcode LIKE ? OR pv.variant_label LIKE ?)))';
+            $like = '%' . $search . '%';
+            array_push($params, $like, $like, $like, $like);
         }
 
         $sql .= ' ORDER BY p.name';
@@ -106,38 +125,64 @@ class Product
     }
 
     /**
+     * The variant (joined with its product's name) that owns $barcode, if any.
+     */
+    public static function findVariantByBarcode(string $barcode, int $shopId): ?array
+    {
+        $stmt = Database::connect()->prepare(
+            'SELECT pv.*, p.name AS product_name FROM product_variants pv
+             JOIN products p ON p.id = pv.product_id
+             WHERE pv.shop_id = ? AND pv.barcode = ? LIMIT 1'
+        );
+        $stmt->execute([$shopId, $barcode]);
+
+        return $stmt->fetch() ?: null;
+    }
+
+    /**
+     * Whether $barcode is already used anywhere in the shop — by another
+     * product or by any product's variant (active or not, so reactivating
+     * one can never create a clash). A barcode has to identify exactly one
+     * sellable thing, or a scan can't add it to the cart unambiguously.
+     */
+    public static function barcodeTaken(int $shopId, string $barcode, ?int $exceptProductId = null, ?int $exceptVariantId = null): bool
+    {
+        $stmt = Database::connect()->prepare(
+            'SELECT EXISTS (SELECT 1 FROM products WHERE shop_id = ? AND barcode = ? AND id != ?)
+                 OR EXISTS (SELECT 1 FROM product_variants WHERE shop_id = ? AND barcode = ? AND id != ?)'
+        );
+        $stmt->execute([$shopId, $barcode, $exceptProductId ?? 0, $shopId, $barcode, $exceptVariantId ?? 0]);
+
+        return (bool) $stmt->fetchColumn();
+    }
+
+    /**
      * Active products at or below their effective low-stock threshold: their
      * own low_stock_threshold when set, otherwise the shop-wide default (see
      * Settings::lowStockThresholdDefault()) when one is configured. A product
-     * with neither never shows up here.
+     * with neither never shows up here. Stock is the effective stock — the
+     * variants' total for a product sold through variants.
      */
     public static function lowStock(int $shopId, ?float $shopDefaultThreshold): array
     {
-        // A product with any active variant tracks its real stock at the
-        // variant level — its own stock_qty is always 0/unused (see
-        // Sale::create()) — so it must never be matched by the shop-wide
-        // default-threshold fallback below, which would otherwise flag every
-        // such product as "out of stock" regardless of how much stock its
-        // variants actually have. An explicit per-product threshold (set
-        // deliberately by the owner) is still honored either way.
-        $sql = 'SELECT p.*, c.name AS category_name
-                FROM products p
-                LEFT JOIN categories c ON c.id = p.category_id
-                WHERE p.shop_id = ? AND p.status = ?
-                  AND (
-                        (p.low_stock_threshold IS NOT NULL AND p.stock_qty <= p.low_stock_threshold)';
+        $sql = 'SELECT * FROM (
+                    SELECT p.*, c.name AS category_name, ' . self::VARIANT_AGGREGATES . ', ' . self::EFFECTIVE_STOCK . ' AS effective_stock
+                    FROM products p
+                    LEFT JOIN categories c ON c.id = p.category_id
+                    WHERE p.shop_id = ? AND p.status = ?
+                ) t
+                WHERE (t.low_stock_threshold IS NOT NULL AND t.effective_stock <= CAST(t.low_stock_threshold AS REAL))';
         $params = [$shopId, 'active'];
 
         if ($shopDefaultThreshold !== null) {
-            $sql .= " OR (p.low_stock_threshold IS NULL AND p.stock_qty <= ?
-                          AND NOT EXISTS (
-                              SELECT 1 FROM product_variants pv
-                              WHERE pv.product_id = p.id AND pv.status = 'active'
-                          ))";
+            // CAST: effective_stock is a CASE expression with no column
+            // affinity, so a bound (text) parameter would otherwise be
+            // compared as text and every number would count as "below" it.
+            $sql .= ' OR (t.low_stock_threshold IS NULL AND t.effective_stock <= CAST(? AS REAL))';
             $params[] = $shopDefaultThreshold;
         }
 
-        $sql .= '  ) ORDER BY p.stock_qty ASC, p.name';
+        $sql .= ' ORDER BY t.effective_stock ASC, t.name';
 
         $stmt = Database::connect()->prepare($sql);
         $stmt->execute($params);
@@ -150,7 +195,7 @@ class Product
         $rows = self::lowStock($shopId, $shopDefaultThreshold);
         $out = 0;
         foreach ($rows as $row) {
-            if ((float) $row['stock_qty'] <= 0) {
+            if ((float) $row['effective_stock'] <= 0) {
                 $out++;
             }
         }
@@ -175,10 +220,16 @@ class Product
             "SELECT COUNT(*) FROM products WHERE shop_id = ? AND status = 'active'",
             [$shopId]
         );
+        // Products' own stock at their cost, plus every variant's stock at
+        // the variant's cost (falling back to its product's, the same rule
+        // Sale::create() snapshots) — variant stock used to be left out.
         $stockValue = (float) self::scalar(
             $pdo,
-            'SELECT COALESCE(SUM(cost_price * stock_qty), 0) FROM products WHERE shop_id = ?',
-            [$shopId]
+            'SELECT COALESCE((SELECT SUM(cost_price * stock_qty) FROM products WHERE shop_id = ?), 0)
+                  + COALESCE((SELECT SUM(COALESCE(pv.cost_price, p.cost_price) * pv.stock_qty)
+                              FROM product_variants pv JOIN products p ON p.id = pv.product_id
+                              WHERE pv.shop_id = ?), 0)',
+            [$shopId, $shopId]
         );
 
         return ['total' => $total, 'active' => $active, 'stock_value' => $stockValue];

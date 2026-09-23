@@ -3,7 +3,7 @@
     <div>
         <h1><?= e(t('sales')) ?></h1>
         <p class="muted">
-            <?= (int) $today['count'] ?> <?= e(t('todays_sales_count_label')) ?> ·
+            <?= e(count_label((int) $today['count'], 'todays_sales_count_label')) ?> ·
             <?= money((float) $today['revenue']) ?>
         </p>
     </div>

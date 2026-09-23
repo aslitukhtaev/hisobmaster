@@ -2,7 +2,7 @@
 <section class="page-head page-head-row">
     <div>
         <h1><?= e(t('customers')) ?></h1>
-        <p class="muted"><?= count($customers) ?> <?= e(t('customers_count_label')) ?></p>
+        <p class="muted"><?= e(count_label(count($customers), 'customers_count_label')) ?></p>
     </div>
     <a href="/customers/create" class="btn btn-primary"><?= e(t('add_customer')) ?></a>
 </section>
@@ -36,7 +36,7 @@
                 <tbody>
                 <?php foreach ($customers as $customer): ?>
                     <tr>
-                        <td><?= e($customer['full_name']) ?></td>
+                        <td class="cell-wrap"><?= e($customer['full_name']) ?></td>
                         <td data-label="<?= e(t('phone')) ?>" class="muted"><?= e($customer['phone'] ?? '—') ?></td>
                         <td data-label="<?= e(t('debt_balance')) ?>">
                             <?php if ((float) $customer['balance'] > 0): ?>

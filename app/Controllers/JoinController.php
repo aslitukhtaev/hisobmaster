@@ -50,6 +50,14 @@ class JoinController
             redirect("/join/{$token}");
         }
 
+        $normalizedPhone = normalize_phone($phone);
+        if ($normalizedPhone === null) {
+            flash('error', t('phone_invalid'));
+            keep_old($old);
+            redirect("/join/{$token}");
+        }
+        $phone = $normalizedPhone;
+
         if (strlen($password) < 6) {
             flash('error', t('password_too_short'));
             keep_old($old);

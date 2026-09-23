@@ -31,20 +31,21 @@
             <input type="hidden" name="cart" id="cart-field">
 
             <div class="cart-totals">
-                <label class="field">
+                <label class="field"<?= $canDiscount ? '' : ' hidden' ?>>
                     <span><?= e(t('discount')) ?></span>
                     <div class="discount-input-row">
-                        <input type="number" id="discount-input" min="0" step="0.01" value="0" inputmode="decimal">
+                        <input type="number" id="discount-input" min="0" max="<?= MONEY_MAX ?>" data-max-amount="<?= MONEY_MAX ?>" step="0.01" value="0" inputmode="decimal">
                         <div class="discount-mode-toggle" role="group" aria-label="<?= e(t('discount_mode_toggle_label')) ?>">
                             <button type="button" class="discount-mode-btn active" data-mode="amount"><?= e(t('discount_mode_fixed')) ?></button>
                             <button type="button" class="discount-mode-btn" data-mode="percent">%</button>
                         </div>
                     </div>
                     <span class="muted" id="discount-computed-label" style="display:none;"></span>
+                    <span class="field-error" id="discount-error" hidden><?= e(t('discount_too_large')) ?></span>
                 </label>
                 <div class="cart-total-row">
                     <span><?= e(t('total')) ?></span>
-                    <strong id="cart-total">0 so'm</strong>
+                    <strong id="cart-total">0 <?= e(t('currency_symbol')) ?></strong>
                 </div>
             </div>
             <input type="hidden" name="discount" id="discount-field" value="0">
@@ -58,12 +59,16 @@
             <div class="field-row">
                 <label class="field">
                     <span><?= e(t('payment_naqd')) ?></span>
-                    <input type="number" id="naqd-amount-input" min="0" step="0.01" value="0" inputmode="decimal">
+                    <input type="number" id="naqd-amount-input" min="0" max="<?= MONEY_MAX ?>" step="0.01" value="0" inputmode="decimal">
                 </label>
                 <label class="field">
                     <span><?= e(t('payment_karta')) ?></span>
-                    <input type="number" id="karta-amount-input" min="0" step="0.01" value="0" inputmode="decimal">
+                    <input type="number" id="karta-amount-input" min="0" max="<?= MONEY_MAX ?>" step="0.01" value="0" inputmode="decimal">
                 </label>
+            </div>
+            <div class="cart-change-row" id="change-row" hidden>
+                <span><?= e(t('change_due')) ?></span>
+                <strong id="change-amount"></strong>
             </div>
             <input type="hidden" name="naqd_amount" id="naqd-amount-field" value="0">
             <input type="hidden" name="karta_amount" id="karta-amount-field" value="0">
@@ -82,7 +87,7 @@
                     </label>
                     <label class="field">
                         <span><?= e(t('phone')) ?> (<?= e(t('optional')) ?>)</span>
-                        <input type="text" id="new-customer-phone">
+                        <input type="tel" id="new-customer-phone" placeholder="+998 90 123 45 67" inputmode="tel">
                     </label>
                 </div>
                 <p class="muted" id="debt-remaining-label"></p>
@@ -91,7 +96,8 @@
             <input type="hidden" name="customer_name" id="customer-name-field" value="">
             <input type="hidden" name="customer_phone" id="customer-phone-field" value="">
 
-            <button type="submit" id="complete-sale-btn" class="btn btn-primary btn-block" disabled><?= e(t('complete_sale')) ?></button>
+            <div class="alert alert-error" id="sale-form-error" role="alert" hidden></div>
+            <button type="submit" id="complete-sale-btn" class="btn btn-primary btn-block"><?= e(t('complete_sale')) ?></button>
         </form>
     </div>
 </div>
@@ -105,7 +111,7 @@ if (!is_array($oldCart)) {
     $oldCart = [];
 }
 ?>
-<script>
+<script nonce="<?= e(csp_nonce()) ?>">
     window.HM_PRODUCTS = <?= $productsJson ?>;
     window.HM_CUSTOMERS = <?= $customersJson ?>;
     window.HM_I18N = {
@@ -121,8 +127,12 @@ if (!is_array($oldCart)) {
         editQty: <?= json_encode(t('edit_qty_label'), JSON_UNESCAPED_UNICODE) ?>,
         discountEqualsLabel: <?= json_encode(t('discount_equals_label'), JSON_UNESCAPED_UNICODE) ?>,
         pickVariantHint: <?= json_encode(t('pick_variant_hint'), JSON_UNESCAPED_UNICODE) ?>,
-        currency: "so'm"
+        scanNotFound: <?= json_encode(t('scan_not_found'), JSON_UNESCAPED_UNICODE) ?>,
+        emptyCart: <?= json_encode(t('cart_empty_submit'), JSON_UNESCAPED_UNICODE) ?>,
+        discountTooLarge: <?= json_encode(t('discount_too_large'), JSON_UNESCAPED_UNICODE) ?>,
+        currency: <?= json_encode(t('currency_symbol'), JSON_UNESCAPED_UNICODE) ?>
     };
+    window.HM_CAN_DISCOUNT = <?= $canDiscount ? 'true' : 'false' ?>;
     window.HM_OLD_CART = <?= json_encode($oldCart, JSON_UNESCAPED_UNICODE) ?>;
     window.HM_OLD_SALE = {
         discount: <?= json_encode(old('discount', '0'), JSON_UNESCAPED_UNICODE) ?>,

@@ -45,6 +45,7 @@ class Purchase
 
             foreach ($items as $item) {
                 $productId = (int) $item['product_id'];
+                $variantId = !empty($item['variant_id']) ? (int) $item['variant_id'] : null;
                 $qty = round((float) $item['qty'], 3);
                 $unitCost = round((float) $item['unit_cost'], 2);
 
@@ -52,8 +53,23 @@ class Purchase
                 if (!$product) {
                     throw new RuntimeException('invalid_product');
                 }
-                if ($qty <= 0 || $unitCost < 0) {
+                if ($qty <= 0 || $qty > QTY_MAX || $unitCost < 0 || $unitCost > MONEY_MAX) {
                     throw new RuntimeException('invalid_qty');
+                }
+                if (!qty_fits_unit($qty, $product['unit'])) {
+                    throw new RuntimeException('qty_must_be_whole_product:' . $product['name']);
+                }
+
+                // Same rule as a sale: stock of a product with active variants
+                // lives on the variants, so the purchase must say which one.
+                $variant = null;
+                if ($variantId !== null) {
+                    $variant = ProductVariant::find($variantId, $shopId);
+                    if (!$variant || (int) $variant['product_id'] !== $productId || $variant['status'] !== 'active') {
+                        throw new RuntimeException('invalid_product');
+                    }
+                } elseif (!empty(ProductVariant::activeByProduct($productId, $shopId))) {
+                    throw new RuntimeException('variant_required:' . $product['name']);
                 }
 
                 $subtotal = round($qty * $unitCost, 2);
@@ -61,6 +77,8 @@ class Purchase
 
                 $resolved[] = [
                     'product_id' => $productId,
+                    'variant_id' => $variant !== null ? (int) $variant['id'] : null,
+                    'variant_label' => $variant['variant_label'] ?? null,
                     'qty' => $qty,
                     'unit_cost' => $unitCost,
                     'subtotal' => $subtotal,
@@ -68,6 +86,9 @@ class Purchase
             }
 
             $totalAmount = round($totalAmount, 2);
+            if ($totalAmount > MONEY_MAX) {
+                throw new RuntimeException('amount_too_large');
+            }
 
             $stmt = $pdo->prepare(
                 'INSERT INTO purchases (shop_id, supplier_id, total_amount, note, created_by) VALUES (?, ?, ?, ?, ?)'
@@ -76,7 +97,8 @@ class Purchase
             $purchaseId = (int) $pdo->lastInsertId();
 
             $itemStmt = $pdo->prepare(
-                'INSERT INTO purchase_items (purchase_id, product_id, qty, unit_cost, subtotal) VALUES (?, ?, ?, ?, ?)'
+                'INSERT INTO purchase_items (purchase_id, product_id, qty, unit_cost, subtotal, variant_id, variant_label)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
             );
             // Atomic restock: adds qty back and re-checks the row belongs to this
             // shop in the same statement, mirroring Refund::create()'s stock
@@ -86,15 +108,27 @@ class Purchase
             );
 
             foreach ($resolved as $item) {
-                $itemStmt->execute([$purchaseId, $item['product_id'], $item['qty'], $item['unit_cost'], $item['subtotal']]);
+                $itemStmt->execute([
+                    $purchaseId, $item['product_id'], $item['qty'], $item['unit_cost'], $item['subtotal'],
+                    $item['variant_id'], $item['variant_label'],
+                ]);
 
-                $stockStmt->execute([$item['qty'], $item['product_id'], $shopId]);
-                if ($stockStmt->rowCount() !== 1) {
+                if ($item['variant_id'] !== null) {
+                    $affected = ProductVariant::incrementStock($item['variant_id'], $shopId, $item['qty']);
+                } else {
+                    $stockStmt->execute([$item['qty'], $item['product_id'], $shopId]);
+                    $affected = $stockStmt->rowCount();
+                }
+                if ($affected !== 1) {
                     throw new RuntimeException('invalid_product');
                 }
 
                 if ($updateCostPrice) {
-                    Product::updateCostPrice($item['product_id'], $shopId, $item['unit_cost']);
+                    if ($item['variant_id'] !== null) {
+                        ProductVariant::updateCostPrice($item['variant_id'], $shopId, $item['unit_cost']);
+                    } else {
+                        Product::updateCostPrice($item['product_id'], $shopId, $item['unit_cost']);
+                    }
                 }
             }
 

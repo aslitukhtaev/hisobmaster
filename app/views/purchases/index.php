@@ -2,7 +2,7 @@
 <section class="page-head page-head-row">
     <div>
         <h1><?= e(t('purchase_history')) ?></h1>
-        <p class="muted"><?= count($purchases) ?> <?= e(t('purchases_count_label')) ?></p>
+        <p class="muted"><?= e(count_label(count($purchases), 'purchases_count_label')) ?></p>
     </div>
     <a href="/purchases/create" class="btn btn-primary"><?= e(t('record_purchase')) ?></a>
 </section>

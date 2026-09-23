@@ -2,7 +2,7 @@
 <section class="page-head page-head-row">
     <div>
         <h1><?= e(t('shops')) ?></h1>
-        <p class="muted"><?= count($shops) ?> <?= e(t('shops_count_label')) ?></p>
+        <p class="muted"><?= e(count_label(count($shops), 'shops_count_label')) ?></p>
     </div>
     <div class="row-actions">
         <a href="/superadmin/backups" class="btn btn-ghost"><?= e(t('backups_nav')) ?></a>
@@ -41,12 +41,12 @@
                         <td data-label="<?= e(t('actions')) ?>">
                             <div class="row-actions">
                                 <form method="post" action="/superadmin/shops/<?= (int) $shop['id'] ?>/reset-password"
-                                      onsubmit="return confirm('<?= e(t('confirm_reset_password')) ?>');">
+                                      data-confirm="<?= e(t('confirm_reset_password')) ?>">
                                     <?= csrf_field() ?>
                                     <button type="submit" class="btn btn-ghost btn-sm"><?= e(t('reset_password')) ?></button>
                                 </form>
                                 <form method="post" action="/superadmin/shops/<?= (int) $shop['id'] ?>/toggle-status"
-                                      onsubmit="return confirm('<?= e($shop['status'] === 'active' ? t('confirm_block') : t('confirm_activate')) ?>');">
+                                      data-confirm="<?= e($shop['status'] === 'active' ? t('confirm_block') : t('confirm_activate')) ?>">
                                     <?= csrf_field() ?>
                                     <button type="submit" class="btn btn-ghost btn-sm">
                                         <?= e($shop['status'] === 'active' ? t('toggle_block') : t('toggle_activate')) ?>

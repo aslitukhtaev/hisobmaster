@@ -162,7 +162,9 @@ CREATE TABLE IF NOT EXISTS purchase_items (
     product_id INTEGER NOT NULL REFERENCES products(id),
     qty REAL NOT NULL,
     unit_cost REAL NOT NULL,
-    subtotal REAL NOT NULL
+    subtotal REAL NOT NULL,
+    variant_id INTEGER REFERENCES product_variants(id),
+    variant_label TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_purchase_items_purchase ON purchase_items(purchase_id);
 CREATE INDEX IF NOT EXISTS idx_purchase_items_product ON purchase_items(product_id);
@@ -210,6 +212,7 @@ CREATE TABLE IF NOT EXISTS sales (
     payment_type TEXT NOT NULL DEFAULT 'naqd',
     paid_amount REAL NOT NULL DEFAULT 0,
     status TEXT NOT NULL DEFAULT 'completed',
+    cash_received REAL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_sales_shop ON sales(shop_id);

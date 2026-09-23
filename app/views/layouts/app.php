@@ -86,7 +86,7 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <script>
+    <script nonce="<?= e(csp_nonce()) ?>">
         (function () {
             try {
                 var t = localStorage.getItem('kassiron-theme');
@@ -184,7 +184,7 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
         </div>
     </div>
 
-    <script>
+    <script nonce="<?= e(csp_nonce()) ?>">
         window.HM_BARCODE_I18N = {
             scanBarcode: <?= json_encode(t('scan_barcode'), JSON_UNESCAPED_UNICODE) ?>,
             scanUnsupported: <?= json_encode(t('scan_unsupported'), JSON_UNESCAPED_UNICODE) ?>,

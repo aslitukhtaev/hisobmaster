@@ -18,7 +18,8 @@ class Refund
     public static function refundableForSale(int $saleId): array
     {
         $stmt = Database::connect()->prepare(
-            'SELECT si.*, COALESCE(ri.refunded_qty, 0) AS refunded_qty
+            'SELECT si.*, COALESCE(ri.refunded_qty, 0) AS refunded_qty,
+                    (SELECT p.unit FROM products p WHERE p.id = si.product_id) AS unit
              FROM sale_items si
              LEFT JOIN (
                  SELECT sale_item_id, SUM(qty) AS refunded_qty
@@ -166,6 +167,14 @@ class Refund
 
                 if ($qty <= 0 || $qty > (float) $item['remaining_qty'] + 0.0001) {
                     throw new RuntimeException('invalid_refund_qty');
+                }
+
+                // Counted goods come back in whole pieces. The one exception
+                // is returning exactly what's left of a line that was sold
+                // fractionally before whole-unit sales were enforced.
+                $isRemainder = abs($qty - (float) $item['remaining_qty']) < 0.0001;
+                if (!$isRemainder && !qty_fits_unit($qty, $item['unit'] ?? null)) {
+                    throw new RuntimeException('invalid_refund_qty_whole');
                 }
 
                 $gross = round((float) $item['unit_price'] * $qty, 2);

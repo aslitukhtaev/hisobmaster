@@ -13,7 +13,7 @@ use App\Models\User;
 
 class EmployeeController
 {
-    public const PERMISSIONS = ['sales', 'products', 'prices', 'customers', 'expenses', 'reports'];
+    public const PERMISSIONS = ['sales', 'discount', 'products', 'prices', 'customers', 'expenses', 'reports'];
 
     public function index(Request $request): void
     {
@@ -60,8 +60,7 @@ class EmployeeController
         $employee = User::findEmployee((int) $id, $shopId);
 
         if (!$employee) {
-            flash('error', t('employee_not_found'));
-            redirect('/employees');
+            abort_404();
         }
 
         View::render('employees/edit', [

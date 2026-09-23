@@ -8,6 +8,7 @@ use App\Core\Auth;
 use App\Core\Request;
 use App\Core\View;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Purchase;
 use App\Models\Supplier;
 use PDOException;
@@ -29,13 +30,27 @@ class PurchaseController
         $shopId = (int) Auth::shopId();
 
         $products = Product::allByShop($shopId);
-        $productsJson = array_map(static function (array $p): array {
+        $variantsByProduct = [];
+        foreach (ProductVariant::activeAllByShop($shopId) as $variant) {
+            $variantsByProduct[(int) $variant['product_id']][] = $variant;
+        }
+
+        // A product with active variants keeps its stock per variant (see
+        // Sale::create()), so a purchase of it has to name the variant —
+        // purchase.js offers those products only through their variants.
+        $productsJson = array_map(static function (array $p) use ($variantsByProduct): array {
             return [
                 'id' => (int) $p['id'],
                 'name' => $p['name'],
                 'unit' => $p['unit'],
                 'cost_price' => (float) $p['cost_price'],
                 'pack_size' => $p['pack_size'] !== null ? (int) $p['pack_size'] : null,
+                'fractional' => unit_allows_fraction($p['unit']),
+                'variants' => array_map(static fn (array $v): array => [
+                    'id' => (int) $v['id'],
+                    'label' => $v['variant_label'],
+                    'cost_price' => $v['cost_price'] !== null ? (float) $v['cost_price'] : (float) $p['cost_price'],
+                ], $variantsByProduct[(int) $p['id']] ?? []),
             ];
         }, $products);
 
@@ -69,8 +84,13 @@ class PurchaseController
             if (!isset($row['product_id'], $row['qty'], $row['unit_cost'])) {
                 continue;
             }
+            if (!is_numeric($row['qty']) || !is_numeric($row['unit_cost']) || !valid_money($row['unit_cost']) || (float) $row['qty'] > QTY_MAX) {
+                flash('error', t('amount_too_large'));
+                redirect('/purchases/create');
+            }
             $items[] = [
                 'product_id' => (int) $row['product_id'],
+                'variant_id' => !empty($row['variant_id']) ? (int) $row['variant_id'] : null,
                 'qty' => (float) $row['qty'],
                 'unit_cost' => (float) $row['unit_cost'],
             ];
@@ -88,7 +108,8 @@ class PurchaseController
             flash('error', t('unexpected_error'));
             redirect('/purchases/create');
         } catch (RuntimeException $e) {
-            flash('error', t($e->getMessage()));
+            [$errorKey, $errorProduct] = array_pad(explode(':', $e->getMessage(), 2), 2, null);
+            flash('error', $errorProduct !== null ? t($errorKey, ['product' => $errorProduct]) : t($errorKey));
             redirect('/purchases/create');
         }
 
@@ -102,8 +123,7 @@ class PurchaseController
         $purchase = Purchase::find((int) $id, $shopId);
 
         if (!$purchase) {
-            flash('error', t('purchase_not_found'));
-            redirect('/purchases');
+            abort_404();
         }
 
         View::render('purchases/show', [

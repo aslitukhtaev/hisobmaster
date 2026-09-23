@@ -106,44 +106,44 @@ class ReportController
 
         $num = static fn (float $v): string => number_format($v, 2, '.', '');
 
-        fputcsv($out, [t('reports'), $from . ' — ' . $to]);
-        fputcsv($out, []);
+        csv_row($out, [t('reports'), $from . ' — ' . $to]);
+        csv_row($out, []);
 
-        fputcsv($out, [t('sales_count_label'), t('total_revenue'), t('total_cogs'), t('expenses'), t('net_profit')]);
-        fputcsv($out, [
+        csv_row($out, [t('sales_count_label'), t('total_revenue'), t('total_cogs'), t('expenses'), t('net_profit')]);
+        csv_row($out, [
             (int) $summary['sales_count'],
             $num((float) $summary['revenue']),
             $num((float) $summary['cogs']),
             $num((float) $summary['expenses']),
             $num((float) $summary['net_profit']),
         ]);
-        fputcsv($out, []);
+        csv_row($out, []);
 
-        fputcsv($out, [t('payment_breakdown_title')]);
-        fputcsv($out, [t('payment_type'), t('amount')]);
+        csv_row($out, [t('payment_breakdown_title')]);
+        csv_row($out, [t('payment_type'), t('amount')]);
         foreach (['naqd', 'karta', 'qarz'] as $type) {
-            fputcsv($out, [t('payment_' . $type), $num((float) $paymentBreakdown[$type])]);
+            csv_row($out, [t('payment_' . $type), $num((float) $paymentBreakdown[$type])]);
         }
-        fputcsv($out, []);
+        csv_row($out, []);
 
-        fputcsv($out, [t('expense_category_breakdown_title')]);
-        fputcsv($out, [t('category'), t('amount')]);
+        csv_row($out, [t('expense_category_breakdown_title')]);
+        csv_row($out, [t('category'), t('amount')]);
         foreach ($expenseBreakdown as $row) {
-            fputcsv($out, [$row['category_name'] ?? t('no_category'), $num($row['total'])]);
+            csv_row($out, [$row['category_name'] ?? t('no_category'), $num($row['total'])]);
         }
-        fputcsv($out, []);
+        csv_row($out, []);
 
-        fputcsv($out, [t('top_products_title')]);
-        fputcsv($out, [t('product_name'), t('qty_sold'), t('revenue')]);
+        csv_row($out, [t('top_products_title')]);
+        csv_row($out, [t('product_name'), t('qty_sold'), t('revenue')]);
         foreach ($topProducts as $row) {
-            fputcsv($out, [$row['product_name'], format_qty((float) $row['qty_sold']), $num((float) $row['revenue'])]);
+            csv_row($out, [$row['product_name'], format_qty((float) $row['qty_sold']), $num((float) $row['revenue'])]);
         }
-        fputcsv($out, []);
+        csv_row($out, []);
 
-        fputcsv($out, [t('daily_revenue_chart')]);
-        fputcsv($out, [t('expense_date_label'), t('revenue')]);
+        csv_row($out, [t('daily_revenue_chart')]);
+        csv_row($out, [t('expense_date_label'), t('revenue')]);
         foreach ($dailyRevenue as $row) {
-            fputcsv($out, [$row['date'], $num((float) $row['revenue'])]);
+            csv_row($out, [$row['date'], $num((float) $row['revenue'])]);
         }
 
         fclose($out);

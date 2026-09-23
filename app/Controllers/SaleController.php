@@ -60,9 +60,9 @@ class SaleController
         $out = fopen('php://output', 'w');
         fwrite($out, "\xEF\xBB\xBF");
 
-        fputcsv($out, [t('sale_date'), t('cashier'), t('customer'), t('total'), t('payment_type')]);
+        csv_row($out, [t('sale_date'), t('cashier'), t('customer'), t('total'), t('payment_type')]);
         foreach ($sales as $sale) {
-            fputcsv($out, [
+            csv_row($out, [
                 local_datetime($sale['created_at']),
                 $sale['cashier_name'] ?? '',
                 $sale['customer_name'] ?? '',
@@ -113,6 +113,7 @@ class SaleController
                 'price' => (float) $p['sell_price'],
                 'stock' => (float) $p['stock_qty'],
                 'barcode' => $p['barcode'],
+                'fractional' => unit_allows_fraction($p['unit']),
                 'variants' => array_map(static function (array $v) use ($p): array {
                     return [
                         'id' => (int) $v['id'],
@@ -155,6 +156,7 @@ class SaleController
             'productsJson' => json_encode($productsJson, JSON_UNESCAPED_UNICODE),
             'customersJson' => json_encode($customersJson, JSON_UNESCAPED_UNICODE),
             'hasProducts' => count($activeProducts) > 0,
+            'canDiscount' => Auth::can('discount'),
         ]);
     }
 
@@ -166,9 +168,12 @@ class SaleController
         $cartRaw = (string) $request->input('cart', '[]');
         $cart = json_decode($cartRaw, true);
 
-        $discount = (float) $request->input('discount', 0);
-        $naqdAmount = (float) $request->input('naqd_amount', 0);
-        $kartaAmount = (float) $request->input('karta_amount', 0);
+        $discountRaw = $request->input('discount', 0);
+        $naqdRaw = $request->input('naqd_amount', 0);
+        $kartaRaw = $request->input('karta_amount', 0);
+        $discount = is_numeric($discountRaw) ? (float) $discountRaw : 0.0;
+        $naqdAmount = is_numeric($naqdRaw) ? (float) $naqdRaw : 0.0;
+        $kartaAmount = is_numeric($kartaRaw) ? (float) $kartaRaw : 0.0;
         $customerIdInput = trim((string) $request->input('customer_id', ''));
         $customerName = trim((string) $request->input('customer_name', ''));
         $customerPhone = trim((string) $request->input('customer_phone', ''));
@@ -190,6 +195,28 @@ class SaleController
             keep_old($old);
             redirect('/sales/new');
         }
+
+        foreach ([$discountRaw, $naqdRaw, $kartaRaw] as $raw) {
+            if (!valid_money($raw === '' || $raw === null ? 0 : $raw)) {
+                flash('error', is_numeric($raw) && (float) $raw > 0 ? t('amount_too_large') : t('payment_amount_invalid'));
+                keep_old($old);
+                redirect('/sales/new');
+            }
+        }
+
+        if ($discount > 0 && !Auth::can('discount')) {
+            flash('error', t('discount_not_allowed'));
+            keep_old(array_merge($old, ['discount' => '0']));
+            redirect('/sales/new');
+        }
+
+        $normalizedPhone = normalize_phone($customerPhone);
+        if ($normalizedPhone === null) {
+            flash('error', t('phone_invalid'));
+            keep_old($old);
+            redirect('/sales/new');
+        }
+        $customerPhone = $normalizedPhone;
 
         $items = [];
         foreach ($cart as $row) {
@@ -254,8 +281,7 @@ class SaleController
         $sale = Sale::find((int) $id, $shopId);
 
         if (!$sale) {
-            flash('error', t('sale_not_found'));
-            redirect('/sales');
+            abort_404();
         }
 
         $refundableLines = Refund::refundableForSale((int) $id);
@@ -281,8 +307,7 @@ class SaleController
         $sale = Sale::find((int) $id, $shopId);
 
         if (!$sale) {
-            flash('error', t('sale_not_found'));
-            redirect('/sales');
+            abort_404();
         }
 
         $lines = Refund::refundableForSale((int) $id);

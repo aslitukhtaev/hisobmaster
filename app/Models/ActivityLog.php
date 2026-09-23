@@ -24,6 +24,10 @@ class ActivityLog
         'employee_permissions_updated',
         'employee_status_changed',
         'products_imported',
+        'product_created',
+        'product_updated',
+        'product_stock_changed',
+        'product_status_changed',
     ];
 
     public static function record(?int $shopId, ?int $userId, string $action, array $meta = []): void

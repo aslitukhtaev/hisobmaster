@@ -2,7 +2,7 @@
 <section class="page-head page-head-row">
     <div>
         <h1><?= e(t('backups_title')) ?></h1>
-        <p class="muted"><?= count($backups) ?> <?= e(t('backups_count_label')) ?></p>
+        <p class="muted"><?= e(count_label(count($backups), 'backups_count_label')) ?></p>
     </div>
     <div class="row-actions">
         <a href="/superadmin/backup" class="btn btn-ghost"><?= e(t('download_current_db')) ?></a>
@@ -37,7 +37,7 @@
                             <div class="row-actions">
                                 <a href="/superadmin/backups/<?= e($backup['filename']) ?>/download" class="btn btn-ghost btn-sm"><?= e(t('download')) ?></a>
                                 <form method="post" action="/superadmin/backups/<?= e($backup['filename']) ?>/delete"
-                                      onsubmit="return confirm('<?= e(t('confirm_delete_backup')) ?>');">
+                                      data-confirm="<?= e(t('confirm_delete_backup')) ?>">
                                     <?= csrf_field() ?>
                                     <button type="submit" class="btn btn-ghost btn-sm"><?= e(t('delete')) ?></button>
                                 </form>

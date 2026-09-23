@@ -131,6 +131,14 @@ class SuperAdminController
             redirect('/superadmin/shops/create');
         }
 
+        $normalizedPhone = normalize_phone($phone);
+        if ($normalizedPhone === null || $normalizedPhone === '') {
+            flash('error', t('phone_invalid'));
+            keep_old($old);
+            redirect('/superadmin/shops/create');
+        }
+        $phone = $normalizedPhone;
+
         $shopId = Shop::create([
             'name' => $name,
             'owner_full_name' => $ownerName,

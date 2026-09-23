@@ -6,8 +6,22 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+// Forms that need a confirmation carry it as data-confirm (inline onsubmit
+// handlers are blocked by the Content-Security-Policy).
+document.addEventListener('submit', function (e) {
+    var form = e.target;
+    var message = form && form.getAttribute ? form.getAttribute('data-confirm') : null;
+    if (message && !window.confirm(message)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+    }
+}, true);
+
 document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.alert').forEach(function (alertEl) {
+    // Only a success message fades away on its own; an error or warning stays
+    // until the user moves on, and page-level alerts (not flash messages)
+    // are never touched.
+    document.querySelectorAll('.flash-alert.alert-success').forEach(function (alertEl) {
         setTimeout(function () {
             alertEl.style.transition = 'opacity .4s ease';
             alertEl.style.opacity = '0';

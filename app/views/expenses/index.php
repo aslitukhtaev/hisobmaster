@@ -5,7 +5,7 @@ $categoryTotal = array_sum(array_column($categoryBreakdown, 'total')) ?: 1;
 <section class="page-head page-head-row">
     <div>
         <h1><?= e(t('expenses')) ?></h1>
-        <p class="muted"><?= count($expenses) ?> <?= e(t('expenses_count_label')) ?></p>
+        <p class="muted"><?= e(count_label(count($expenses), 'expenses_count_label')) ?></p>
     </div>
     <a href="/expenses/create" class="btn btn-primary"><?= e(t('add_expense')) ?></a>
 </section>
@@ -69,13 +69,13 @@ $categoryTotal = array_sum(array_column($categoryBreakdown, 'total')) ?: 1;
                     <tr>
                         <td><?= e($expense['expense_date']) ?></td>
                         <td data-label="<?= e(t('category')) ?>" class="muted"><?= e($expense['category_name'] ?? '—') ?></td>
-                        <td data-label="<?= e(t('description')) ?>" class="muted"><?= e($expense['description'] ?? '—') ?></td>
+                        <td data-label="<?= e(t('description')) ?>" class="muted cell-wrap"><?= e($expense['description'] ?? '—') ?></td>
                         <td data-label="<?= e(t('amount')) ?>"><?= money((float) $expense['amount']) ?></td>
                         <td data-label="<?= e(t('actions')) ?>">
                             <div class="row-actions">
                                 <a href="/expenses/<?= (int) $expense['id'] ?>/edit" class="btn btn-ghost btn-sm"><?= e(t('edit')) ?></a>
                                 <form method="post" action="/expenses/<?= (int) $expense['id'] ?>/delete"
-                                      onsubmit="return confirm('<?= e(t('confirm_delete_expense')) ?>');">
+                                      data-confirm="<?= e(t('confirm_delete_expense')) ?>">
                                     <?= csrf_field() ?>
                                     <button type="submit" class="btn btn-ghost btn-sm"><?= e(t('delete')) ?></button>
                                 </form>
