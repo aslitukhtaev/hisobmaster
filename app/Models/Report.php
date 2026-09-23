@@ -79,39 +79,125 @@ class Report
         $stmt->execute([$shopId, $startUtc, $endUtc]);
         $cogs = (float) $stmt->fetchColumn();
 
+        $refunds = self::refundTotals($shopId, $startUtc, $endUtc);
+
         $expenses = Expense::totalByShop($shopId, $from, $to);
-        $revenue = (float) ($sales['revenue'] ?? 0);
-        $netProfit = $revenue - $cogs - $expenses;
+        $revenue = round((float) ($sales['revenue'] ?? 0) - $refunds['amount'], 2);
+        $cogs = round($cogs - $refunds['cogs'], 2);
+        $netProfit = round($revenue - $cogs - $expenses, 2);
 
         return [
             'sales_count' => (int) ($sales['cnt'] ?? 0),
             'revenue' => $revenue,
+            'refunds' => $refunds['amount'],
             'cogs' => $cogs,
             'expenses' => $expenses,
             'net_profit' => $netProfit,
         ];
     }
 
+    /**
+     * Refunds issued within a UTC window (by the refund's own date — a return
+     * counts in the period it happens, like any cash movement, not back in
+     * the period of the original sale): the money given back, and the cost
+     * of the goods that came back into stock (at each line's original
+     * cost_price_snapshot), both of which reverse part of the period's
+     * revenue/COGS.
+     *
+     * @return array{amount: float, cogs: float}
+     */
+    private static function refundTotals(int $shopId, string $startUtc, string $endUtc): array
+    {
+        $pdo = Database::connect();
+
+        $stmt = $pdo->prepare(
+            'SELECT COALESCE(SUM(total_amount), 0) FROM refunds WHERE shop_id = ? AND created_at >= ? AND created_at < ?'
+        );
+        $stmt->execute([$shopId, $startUtc, $endUtc]);
+        $amount = (float) $stmt->fetchColumn();
+
+        $stmt = $pdo->prepare(
+            'SELECT COALESCE(SUM(ri.qty * si.cost_price_snapshot), 0)
+             FROM refund_items ri
+             INNER JOIN refunds r ON r.id = ri.refund_id
+             INNER JOIN sale_items si ON si.id = ri.sale_item_id
+             WHERE r.shop_id = ? AND r.created_at >= ? AND r.created_at < ?'
+        );
+        $stmt->execute([$shopId, $startUtc, $endUtc]);
+
+        return ['amount' => $amount, 'cogs' => (float) $stmt->fetchColumn()];
+    }
+
+    /**
+     * Best sellers for a period, net of both the sale-level discount and any
+     * refunds issued in the period. sale_items.subtotal is the pre-discount
+     * line amount; each line's actual revenue is its share of the sale's
+     * discounted total (subtotal * total / (total + discount)), the same
+     * proportional split Refund::create() already uses for a refund line's
+     * amount, so refund_items.amount can be subtracted from it directly.
+     */
     public static function topProducts(int $shopId, string $from, string $to, int $limit = 10): array
     {
         [$startUtc, $endUtc] = tashkent_day_bounds_utc($from, $to);
+        $pdo = Database::connect();
 
-        $stmt = Database::connect()->prepare(
-            "SELECT si.product_id, si.product_name, SUM(si.qty) AS qty_sold, SUM(si.subtotal) AS revenue
+        $stmt = $pdo->prepare(
+            "SELECT si.product_id, MAX(si.product_name) AS product_name, SUM(si.qty) AS qty,
+                    SUM(CASE WHEN (s.total + s.discount) > 0
+                             THEN si.subtotal * s.total / (s.total + s.discount)
+                             ELSE 0 END) AS revenue
              FROM sale_items si
              INNER JOIN sales s ON s.id = si.sale_id
-             WHERE s.shop_id = :shop_id AND s.status = 'completed' AND s.created_at >= :start AND s.created_at < :end
-             GROUP BY si.product_id, si.product_name
-             ORDER BY qty_sold DESC
-             LIMIT :limit"
+             WHERE s.shop_id = ? AND s.status = 'completed' AND s.created_at >= ? AND s.created_at < ?
+             GROUP BY si.product_id"
         );
-        $stmt->bindValue(':shop_id', $shopId, \PDO::PARAM_INT);
-        $stmt->bindValue(':start', $startUtc);
-        $stmt->bindValue(':end', $endUtc);
-        $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
-        $stmt->execute();
+        $stmt->execute([$shopId, $startUtc, $endUtc]);
 
-        return $stmt->fetchAll();
+        $byProduct = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $byProduct[(int) $row['product_id']] = [
+                'product_id' => (int) $row['product_id'],
+                'product_name' => (string) $row['product_name'],
+                'qty_sold' => (float) $row['qty'],
+                'revenue' => (float) $row['revenue'],
+            ];
+        }
+
+        $stmt = $pdo->prepare(
+            'SELECT si.product_id, MAX(si.product_name) AS product_name, SUM(ri.qty) AS qty, SUM(ri.amount) AS amount
+             FROM refund_items ri
+             INNER JOIN refunds r ON r.id = ri.refund_id
+             INNER JOIN sale_items si ON si.id = ri.sale_item_id
+             WHERE r.shop_id = ? AND r.created_at >= ? AND r.created_at < ?
+             GROUP BY si.product_id'
+        );
+        $stmt->execute([$shopId, $startUtc, $endUtc]);
+
+        foreach ($stmt->fetchAll() as $row) {
+            $productId = (int) $row['product_id'];
+            $byProduct[$productId] ??= [
+                'product_id' => $productId,
+                'product_name' => (string) $row['product_name'],
+                'qty_sold' => 0.0,
+                'revenue' => 0.0,
+            ];
+            $byProduct[$productId]['qty_sold'] -= (float) $row['qty'];
+            $byProduct[$productId]['revenue'] -= (float) $row['amount'];
+        }
+
+        $rows = array_values(array_filter(
+            $byProduct,
+            static fn (array $row): bool => $row['qty_sold'] > 0.0001
+        ));
+        foreach ($rows as &$row) {
+            $row['qty_sold'] = round($row['qty_sold'], 2);
+            $row['revenue'] = round($row['revenue'], 2);
+        }
+        unset($row);
+
+        usort($rows, static fn (array $a, array $b): int => [$b['qty_sold'], $b['revenue']] <=> [$a['qty_sold'], $a['revenue']]);
+
+        return array_slice($rows, 0, $limit);
     }
 
     /**
@@ -159,16 +245,23 @@ class Report
             }
         }
 
+        // Refunds issued in the period come back off the method each one
+        // actually went back through (refund_payments), so a refunded debt
+        // sale no longer counts as outstanding qarz here.
+        foreach (Refund::totalsByPayment($shopId, $startUtc, $endUtc) as $type => $amount) {
+            $result[$type] = round($result[$type] - $amount, 2);
+        }
+
         return $result;
     }
 
     /**
      * The end-of-day (Z-report) view for a single Tashkent calendar day: cash
-     * / card / debt-issued / refund totals shop-wide and per cashier, plus the
-     * net cash the drawer should hold (cash sales minus refunds paid out in
-     * cash — refunds don't record which method they were returned through, so
-     * every refund is assumed to have come back out of the cash drawer, which
-     * is the conservative assumption for a small shop's till count).
+     * / card / debt-issued sales and refunds shop-wide and per cashier, plus
+     * the net cash the drawer should hold. Only the naqd share of a refund
+     * (refund_payments) is cash leaving the drawer — a refund of a card sale
+     * goes back to the card, and one of a debt sale only reduces the
+     * customer's ledger, so neither touches the cash count.
      */
     public static function shiftReport(int $shopId, string $ymd): array
     {
@@ -185,6 +278,9 @@ class Report
                     'karta' => 0.0,
                     'qarz' => 0.0,
                     'refunds' => 0.0,
+                    'refunds_naqd' => 0.0,
+                    'refunds_karta' => 0.0,
+                    'refunds_qarz' => 0.0,
                 ];
             }
         };
@@ -226,36 +322,49 @@ class Report
             }
         }
 
+        // Refunds are attributed to whoever processed them (refunded_by) —
+        // that's whose drawer the cash came out of — split by the method each
+        // one actually went back through.
         $stmt = $pdo->prepare(
-            "SELECT r.refunded_by AS cashier_id, u.full_name AS cashier_name, SUM(r.total_amount) AS total
+            "SELECT r.refunded_by AS cashier_id, u.full_name AS cashier_name, rp.payment_type, SUM(rp.amount) AS total
              FROM refunds r
+             INNER JOIN refund_payments rp ON rp.refund_id = r.id
              INNER JOIN users u ON u.id = r.refunded_by
              WHERE r.shop_id = ? AND r.created_at >= ? AND r.created_at < ?
-             GROUP BY r.refunded_by"
+             GROUP BY r.refunded_by, rp.payment_type"
         );
         $stmt->execute([$shopId, $startUtc, $endUtc]);
         foreach ($stmt->fetchAll() as $row) {
             $cashierId = (int) $row['cashier_id'];
             $ensure($cashierId, (string) $row['cashier_name']);
-            $byCashier[$cashierId]['refunds'] += (float) $row['total'];
+            $key = 'refunds_' . $row['payment_type'];
+            if (isset($byCashier[$cashierId][$key])) {
+                $byCashier[$cashierId][$key] += (float) $row['total'];
+                $byCashier[$cashierId]['refunds'] += (float) $row['total'];
+            }
         }
 
         foreach ($byCashier as &$row) {
-            $row['net_cash'] = round($row['naqd'] - $row['refunds'], 2);
+            $row['net_cash'] = round($row['naqd'] - $row['refunds_naqd'], 2);
         }
         unset($row);
 
         usort($byCashier, static fn (array $a, array $b): int => strcmp((string) $a['cashier_name'], (string) $b['cashier_name']));
         $byCashier = array_values($byCashier);
 
-        $totals = ['naqd' => 0.0, 'karta' => 0.0, 'qarz' => 0.0, 'refunds' => 0.0];
+        $totals = [
+            'naqd' => 0.0, 'karta' => 0.0, 'qarz' => 0.0,
+            'refunds' => 0.0, 'refunds_naqd' => 0.0, 'refunds_karta' => 0.0, 'refunds_qarz' => 0.0,
+        ];
         foreach ($byCashier as $row) {
-            $totals['naqd'] += $row['naqd'];
-            $totals['karta'] += $row['karta'];
-            $totals['qarz'] += $row['qarz'];
-            $totals['refunds'] += $row['refunds'];
+            foreach ($totals as $key => $_) {
+                $totals[$key] += $row[$key];
+            }
         }
-        $totals['net_cash'] = round($totals['naqd'] - $totals['refunds'], 2);
+        foreach ($totals as $key => $value) {
+            $totals[$key] = round($value, 2);
+        }
+        $totals['net_cash'] = round($totals['naqd'] - $totals['refunds_naqd'], 2);
 
         return ['totals' => $totals, 'by_cashier' => $byCashier];
     }
@@ -277,6 +386,17 @@ class Report
         $byDate = [];
         foreach ($stmt->fetchAll() as $row) {
             $byDate[$row['d']] = (float) $row['revenue'];
+        }
+
+        $stmt = Database::connect()->prepare(
+            "SELECT date(created_at, '+5 hours') AS d, COALESCE(SUM(total_amount), 0) AS refunded
+             FROM refunds
+             WHERE shop_id = ? AND created_at >= ? AND created_at < ?
+             GROUP BY date(created_at, '+5 hours')"
+        );
+        $stmt->execute([$shopId, $startUtc, $endUtc]);
+        foreach ($stmt->fetchAll() as $row) {
+            $byDate[$row['d']] = round(($byDate[$row['d']] ?? 0.0) - (float) $row['refunded'], 2);
         }
 
         $result = [];
@@ -361,6 +481,34 @@ class Report
             $cogsByShop[(int) $row['shop_id']] = (float) $row['cogs'];
         }
 
+        // Refunds in the period reverse part of each shop's revenue and COGS
+        // (see refundTotals()) — two more grouped queries, same no-fan-out
+        // reasoning as above.
+        $refundsByShop = [];
+        $stmt = $pdo->prepare(
+            'SELECT shop_id, COALESCE(SUM(total_amount), 0) AS total
+             FROM refunds WHERE created_at >= ? AND created_at < ?
+             GROUP BY shop_id'
+        );
+        $stmt->execute([$startUtc, $endUtc]);
+        foreach ($stmt->fetchAll() as $row) {
+            $refundsByShop[(int) $row['shop_id']] = (float) $row['total'];
+        }
+
+        $refundCogsByShop = [];
+        $stmt = $pdo->prepare(
+            'SELECT r.shop_id, COALESCE(SUM(ri.qty * si.cost_price_snapshot), 0) AS cogs
+             FROM refund_items ri
+             INNER JOIN refunds r ON r.id = ri.refund_id
+             INNER JOIN sale_items si ON si.id = ri.sale_item_id
+             WHERE r.created_at >= ? AND r.created_at < ?
+             GROUP BY r.shop_id'
+        );
+        $stmt->execute([$startUtc, $endUtc]);
+        foreach ($stmt->fetchAll() as $row) {
+            $refundCogsByShop[(int) $row['shop_id']] = (float) $row['cogs'];
+        }
+
         // expense_date is a plain Tashkent calendar date (see Expense::totalByShop()),
         // not a UTC created_at timestamp, so it's compared directly against
         // $from/$to rather than through tashkent_day_bounds_utc().
@@ -379,8 +527,8 @@ class Report
         $result = [];
         foreach (Shop::all() as $shop) {
             $shopId = (int) $shop['id'];
-            $revenue = $salesByShop[$shopId]['revenue'] ?? 0.0;
-            $cogs = $cogsByShop[$shopId] ?? 0.0;
+            $revenue = round(($salesByShop[$shopId]['revenue'] ?? 0.0) - ($refundsByShop[$shopId] ?? 0.0), 2);
+            $cogs = round(($cogsByShop[$shopId] ?? 0.0) - ($refundCogsByShop[$shopId] ?? 0.0), 2);
             $expenses = $expensesByShop[$shopId] ?? 0.0;
 
             $result[] = [
@@ -456,6 +604,37 @@ class Report
             $cogsByCashier[(int) $row['cashier_id']] = (float) $row['cogs'];
         }
 
+        // Refunds in the period come off the revenue/COGS of whoever made the
+        // original sale (not whoever processed the return), so commission is
+        // never paid on goods that came back.
+        $refundsByCashier = [];
+        $stmt = $pdo->prepare(
+            'SELECT s.cashier_id, COALESCE(SUM(r.total_amount), 0) AS total
+             FROM refunds r
+             INNER JOIN sales s ON s.id = r.sale_id
+             WHERE r.shop_id = ? AND r.created_at >= ? AND r.created_at < ?
+             GROUP BY s.cashier_id'
+        );
+        $stmt->execute([$shopId, $startUtc, $endUtc]);
+        foreach ($stmt->fetchAll() as $row) {
+            $refundsByCashier[(int) $row['cashier_id']] = (float) $row['total'];
+        }
+
+        $refundCogsByCashier = [];
+        $stmt = $pdo->prepare(
+            'SELECT s.cashier_id, COALESCE(SUM(ri.qty * si.cost_price_snapshot), 0) AS cogs
+             FROM refund_items ri
+             INNER JOIN refunds r ON r.id = ri.refund_id
+             INNER JOIN sale_items si ON si.id = ri.sale_item_id
+             INNER JOIN sales s ON s.id = r.sale_id
+             WHERE r.shop_id = ? AND r.created_at >= ? AND r.created_at < ?
+             GROUP BY s.cashier_id'
+        );
+        $stmt->execute([$shopId, $startUtc, $endUtc]);
+        foreach ($stmt->fetchAll() as $row) {
+            $refundCogsByCashier[(int) $row['cashier_id']] = (float) $row['cogs'];
+        }
+
         $stmt = $pdo->prepare(
             "SELECT id, full_name, role, commission_rate FROM users
              WHERE shop_id = ? AND role IN ('owner', 'employee')
@@ -466,8 +645,8 @@ class Report
         $result = [];
         foreach ($stmt->fetchAll() as $u) {
             $cashierId = (int) $u['id'];
-            $revenue = $salesByCashier[$cashierId]['revenue'] ?? 0.0;
-            $cogs = $cogsByCashier[$cashierId] ?? 0.0;
+            $revenue = round(($salesByCashier[$cashierId]['revenue'] ?? 0.0) - ($refundsByCashier[$cashierId] ?? 0.0), 2);
+            $cogs = round(($cogsByCashier[$cashierId] ?? 0.0) - ($refundCogsByCashier[$cashierId] ?? 0.0), 2);
             $rate = $u['commission_rate'] !== null ? (float) $u['commission_rate'] : null;
 
             $result[] = [
@@ -479,7 +658,7 @@ class Report
                 'cogs' => $cogs,
                 'net_contribution' => $revenue - $cogs,
                 'commission_rate' => $rate,
-                'commission_amount' => $rate !== null ? round($revenue * $rate / 100, 2) : null,
+                'commission_amount' => $rate !== null ? max(0.0, round($revenue * $rate / 100, 2)) : null,
             ];
         }
 

@@ -23,6 +23,13 @@
     <div class="stat-tile">
         <div class="stat-value"><?= money((float) $totals['refunds']) ?></div>
         <div class="stat-label"><?= e(t('refunds_total_label')) ?></div>
+        <?php if ((float) $totals['refunds'] > 0): ?>
+            <div class="stat-sub"><?= e(t('refunds_split_line', [
+                'naqd' => money((float) $totals['refunds_naqd']),
+                'karta' => money((float) $totals['refunds_karta']),
+                'qarz' => money((float) $totals['refunds_qarz']),
+            ])) ?></div>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -43,6 +50,7 @@
                         <th><?= e(t('payment_karta')) ?></th>
                         <th><?= e(t('payment_qarz')) ?></th>
                         <th><?= e(t('refunds_total_label')) ?></th>
+                        <th><?= e(t('cash_refunds_label')) ?></th>
                         <th><?= e(t('net_cash_short_label')) ?></th>
                     </tr>
                 </thead>
@@ -54,6 +62,7 @@
                         <td data-label="<?= e(t('payment_karta')) ?>"><?= money((float) $row['karta']) ?></td>
                         <td data-label="<?= e(t('payment_qarz')) ?>"><?= money((float) $row['qarz']) ?></td>
                         <td data-label="<?= e(t('refunds_total_label')) ?>"><?= money((float) $row['refunds']) ?></td>
+                        <td data-label="<?= e(t('cash_refunds_label')) ?>"><?= money((float) $row['refunds_naqd']) ?></td>
                         <td data-label="<?= e(t('net_cash_short_label')) ?>"><?= money((float) $row['net_cash']) ?></td>
                     </tr>
                 <?php endforeach; ?>

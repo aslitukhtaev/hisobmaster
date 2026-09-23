@@ -30,6 +30,10 @@ class Database
             // serialize" into "the second one just errors out". This makes it
             // wait (retrying internally) for up to 5s before giving up.
             self::$pdo->exec('PRAGMA busy_timeout = 5000');
+
+            // Deploys only reset the code, so a pending schema change is
+            // applied by the first request that needs the database.
+            Migrator::ensureUpToDate(self::$pdo);
         }
 
         return self::$pdo;

@@ -520,6 +520,7 @@ img.logo-for-dark-theme { display: none; }
 }
 .stat-value { font-size: 1.5rem; font-weight: 800; color: var(--primary-dark); }
 .stat-label { font-size: .78rem; color: var(--muted); font-weight: 600; margin-top: 2px; }
+.stat-sub { font-size: .72rem; color: var(--muted); margin-top: 4px; line-height: 1.4; }
 
 /* ---------- Tables ---------- */
 .table-card { padding: 8px; }

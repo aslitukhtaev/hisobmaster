@@ -306,6 +306,19 @@ CREATE TABLE IF NOT EXISTS refund_items (
 CREATE INDEX IF NOT EXISTS idx_refund_items_refund ON refund_items(refund_id);
 CREATE INDEX IF NOT EXISTS idx_refund_items_sale_item ON refund_items(sale_item_id);
 
+-- Which payment method(s) a refund went back through, mirroring
+-- sale_payments: the refund's total is split across naqd/karta/qarz in the
+-- same proportion the original sale was paid (Refund::allocateByPayment()),
+-- so a refund of a card or debt sale is never counted as cash leaving the
+-- drawer. The qarz share is exactly what's taken off the customer's ledger.
+CREATE TABLE IF NOT EXISTS refund_payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    refund_id INTEGER NOT NULL REFERENCES refunds(id) ON DELETE CASCADE,
+    payment_type TEXT NOT NULL,
+    amount REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_refund_payments_refund ON refund_payments(refund_id);
+
 CREATE TABLE IF NOT EXISTS activity_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     shop_id INTEGER REFERENCES shops(id) ON DELETE CASCADE,

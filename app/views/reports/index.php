@@ -75,6 +75,9 @@ $comparisonMetrics = [
     <div class="stat-tile" style="grid-column: span 2;">
         <div class="stat-value" style="font-size:1.15rem;"><?= money((float) $summary['revenue']) ?></div>
         <div class="stat-label"><?= e(t('total_revenue')) ?></div>
+        <?php if ((float) ($summary['refunds'] ?? 0) > 0): ?>
+            <div class="stat-sub"><?= e(t('revenue_net_of_refunds', ['amount' => money((float) $summary['refunds'])])) ?></div>
+        <?php endif; ?>
     </div>
 </section>
 

@@ -23,6 +23,11 @@ if (is_file($envFile)) {
     }
 }
 
+// Deliberately not app/bootstrap.php (no session/router needed here) — just
+// the two classes the migration itself uses.
+require_once BASE_PATH . '/app/Core/Migrator.php';
+require_once BASE_PATH . '/app/Models/Refund.php';
+
 $dbPath = BASE_PATH . '/' . (getenv('DB_PATH') ?: 'database/kassiron.db');
 $dbDir = dirname($dbPath);
 if (!is_dir($dbDir)) {
@@ -32,79 +37,12 @@ if (!is_dir($dbDir)) {
 $pdo = new PDO('sqlite:' . $dbPath);
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->exec('PRAGMA foreign_keys = ON');
+$pdo->exec('PRAGMA busy_timeout = 5000');
 
-$schema = file_get_contents(__DIR__ . '/migrations/schema.sql');
-$pdo->exec($schema);
-echo "Sxema muvaffaqiyatli yaratildi/yangilandi: {$dbPath}\n";
-
-// Eski bazalarda users jadvali allaqachon mavjud bo'lishi mumkin (CREATE TABLE IF NOT EXISTS
-// ularni o'zgartirmaydi), shuning uchun yangi ustunlarni mavjudligini tekshirib, kerak bo'lsa qo'shamiz.
-$userColumns = array_column($pdo->query('PRAGMA table_info(users)')->fetchAll(PDO::FETCH_ASSOC), 'name');
-
-if (!in_array('failed_login_attempts', $userColumns, true)) {
-    $pdo->exec('ALTER TABLE users ADD COLUMN failed_login_attempts INTEGER NOT NULL DEFAULT 0');
-    echo "users jadvaliga failed_login_attempts ustuni qo'shildi.\n";
-}
-
-if (!in_array('locked_until', $userColumns, true)) {
-    $pdo->exec('ALTER TABLE users ADD COLUMN locked_until TEXT');
-    echo "users jadvaliga locked_until ustuni qo'shildi.\n";
-}
-
-// Xodim komissiyasi (commission_rate) — eski bazalarda bu ustun bo'lmasligi mumkin.
-if (!in_array('commission_rate', $userColumns, true)) {
-    $pdo->exec('ALTER TABLE users ADD COLUMN commission_rate REAL');
-    echo "users jadvaliga commission_rate ustuni qo'shildi.\n";
-}
-
-// Dashboard onboarding banner — eski bazalarda bu ustun bo'lmasligi mumkin.
-if (!in_array('onboarding_seen_at', $userColumns, true)) {
-    $pdo->exec('ALTER TABLE users ADD COLUMN onboarding_seen_at TEXT');
-    echo "users jadvaliga onboarding_seen_at ustuni qo'shildi.\n";
-}
-
-// Eski bazalarda products jadvali allaqachon mavjud bo'lishi mumkin — kam
-// tovar ogohlantirishi (low_stock_threshold) va karobka/quti hajmi
-// (pack_size) ustunlari kerak bo'lsa qo'shiladi.
-$productColumns = array_column($pdo->query('PRAGMA table_info(products)')->fetchAll(PDO::FETCH_ASSOC), 'name');
-
-if (!in_array('low_stock_threshold', $productColumns, true)) {
-    $pdo->exec('ALTER TABLE products ADD COLUMN low_stock_threshold REAL');
-    echo "products jadvaliga low_stock_threshold ustuni qo'shildi.\n";
-}
-
-if (!in_array('pack_size', $productColumns, true)) {
-    $pdo->exec('ALTER TABLE products ADD COLUMN pack_size INTEGER');
-    echo "products jadvaliga pack_size ustuni qo'shildi.\n";
-}
-
-// sale_items jadvaliga variant qo'shildi (mahsulot variantlari moduli) —
-// eski bazalarda bu ustunlar bo'lmasligi mumkin.
-$saleItemColumns = array_column($pdo->query('PRAGMA table_info(sale_items)')->fetchAll(PDO::FETCH_ASSOC), 'name');
-
-if (!in_array('variant_id', $saleItemColumns, true)) {
-    $pdo->exec('ALTER TABLE sale_items ADD COLUMN variant_id INTEGER REFERENCES product_variants(id)');
-    echo "sale_items jadvaliga variant_id ustuni qo'shildi.\n";
-}
-
-if (!in_array('variant_label', $saleItemColumns, true)) {
-    $pdo->exec('ALTER TABLE sale_items ADD COLUMN variant_label TEXT');
-    echo "sale_items jadvaliga variant_label ustuni qo'shildi.\n";
-}
-
-// Mijoz/qarz backlog: kredit limiti (credit_limit) va qarzni to'lash muddati
-// (debt_due_date) ustunlari — eski bazalarda bu ustunlar bo'lmasligi mumkin.
-$customerColumns = array_column($pdo->query('PRAGMA table_info(customers)')->fetchAll(PDO::FETCH_ASSOC), 'name');
-
-if (!in_array('credit_limit', $customerColumns, true)) {
-    $pdo->exec('ALTER TABLE customers ADD COLUMN credit_limit REAL');
-    echo "customers jadvaliga credit_limit ustuni qo'shildi.\n";
-}
-
-if (!in_array('debt_due_date', $customerColumns, true)) {
-    $pdo->exec('ALTER TABLE customers ADD COLUMN debt_due_date TEXT');
-    echo "customers jadvaliga debt_due_date ustuni qo'shildi.\n";
-}
+App\Core\Migrator::migrate($pdo, static function (string $message): void {
+    echo $message . "\n";
+});
+echo "Sxema muvaffaqiyatli yaratildi/yangilandi (versiya " . App\Core\Migrator::VERSION . "): {$dbPath}\n";
 
 $adminLogin = getenv('SUPER_ADMIN_LOGIN') ?: 'admin';
 $adminPassword = getenv('SUPER_ADMIN_PASSWORD') ?: 'change-me-please';

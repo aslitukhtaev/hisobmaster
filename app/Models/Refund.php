@@ -40,6 +40,78 @@ class Refund
     }
 
     /**
+     * Splits a refund amount across naqd/karta/qarz in the same proportion
+     * the original sale was paid. Every share but one is rounded directly;
+     * the remaining one (naqd first, then karta, then qarz — whichever the
+     * sale actually used) absorbs the rounding difference, so the shares
+     * always sum to exactly $amount and a method the sale never used always
+     * gets exactly 0.
+     *
+     * Pure function (no DB access) — also used by database/migrate.php to
+     * backfill refund_payments for refunds recorded before it existed.
+     *
+     * @return array{naqd: float, karta: float, qarz: float}
+     */
+    public static function allocateByPayment(float $amount, float $naqd, float $karta, float $qarz): array
+    {
+        $result = ['naqd' => 0.0, 'karta' => 0.0, 'qarz' => 0.0];
+        $split = ['naqd' => $naqd, 'karta' => $karta, 'qarz' => $qarz];
+        $total = $naqd + $karta + $qarz;
+
+        if ($amount <= 0 || $total <= 0) {
+            $result['naqd'] = max(0.0, $amount);
+            return $result;
+        }
+
+        $remainderKey = null;
+        foreach ($split as $type => $value) {
+            if ($value > 0) {
+                $remainderKey = $type;
+                break;
+            }
+        }
+
+        $assigned = 0.0;
+        foreach ($split as $type => $value) {
+            if ($type === $remainderKey || $value <= 0) {
+                continue;
+            }
+            $result[$type] = round($amount * $value / $total, 2);
+            $assigned += $result[$type];
+        }
+        $result[$remainderKey] = round($amount - $assigned, 2);
+
+        return $result;
+    }
+
+    /**
+     * Refunds within a UTC window, summed per payment method they went back
+     * through (refund_payments).
+     *
+     * @return array{naqd: float, karta: float, qarz: float}
+     */
+    public static function totalsByPayment(int $shopId, string $startUtc, string $endUtc): array
+    {
+        $stmt = Database::connect()->prepare(
+            'SELECT rp.payment_type, COALESCE(SUM(rp.amount), 0) AS total
+             FROM refund_payments rp
+             INNER JOIN refunds r ON r.id = rp.refund_id
+             WHERE r.shop_id = ? AND r.created_at >= ? AND r.created_at < ?
+             GROUP BY rp.payment_type'
+        );
+        $stmt->execute([$shopId, $startUtc, $endUtc]);
+
+        $result = ['naqd' => 0.0, 'karta' => 0.0, 'qarz' => 0.0];
+        foreach ($stmt->fetchAll() as $row) {
+            if (isset($result[$row['payment_type']])) {
+                $result[$row['payment_type']] += (float) $row['total'];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Issues a refund for some (or all) of a completed sale's line items.
      *
      * @param array<int, array{sale_item_id: int, qty: float}> $lines
@@ -149,7 +221,19 @@ class Refund
                 }
             }
 
-            self::adjustDebtForRefund($shopId, $sale, $totalAmount, $userId);
+            $split = Sale::paymentSplit($sale);
+            $allocation = self::allocateByPayment($totalAmount, $split['naqd'], $split['karta'], $split['qarz']);
+
+            $paymentStmt = $pdo->prepare(
+                'INSERT INTO refund_payments (refund_id, payment_type, amount) VALUES (?, ?, ?)'
+            );
+            foreach ($allocation as $type => $amount) {
+                if ($amount > 0) {
+                    $paymentStmt->execute([$refundId, $type, $amount]);
+                }
+            }
+
+            self::adjustDebtForRefund($shopId, $sale, $allocation['qarz'], $userId);
 
             Database::commit($pdo);
 
@@ -162,8 +246,9 @@ class Refund
 
     /**
      * If the sale being refunded was paid partly or fully via qarz (debt),
-     * this shrinks the customer's ledger by the debt's proportional share of
-     * the refunded amount.
+     * this shrinks the customer's ledger by $debtPortion — the qarz share of
+     * the refund from allocateByPayment(), the same figure recorded in
+     * refund_payments, so the ledger and the reports can never disagree.
      *
      * The ledger only ever tracks a running balance (not "which sale a debt
      * came from" once other payments/refunds start mixing in), so there's no
@@ -179,24 +264,12 @@ class Refund
      * Either way the shop's ledger balances exactly; nothing is double
      * counted or lost.
      */
-    private static function adjustDebtForRefund(int $shopId, array $sale, float $refundTotalAmount, int $userId): void
+    private static function adjustDebtForRefund(int $shopId, array $sale, float $debtPortion, int $userId): void
     {
         if ($sale['customer_id'] === null) {
             return;
         }
 
-        // total - paid_amount is the qarz portion of the sale by construction
-        // (see Sale::create(): paid_amount = naqd + karta, total = naqd + karta
-        // + qarz), for both legacy single-payment-type sales and new
-        // split-payment ones alike — no need to touch sale_payments here.
-        $qarzPortion = round((float) $sale['total'] - (float) $sale['paid_amount'], 2);
-        $saleTotal = (float) $sale['total'];
-
-        if ($qarzPortion <= 0 || $saleTotal <= 0) {
-            return;
-        }
-
-        $debtPortion = round($refundTotalAmount * ($qarzPortion / $saleTotal), 2);
         if ($debtPortion > 0) {
             DebtTransaction::record($shopId, (int) $sale['customer_id'], (int) $sale['id'], 'refund', $debtPortion, $userId, nested: true);
         }

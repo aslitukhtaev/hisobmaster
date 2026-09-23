@@ -229,6 +229,39 @@ class Sale
     }
 
     /**
+     * How much of a sale's total went through each payment method. Sales
+     * with sale_payments rows read them directly; older single-payment-type
+     * sales derive it from their own row: the qarz part is always
+     * total - paid_amount, and whatever was paid up front went through that
+     * sale's payment_type (karta), or cash for anything else — a legacy
+     * 'qarz' sale's partial up-front payment was taken in cash.
+     *
+     * @return array{naqd: float, karta: float, qarz: float}
+     */
+    public static function paymentSplit(array $sale): array
+    {
+        $split = ['naqd' => 0.0, 'karta' => 0.0, 'qarz' => 0.0];
+        $rows = self::payments((int) $sale['id']);
+
+        if (!empty($rows)) {
+            foreach ($rows as $row) {
+                if (isset($split[$row['payment_type']])) {
+                    $split[$row['payment_type']] += (float) $row['amount'];
+                }
+            }
+
+            return $split;
+        }
+
+        $total = (float) $sale['total'];
+        $paid = min((float) $sale['paid_amount'], $total);
+        $split['qarz'] = max(0.0, round($total - $paid, 2));
+        $split[$sale['payment_type'] === 'karta' ? 'karta' : 'naqd'] = $paid;
+
+        return $split;
+    }
+
+    /**
      * A short label for the sales.payment_type summary column: the single type
      * name when only one method was used (so old single-payment-type sales and
      * reports keep reading exactly what they always did), or 'aralash' (mixed)
@@ -329,9 +362,16 @@ class Sale
         $stmt->execute([$shopId, $startUtc, $endUtc]);
         $row = $stmt->fetch();
 
+        // Net of today's refunds, matching the reports page's revenue.
+        $stmt = $pdo->prepare(
+            'SELECT COALESCE(SUM(total_amount), 0) FROM refunds WHERE shop_id = ? AND created_at >= ? AND created_at < ?'
+        );
+        $stmt->execute([$shopId, $startUtc, $endUtc]);
+        $refunded = (float) $stmt->fetchColumn();
+
         return [
             'count' => (int) ($row['cnt'] ?? 0),
-            'revenue' => (float) ($row['revenue'] ?? 0),
+            'revenue' => round((float) ($row['revenue'] ?? 0) - $refunded, 2),
         ];
     }
 }
