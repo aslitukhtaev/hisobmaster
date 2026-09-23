@@ -501,6 +501,8 @@ return [
     'attendance_total_shifts_label' => 'Jami smenalar',
     'attendance_total_hours_label' => 'Jami ish vaqti',
     'attendance_currently_working' => 'Hozir ishda',
+    'attendance_not_clocked_out' => 'Ketish belgilanmagan',
+    'attendance_ongoing' => 'davom etmoqda',
     'clock_in_label' => 'Kelgan vaqti',
     'clock_out_label' => 'Ketgan vaqti',
     'shift_duration_label' => 'Davomiyligi',

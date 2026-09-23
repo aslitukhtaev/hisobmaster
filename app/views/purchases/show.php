@@ -1,7 +1,7 @@
 <?php $pageTitle = t('purchase_details'); ?>
 <section class="page-head">
     <h1><?= e(t('purchase_details')) ?></h1>
-    <p class="muted"><?= e(date('d.m.Y H:i', strtotime((string) $purchase['created_at']))) ?></p>
+    <p class="muted"><?= e(local_datetime($purchase['created_at'])) ?></p>
 </section>
 
 <div class="card" style="margin-bottom:16px;">

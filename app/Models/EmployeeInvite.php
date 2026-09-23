@@ -13,7 +13,11 @@ class EmployeeInvite
     {
         $pdo = Database::connect();
         $token = bin2hex(random_bytes(24));
-        $expiresAt = (new \DateTimeImmutable("+{$hoursValid} hours"))->format('Y-m-d H:i:s');
+        // UTC, like every other stored timestamp: it's compared against
+        // SQLite's datetime('now') (UTC) below, and shown via local_datetime().
+        $expiresAt = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))
+            ->modify("+{$hoursValid} hours")
+            ->format('Y-m-d H:i:s');
 
         $stmt = $pdo->prepare(
             'INSERT INTO employee_invites (shop_id, token, preset_permissions_json, created_by, expires_at)

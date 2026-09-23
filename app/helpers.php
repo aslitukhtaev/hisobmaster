@@ -118,6 +118,35 @@ function tashkent_day_bounds_utc(string $fromYmd, ?string $toYmd = null): array
     ];
 }
 
+/**
+ * A UTC 'Y-m-d H:i:s' column value (anything written by SQLite's
+ * datetime('now')) as a Unix timestamp. strtotime() alone would read it as
+ * Asia/Tashkent (PHP's default timezone here) and be 5 hours off.
+ */
+function utc_timestamp(?string $utc): ?int
+{
+    if ($utc === null || $utc === '') {
+        return null;
+    }
+
+    try {
+        return (new DateTimeImmutable($utc, new DateTimeZone('UTC')))->getTimestamp();
+    } catch (Exception) {
+        return null;
+    }
+}
+
+/**
+ * A UTC column value formatted in Tashkent local time — the only way a
+ * stored timestamp should ever reach the screen or an export.
+ */
+function local_datetime(?string $utc, string $format = 'd.m.Y H:i'): string
+{
+    $timestamp = utc_timestamp($utc);
+
+    return $timestamp === null ? '' : date($format, $timestamp);
+}
+
 function money(float $amount, string $currency = "so'm"): string
 {
     return number_format($amount, 0, '.', ' ') . ' ' . $currency;

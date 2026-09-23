@@ -37,7 +37,7 @@
                                 <?= e($shop['status'] === 'active' ? t('active_status') : t('blocked_status')) ?>
                             </span>
                         </td>
-                        <td class="muted" data-label="<?= e(t('created_at_label')) ?>"><?= e(substr((string) $shop['created_at'], 0, 10)) ?></td>
+                        <td class="muted" data-label="<?= e(t('created_at_label')) ?>"><?= e(local_datetime($shop['created_at'], 'd.m.Y')) ?></td>
                         <td data-label="<?= e(t('actions')) ?>">
                             <div class="row-actions">
                                 <form method="post" action="/superadmin/shops/<?= (int) $shop['id'] ?>/reset-password"

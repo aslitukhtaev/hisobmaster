@@ -7,13 +7,19 @@ $formatMinutes = static function (int $minutes): string {
     return t('shift_duration_format', ['h' => (string) $h, 'm' => str_pad((string) $m, 2, '0', STR_PAD_LEFT)]);
 };
 
+// Minutes worked in a shift; an open shift counts up to now, so a shift
+// left open since yesterday shows how long it's really been open.
+$shiftMinutes = static function (array $row): int {
+    $start = utc_timestamp($row['clock_in']) ?? time();
+    $end = $row['clock_out'] !== null ? (utc_timestamp($row['clock_out']) ?? $start) : time();
+    return max(0, (int) round(($end - $start) / 60));
+};
+// An open shift longer than this was almost certainly never clocked out.
+$staleOpenMinutes = 14 * 60;
+
 $totalMinutes = 0;
-$completedShifts = 0;
 foreach ($rows as $row) {
-    if ($row['clock_out'] !== null) {
-        $totalMinutes += (int) round((strtotime((string) $row['clock_out']) - strtotime((string) $row['clock_in'])) / 60);
-        $completedShifts++;
-    }
+    $totalMinutes += $shiftMinutes($row);
 }
 ?>
 <section class="page-head page-head-row">
@@ -74,24 +80,23 @@ foreach ($rows as $row) {
                 <tbody>
                 <?php foreach ($rows as $row):
                     $isOpen = $row['clock_out'] === null;
-                    $duration = $isOpen ? null : (int) round((strtotime((string) $row['clock_out']) - strtotime((string) $row['clock_in'])) / 60);
+                    $duration = $shiftMinutes($row);
                 ?>
                     <tr>
                         <td><?= e($row['user_name']) ?></td>
-                        <td data-label="<?= e(t('clock_in_label')) ?>" class="muted"><?= e(substr((string) $row['clock_in'], 0, 16)) ?></td>
+                        <td data-label="<?= e(t('clock_in_label')) ?>" class="muted"><?= e(local_datetime($row['clock_in'])) ?></td>
                         <td data-label="<?= e(t('clock_out_label')) ?>">
-                            <?php if ($isOpen): ?>
+                            <?php if ($isOpen && $duration > $staleOpenMinutes): ?>
+                                <span class="status-pill status-blocked"><?= e(t('attendance_not_clocked_out')) ?></span>
+                            <?php elseif ($isOpen): ?>
                                 <span class="status-pill status-active"><?= e(t('attendance_currently_working')) ?></span>
                             <?php else: ?>
-                                <span class="muted"><?= e(substr((string) $row['clock_out'], 0, 16)) ?></span>
+                                <span class="muted"><?= e(local_datetime($row['clock_out'])) ?></span>
                             <?php endif; ?>
                         </td>
                         <td data-label="<?= e(t('shift_duration_label')) ?>">
-                            <?php if ($duration !== null): ?>
-                                <?= e($formatMinutes($duration)) ?>
-                            <?php else: ?>
-                                <span class="muted">—</span>
-                            <?php endif; ?>
+                            <?= e($formatMinutes($duration)) ?>
+                            <?php if ($isOpen): ?><span class="muted"> · <?= e(t('attendance_ongoing')) ?></span><?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>

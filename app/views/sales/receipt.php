@@ -28,7 +28,7 @@ $debtAmount = round((float) $sale['total'] - (float) $sale['paid_amount'], 2);
         <div class="receipt-shop-name"><?= e($shop['name'] ?? '') ?></div>
         <?php if (!empty($shop['address'])): ?><div class="receipt-meta"><?= e($shop['address']) ?></div><?php endif; ?>
         <?php if (!empty($shop['phone'])): ?><div class="receipt-meta"><?= e($shop['phone']) ?></div><?php endif; ?>
-        <div class="receipt-meta">№<?= (int) $sale['id'] ?> · <?= e(substr((string) $sale['created_at'], 0, 16)) ?></div>
+        <div class="receipt-meta">№<?= (int) $sale['id'] ?> · <?= e(local_datetime($sale['created_at'])) ?></div>
         <div class="receipt-meta"><?= e(t('cashier')) ?>: <?= e($sale['cashier_name'] ?? '') ?></div>
     </div>
 
@@ -83,7 +83,7 @@ $debtAmount = round((float) $sale['total'] - (float) $sale['paid_amount'], 2);
         <div class="receipt-line" style="font-weight:800;"><span><?= e(t('refund_history')) ?></span><span></span></div>
         <?php foreach ($refunds as $refund): ?>
             <div class="receipt-line">
-                <span><?= e(substr((string) $refund['created_at'], 0, 16)) ?> · <?= e($refund['refunded_by_name'] ?? '') ?></span>
+                <span><?= e(local_datetime($refund['created_at'])) ?> · <?= e($refund['refunded_by_name'] ?? '') ?></span>
                 <span>-<?= money((float) $refund['total_amount']) ?></span>
             </div>
             <?php foreach ($refund['items'] as $refundItem): ?>

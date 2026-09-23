@@ -111,7 +111,7 @@ $isOverdue = $dueDate !== null && $dueDate !== '' && $dueDate < date('Y-m-d') &&
                 <tbody>
                 <?php foreach ($purchases as $sale): ?>
                     <tr>
-                        <td><?= e(substr((string) $sale['created_at'], 0, 16)) ?></td>
+                        <td><?= e(local_datetime($sale['created_at'])) ?></td>
                         <td data-label="<?= e(t('items_count_column')) ?>"><?= (int) $sale['item_count'] ?></td>
                         <td data-label="<?= e(t('total')) ?>"><?= money((float) $sale['total']) ?></td>
                         <td data-label="<?= e(t('payment_type')) ?>">
@@ -153,7 +153,7 @@ $isOverdue = $dueDate !== null && $dueDate !== '' && $dueDate < date('Y-m-d') &&
                         default => t('debt_type_tolov'),
                     }; ?>
                     <tr>
-                        <td><?= e(substr((string) $entry['created_at'], 0, 16)) ?></td>
+                        <td><?= e(local_datetime($entry['created_at'])) ?></td>
                         <td data-label="<?= e(t('debt_type')) ?>">
                             <span class="status-pill <?= $entry['type'] === 'qarz' ? 'status-blocked' : 'status-active' ?>">
                                 <?= e($debtTypeLabel) ?>

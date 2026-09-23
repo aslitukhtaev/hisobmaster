@@ -16,7 +16,7 @@
     <div class="stack" style="gap:10px; margin-top:12px;">
     <?php foreach ($invites as $invite): ?>
         <div class="invite-row">
-            <span class="muted"><?= e(t('expires_at_label')) ?>: <?= e(substr((string) $invite['expires_at'], 0, 16)) ?></span>
+            <span class="muted"><?= e(t('expires_at_label')) ?>: <?= e(local_datetime($invite['expires_at'])) ?></span>
             <form method="post" action="/employees/invites/<?= (int) $invite['id'] ?>/revoke"
                   onsubmit="return confirm('<?= e(t('confirm_revoke_invite')) ?>');">
                 <?= csrf_field() ?>

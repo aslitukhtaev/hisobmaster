@@ -501,6 +501,8 @@ return [
     'attendance_total_shifts_label' => 'Всего смен',
     'attendance_total_hours_label' => 'Общее время работы',
     'attendance_currently_working' => 'Сейчас на работе',
+    'attendance_not_clocked_out' => 'Уход не отмечен',
+    'attendance_ongoing' => 'продолжается',
     'clock_in_label' => 'Время прихода',
     'clock_out_label' => 'Время ухода',
     'shift_duration_label' => 'Продолжительность',

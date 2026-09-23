@@ -54,7 +54,7 @@
                     };
                     ?>
                     <tr>
-                        <td><?= e(substr((string) $sale['created_at'], 0, 16)) ?></td>
+                        <td><?= e(local_datetime($sale['created_at'])) ?></td>
                         <td data-label="<?= e(t('cashier')) ?>"><?= e($sale['cashier_name'] ?? '—') ?></td>
                         <td data-label="<?= e(t('customer')) ?>"><?= e($sale['customer_name'] ?? '—') ?></td>
                         <td data-label="<?= e(t('total')) ?>"><?= money((float) $sale['total']) ?></td>

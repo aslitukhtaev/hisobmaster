@@ -26,7 +26,7 @@
                 <tbody>
                 <?php foreach ($purchases as $purchase): ?>
                     <tr>
-                        <td><?= e(date('d.m.Y H:i', strtotime((string) $purchase['created_at']))) ?></td>
+                        <td><?= e(local_datetime($purchase['created_at'])) ?></td>
                         <td data-label="<?= e(t('supplier_name')) ?>" class="muted"><?= e($purchase['supplier_name'] ?? t('no_supplier_option')) ?></td>
                         <td data-label="<?= e(t('amount')) ?>"><?= money((float) $purchase['total_amount']) ?></td>
                         <td data-label="<?= e(t('actions')) ?>">

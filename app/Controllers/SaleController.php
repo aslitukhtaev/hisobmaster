@@ -63,7 +63,7 @@ class SaleController
         fputcsv($out, [t('sale_date'), t('cashier'), t('customer'), t('total'), t('payment_type')]);
         foreach ($sales as $sale) {
             fputcsv($out, [
-                substr((string) $sale['created_at'], 0, 16),
+                local_datetime($sale['created_at']),
                 $sale['cashier_name'] ?? '',
                 $sale['customer_name'] ?? '',
                 number_format((float) $sale['total'], 2, '.', ''),

@@ -63,7 +63,7 @@ class ActivityLogController
         foreach ($entries as $entry) {
             $meta = json_decode($entry['meta_json'] ?? '[]', true) ?: [];
             fputcsv($out, [
-                (string) $entry['created_at'],
+                local_datetime($entry['created_at']),
                 $entry['user_name'] ?? '—',
                 t('activity_' . $entry['action'], $meta),
             ]);
