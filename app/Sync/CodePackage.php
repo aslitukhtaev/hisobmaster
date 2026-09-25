@@ -122,13 +122,20 @@ final class CodePackage
 
     /**
      * What's new since the computer's code: the changelog entries (app/
-     * changelog.php) dated after the newest one it already has.
+     * changelog.php) it doesn't have yet. New entries are only ever added at
+     * the top, so a computer that has $knownCount of them lacks the first
+     * (total - $knownCount). Apps from before the count was sent give only
+     * the date of their newest entry: then, the entries dated after it.
      *
      * @return list<array{date: string, uz: string, ru: string}>
      */
-    public static function notesSince(?string $lastDate): array
+    public static function notesSince(?string $lastDate, ?int $knownCount = null): array
     {
         $entries = require BASE_PATH . '/app/changelog.php';
+
+        if ($knownCount !== null) {
+            return array_slice($entries, 0, max(0, count($entries) - $knownCount));
+        }
 
         return array_values(array_filter(
             $entries,

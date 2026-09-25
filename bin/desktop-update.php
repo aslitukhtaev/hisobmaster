@@ -41,6 +41,7 @@ try {
         $answer = DesktopSync::request('/api/desktop/update', [
             'version' => CodePackage::version(BASE_PATH),
             'changelog_date' => $changelog[0]['date'] ?? null,
+            'changelog_count' => count($changelog),
         ]);
         out($answer + ['current' => CodePackage::version(BASE_PATH)]);
     }

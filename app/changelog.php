@@ -3,8 +3,15 @@
 // What's new, newest first — shown in the desktop app when an update
 // arrives ("Nima yangi"). Add an entry for changes a shop would notice; a
 // change without an entry still reaches the computers, with a generic note.
+// New entries go at the top, and old ones are never removed: a computer is
+// shown the entries above the ones it already has (CodePackage::notesSince()).
 
 return [
+    [
+        'date' => '2026-09-25',
+        'uz' => "Yordam bo'limida biz bilan bog'lanish: telefon va Telegram.",
+        'ru' => 'В разделе «Помощь» — контакты для связи: телефон и Telegram.',
+    ],
     [
         'date' => '2026-09-25',
         'uz' => "Kompyuter dasturi: internetsiz ishlash, avtomatik sinxronlash va yangilanish.",

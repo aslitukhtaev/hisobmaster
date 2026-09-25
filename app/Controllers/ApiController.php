@@ -91,8 +91,9 @@ class ApiController
 
     /**
      * Is there newer code for this computer? It sends the version of the code
-     * it runs and the date of its newest changelog entry; the answer carries
-     * the package's size, hash, signature and what's new since then.
+     * it runs and how many changelog entries it has (older apps: the date of
+     * its newest one); the answer carries the package's size, hash, signature
+     * and what's new since then.
      */
     public function updateCheck(Request $request): void
     {
@@ -104,6 +105,9 @@ class ApiController
             $lastDate = isset($body['changelog_date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $body['changelog_date'])
                 ? (string) $body['changelog_date']
                 : null;
+            $knownCount = isset($body['changelog_count']) && is_int($body['changelog_count']) && $body['changelog_count'] >= 0
+                ? $body['changelog_count']
+                : null;
 
             return [
                 'available' => $theirs !== $package['version'],
@@ -112,7 +116,7 @@ class ApiController
                 'size' => $package['size'],
                 'sha256' => $package['sha256'],
                 'signature' => $package['signature'],
-                'notes' => CodePackage::notesSince($lastDate),
+                'notes' => CodePackage::notesSince($lastDate, $knownCount),
             ];
         });
     }
