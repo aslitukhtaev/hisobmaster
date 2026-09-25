@@ -15,6 +15,27 @@ class Auth
 
     public static function attempt(string $login, string $password): bool
     {
+        $user = self::verifyCredentials($login, $password);
+        if ($user === null) {
+            return false;
+        }
+
+        session_regenerate_id(true);
+        $_SESSION['user_id'] = (int) $user['id'];
+        self::$user = $user;
+        self::$loaded = true;
+
+        return true;
+    }
+
+    /**
+     * The active user with this login and password (whose shop is active),
+     * or null — with the same failed-attempt counting and lockout as the
+     * login form, but without touching the session. Used by attempt() and by
+     * the desktop app's activation, which logs in over the API.
+     */
+    public static function verifyCredentials(string $login, string $password): ?array
+    {
         self::$lockedOut = false;
 
         $pdo = Database::connect();
@@ -28,28 +49,23 @@ class Auth
         // is a distinct locked-out message shown to the user submitting the form.
         if ($user !== false && self::isCurrentlyLocked($user)) {
             self::$lockedOut = true;
-            return false;
+            return null;
         }
 
         if (!$user || !password_verify($password, $user['password_hash'])) {
             if ($user !== false) {
                 self::registerFailedAttempt((int) $user['id'], (int) $user['failed_login_attempts']);
             }
-            return false;
+            return null;
         }
 
         if (!self::isShopActive($user['shop_id'])) {
-            return false;
+            return null;
         }
 
         self::resetFailedAttempts((int) $user['id']);
 
-        session_regenerate_id(true);
-        $_SESSION['user_id'] = (int) $user['id'];
-        self::$user = $user;
-        self::$loaded = true;
-
-        return true;
+        return $user;
     }
 
     /**

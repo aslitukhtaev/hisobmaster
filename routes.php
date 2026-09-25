@@ -3,10 +3,12 @@
 declare(strict_types=1);
 
 use App\Controllers\ActivityLogController;
+use App\Controllers\ApiController;
 use App\Controllers\AttendanceController;
 use App\Controllers\AuthController;
 use App\Controllers\CustomerController;
 use App\Controllers\DashboardController;
+use App\Controllers\DeviceController;
 use App\Controllers\EmployeeController;
 use App\Controllers\ExpenseController;
 use App\Controllers\HelpController;
@@ -50,6 +52,12 @@ $router->post('/superadmin/shops', [SuperAdminController::class, 'store'], ['aut
 $router->get('/superadmin/shops/{id}/created', [SuperAdminController::class, 'created'], ['auth', 'role:super_admin']);
 $router->post('/superadmin/shops/{id}/toggle-status', [SuperAdminController::class, 'toggleStatus'], ['auth', 'role:super_admin', 'csrf']);
 $router->post('/superadmin/shops/{id}/reset-password', [SuperAdminController::class, 'resetPassword'], ['auth', 'role:super_admin', 'csrf']);
+$router->get('/superadmin/shops/{id}/devices', [SuperAdminController::class, 'devices'], ['auth', 'role:super_admin']);
+$router->post('/superadmin/shops/{id}/devices/{deviceId}/revoke', [SuperAdminController::class, 'revokeDevice'], ['auth', 'role:super_admin', 'csrf']);
+$router->post('/superadmin/shops/{id}/offline-days', [SuperAdminController::class, 'updateOfflineDays'], ['auth', 'role:super_admin', 'csrf']);
+
+$router->get('/devices', [DeviceController::class, 'index'], ['auth', 'role:owner']);
+$router->post('/devices/{id}/revoke', [DeviceController::class, 'revoke'], ['auth', 'role:owner', 'csrf']);
 
 $router->get('/products', [ProductController::class, 'index'], ['auth', 'permission:products']);
 $router->get('/products/create', [ProductController::class, 'createForm'], ['auth', 'permission:products']);
@@ -130,3 +138,9 @@ $router->post('/telegram/webhook', [TelegramController::class, 'webhook'], []);
 
 $router->get('/activity', [ActivityLogController::class, 'index'], ['auth', 'role:owner']);
 $router->get('/activity/export', [ActivityLogController::class, 'exportCsv'], ['auth', 'role:owner']);
+
+// Desktop app API (JSON, authenticated per request — see ApiController).
+$router->post('/api/device/activate', [ApiController::class, 'activate']);
+$router->post('/api/sync/push', [ApiController::class, 'push']);
+$router->post('/api/sync/pull', [ApiController::class, 'pull']);
+$router->get('/api/license/public-key', [ApiController::class, 'publicKey']);

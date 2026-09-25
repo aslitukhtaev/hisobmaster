@@ -344,3 +344,87 @@ CREATE TABLE IF NOT EXISTS settings (
     value TEXT,
     PRIMARY KEY (shop_id, key)
 );
+
+-- ---------- Desktop app: computers and sync ----------
+
+-- A shop's computer running the desktop app. Created when the shop owner
+-- activates the app online (see App\Sync\DeviceService). One shop, one
+-- lifetime license, any number of computers; the list exists so the owner or
+-- super admin can see them and switch one off (a lost or sold computer).
+CREATE TABLE IF NOT EXISTS devices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shop_id INTEGER NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+    uuid TEXT NOT NULL UNIQUE,
+    -- "K1", "K2", ...: the prefix of this computer's receipt numbers.
+    code TEXT NOT NULL,
+    name TEXT,
+    -- sha256 of the Windows MachineGuid, computed by the app.
+    fingerprint TEXT NOT NULL,
+    -- sha256 of the secret the computer authenticates with (the secret
+    -- itself is shown to the computer once, at activation).
+    secret_hash TEXT NOT NULL,
+    -- active | revoked (switched off) | replaced (reactivated on the same
+    -- computer, which got a new record and code)
+    status TEXT NOT NULL DEFAULT 'active',
+    app_version TEXT,
+    -- Highest change number from this computer already applied, so a batch
+    -- sent twice (lost connection) is never applied twice.
+    last_push_seq INTEGER NOT NULL DEFAULT 0,
+    activated_by INTEGER REFERENCES users(id),
+    last_seen_at TEXT,
+    last_sync_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (shop_id, code)
+);
+CREATE INDEX IF NOT EXISTS idx_devices_shop ON devices(shop_id);
+
+-- Append-only journal of every change to a synced table, written by the
+-- triggers from App\Core\SyncSchema::installTriggers(). On the server it is
+-- what computers pull ("everything after entry N"); in the desktop app it is
+-- the queue of local changes still to be sent.
+CREATE TABLE IF NOT EXISTS sync_changes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shop_id INTEGER,
+    tbl TEXT NOT NULL,
+    row_id INTEGER NOT NULL,
+    -- Only for deletes, when the row (and its uuid) is gone.
+    row_uuid TEXT,
+    -- upsert | delete | delta (a counter changed by `delta`)
+    op TEXT NOT NULL,
+    delta_col TEXT,
+    delta REAL,
+    -- The computer (devices.id) the change came from; NULL = made here.
+    source INTEGER,
+    changed_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now'))
+);
+CREATE INDEX IF NOT EXISTS idx_sync_changes_shop ON sync_changes(shop_id, id);
+CREATE INDEX IF NOT EXISTS idx_sync_changes_row ON sync_changes(tbl, row_id);
+
+-- One row the change-capture triggers read: `source` stamps the changes being
+-- applied on behalf of a computer, `suppress` silences the triggers while the
+-- desktop app applies rows it received (so they aren't sent back).
+CREATE TABLE IF NOT EXISTS sync_context (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    source INTEGER,
+    suppress INTEGER NOT NULL DEFAULT 0
+);
+INSERT OR IGNORE INTO sync_context (id, source, suppress) VALUES (1, NULL, 0);
+
+-- Server-generated secrets, e.g. the Ed25519 key licenses are signed with.
+CREATE TABLE IF NOT EXISTS server_keys (
+    name TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- A change a computer sent that the server could not apply (see
+-- App\Sync\SyncService::push()): kept for inspection instead of blocking
+-- every later change from that computer.
+CREATE TABLE IF NOT EXISTS sync_rejects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id INTEGER NOT NULL,
+    seq INTEGER NOT NULL,
+    change_json TEXT,
+    error TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

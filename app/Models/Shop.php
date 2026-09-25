@@ -46,6 +46,11 @@ class Shop
         Database::connect()->prepare('UPDATE shops SET status = ? WHERE id = ?')->execute([$status, $id]);
     }
 
+    public static function updateOfflineDays(int $id, int $days): void
+    {
+        Database::connect()->prepare('UPDATE shops SET offline_days = ? WHERE id = ?')->execute([$days, $id]);
+    }
+
     public static function updateSettings(int $id, string $name, ?string $address, int $receiptPrinterWidth): void
     {
         Database::connect()

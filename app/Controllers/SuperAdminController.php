@@ -10,6 +10,7 @@ use App\Models\Backup;
 use App\Models\Report;
 use App\Models\Shop;
 use App\Models\User;
+use App\Sync\DeviceService;
 
 class SuperAdminController
 {
@@ -186,6 +187,42 @@ class SuperAdminController
         }
 
         redirect('/superadmin/shops');
+    }
+
+    public function devices(Request $request, string $id): void
+    {
+        $shop = Shop::find((int) $id);
+        if (!$shop) {
+            abort_404();
+        }
+
+        View::render('superadmin/shops/devices', [
+            'shop' => $shop,
+            'devices' => DeviceService::allByShop((int) $id),
+        ]);
+    }
+
+    public function revokeDevice(Request $request, string $id, string $deviceId): void
+    {
+        if (DeviceService::revoke((int) $deviceId, (int) $id)) {
+            flash('success', t('device_revoked_flash'));
+        }
+
+        redirect("/superadmin/shops/{$id}/devices");
+    }
+
+    public function updateOfflineDays(Request $request, string $id): void
+    {
+        $raw = trim((string) $request->input('offline_days', ''));
+
+        if (!ctype_digit($raw) || (int) $raw < 1 || (int) $raw > 90) {
+            flash('error', t('offline_days_invalid'));
+        } elseif (Shop::find((int) $id)) {
+            Shop::updateOfflineDays((int) $id, (int) $raw);
+            flash('success', t('offline_days_saved'));
+        }
+
+        redirect("/superadmin/shops/{$id}/devices");
     }
 
     public function resetPassword(Request $request, string $id): void

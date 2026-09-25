@@ -22,7 +22,7 @@ use Throwable;
  */
 final class Migrator
 {
-    public const VERSION = 4;
+    public const VERSION = 5;
 
     public static function ensureUpToDate(PDO $pdo): void
     {
@@ -110,8 +110,15 @@ final class Migrator
             self::grantDiscountPermission($pdo, $log);
         }
 
+        self::addColumns($pdo, $log, 'shops', [
+            // How long the shop's computers keep working without reaching
+            // the server (see App\Sync\License).
+            'offline_days' => 'INTEGER NOT NULL DEFAULT 7',
+        ]);
+
         // Last, so rows inserted by the steps above get their uuid too.
         self::addSyncIdentity($pdo, $log);
+        SyncSchema::installTriggers($pdo);
     }
 
     /**

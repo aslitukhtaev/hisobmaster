@@ -42,6 +42,25 @@ So'ng brauzerda `http://localhost:8000` ni oching va `.env`dagi super admin logi
 
 4. Botga `/start` yozing — bot "Ilovani ochish" tugmasi bilan javob beradi, u bosilganda sayt Telegram ichida WebApp sifatida ochiladi. Kirish baribir login/parol orqali amalga oshadi — Telegram faqat qulay kirish kanali.
 
+## Kompyuter dasturi (desktop) uchun server API
+
+Kompyuter dasturi offline ishlaydi va internet bo'lganda server bilan sinxronlanadi.
+Litsenziya: bitta do'kon — bitta umrbod litsenziya, kompyuterlar soni cheklanmagan.
+
+- `POST /api/device/activate` — do'kon egasining login/paroli bilan kompyuterni faollashtirish.
+  Javobda kompyuter kodi (`K1`, `K2`...), maxfiy kalit va imzolangan ruxsatnoma qaytadi.
+- `POST /api/sync/push` — kompyuterda qilingan o'zgarishlar (`X-Device-Auth: Device <uuid>:<secret>`).
+- `POST /api/sync/pull` — boshqa joylarda (sayt, Telegram, boshqa kassalar) bo'lgan o'zgarishlar.
+- `GET /api/license/public-key` — ruxsatnoma imzosini tekshiradigan ochiq kalit (dastur yig'ilganda qo'shiladi).
+
+Ruxsatnoma Ed25519 bilan imzolanadi; kalit birinchi ishlatilganda yaratilib, bazadagi
+`server_keys` jadvalida saqlanadi (yoki `.env` dagi `LICENSE_SECRET_KEY`). U yo'qolsa,
+barcha kompyuterlar qayta faollashtirilishi kerak — bazaning zaxira nusxasida bor.
+Har bir o'zgarish triggerlar orqali `sync_changes` jurnaliga avtomatik yoziladi
+(`app/Core/SyncSchema.php`), shuning uchun sayt kodini sinxron uchun o'zgartirish shart emas.
+Do'kon kompyuterlari: egasi — "Kompyuterlar" bo'limi, superadmin — do'konlar ro'yxatidagi
+"Kompyuterlar" tugmasi (internetsiz ishlash muddati ham shu yerda).
+
 ## Loyiha tuzilishi
 
 ```

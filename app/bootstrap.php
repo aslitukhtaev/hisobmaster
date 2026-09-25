@@ -27,6 +27,11 @@ $isHttpsRequest = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
     || (($_SERVER['SERVER_PORT'] ?? null) == 443)
     || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
 
+// The desktop app's JSON API (/api/...) authenticates every request itself
+// and never sends a cookie, so it gets no session (one would be a new,
+// empty session file per request).
+$isApiRequest = str_starts_with((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH), '/api/');
+
 session_set_cookie_params([
     'lifetime' => 0,
     'path' => '/',
@@ -34,7 +39,9 @@ session_set_cookie_params([
     'httponly' => true,
     'samesite' => 'Lax',
 ]);
-session_start();
+if (!$isApiRequest) {
+    session_start();
+}
 
 date_default_timezone_set('Asia/Tashkent');
 

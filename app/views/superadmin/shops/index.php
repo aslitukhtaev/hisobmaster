@@ -40,6 +40,7 @@
                         <td class="muted" data-label="<?= e(t('created_at_label')) ?>"><?= e(local_datetime($shop['created_at'], 'd.m.Y')) ?></td>
                         <td data-label="<?= e(t('actions')) ?>">
                             <div class="row-actions">
+                                <a href="/superadmin/shops/<?= (int) $shop['id'] ?>/devices" class="btn btn-ghost btn-sm"><?= e(t('devices_title')) ?></a>
                                 <form method="post" action="/superadmin/shops/<?= (int) $shop['id'] ?>/reset-password"
                                       data-confirm="<?= e(t('confirm_reset_password')) ?>">
                                     <?= csrf_field() ?>
