@@ -81,6 +81,14 @@ class DesktopController
         redirect($back);
     }
 
+    /** Just the status bar, re-fetched by the page when a background sync finishes. */
+    public function statusBar(Request $request): void
+    {
+        $this->desktopOnly();
+        header('Cache-Control: no-store');
+        View::render('desktop/_status-bar', [], null);
+    }
+
     /** For the shell and the header indicator: no secrets, only state. */
     public function status(Request $request): void
     {

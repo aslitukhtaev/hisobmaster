@@ -152,3 +152,4 @@ $router->post('/desktop/activate', [DesktopController::class, 'activate'], ['csr
 $router->get('/desktop/web-only', [DesktopController::class, 'webOnly'], ['auth']);
 $router->post('/desktop/sync', [DesktopController::class, 'syncNow'], ['auth', 'csrf']);
 $router->get('/desktop/status', [DesktopController::class, 'status']);
+$router->get('/desktop/status-bar', [DesktopController::class, 'statusBar'], ['auth']);

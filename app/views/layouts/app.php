@@ -111,10 +111,14 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
     <link rel="apple-touch-icon" href="<?= asset('img/icon-192.png') ?>">
     <meta name="theme-color" content="#059669" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#121e2e" media="(prefers-color-scheme: dark)">
+    <?php if (!App\Desktop\Desktop::enabled()): /* Telegram WebApp SDK: website only — the desktop app works offline */ ?>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <?php endif; ?>
 </head>
 <body>
+    <?php if (!App\Desktop\Desktop::enabled()): ?>
     <script src="<?= asset('js/telegram.js') ?>"></script>
+    <?php endif; ?>
     <div class="shell">
         <aside class="sidebar">
             <div class="brand">

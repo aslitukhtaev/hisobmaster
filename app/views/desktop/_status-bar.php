@@ -19,7 +19,7 @@ if ($pending['sales'] > 0) {
 }
 $lastSync = $desktopStatus['last_sync_at'] ? t('desktop_status_last_sync', ['time' => local_datetime($desktopStatus['last_sync_at'], 'H:i')]) : t('desktop_status_never');
 ?>
-<div class="desktop-bar" id="desktop-bar">
+<div id="desktop-status"><div class="desktop-bar" id="desktop-bar">
     <span class="desktop-dot desktop-dot-<?= e($dot) ?>" aria-hidden="true"></span>
     <span class="desktop-bar-label"><?= e($label) ?></span>
     <span class="muted desktop-bar-sub"><?= e($lastSync) ?><?php if ($licenseState === 'ok' && $daysLeft !== null && $daysLeft <= Desktop::WARN_DAYS + 3): ?> · <?= e(t('desktop_license_days_left', ['days' => $daysLeft])) ?><?php endif; ?></span>
@@ -33,3 +33,4 @@ $lastSync = $desktopStatus['last_sync_at'] ? t('desktop_status_last_sync', ['tim
 <?php elseif ($daysLeft !== null && $daysLeft <= Desktop::WARN_DAYS): ?>
     <div class="alert alert-warning" role="status"><?= e(t('desktop_license_expiring', ['days' => max(0, $daysLeft)])) ?></div>
 <?php endif; ?>
+</div>

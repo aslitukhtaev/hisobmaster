@@ -1,0 +1,47 @@
+name: Desktop (Windows)
+
+# Builds the KassirON desktop installer for Windows: the Electron shell, PHP
+# 8.3 for Windows and the KassirON code, checked by scripts/smoke-test.js
+# with the bundled PHP before the installer is made.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/friendly-fermi-qrkday]
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/desktop.yml'
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Prepare build (code, PHP for Windows, CA bundle, license key)
+        run: node scripts/prepare-build.js
+
+      - name: Smoke test with the bundled PHP
+        run: node scripts/smoke-test.js
+
+      - name: Build installer
+        run: npx electron-builder --win --x64 --publish never
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KassirON-Setup
+          path: desktop/dist/*.exe
+          retention-days: 30

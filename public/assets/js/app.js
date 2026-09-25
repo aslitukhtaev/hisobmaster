@@ -104,3 +104,32 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 });
+
+// Desktop app: when a background sync finishes (the shell tells us through
+// the preload bridge), refresh the status bar so "1 ta sotuv yuborilmagan"
+// turns into "Sinxronlangan" without reloading the page.
+(function () {
+    if (!window.kassironDesktop || typeof window.kassironDesktop.onSyncStatus !== 'function') {
+        return;
+    }
+    window.kassironDesktop.onSyncStatus(function () {
+        var holder = document.getElementById('desktop-status');
+        if (!holder) {
+            return;
+        }
+        fetch('/desktop/status-bar', { credentials: 'same-origin', cache: 'no-store' })
+            .then(function (response) { return response.ok ? response.text() : null; })
+            .then(function (html) {
+                if (!html) {
+                    return;
+                }
+                var tmp = document.createElement('div');
+                tmp.innerHTML = html;
+                var fresh = tmp.querySelector('#desktop-status');
+                if (fresh) {
+                    holder.replaceWith(fresh);
+                }
+            })
+            .catch(function () {});
+    });
+})();

@@ -1,0 +1,71 @@
+{
+  "name": "kassiron-desktop",
+  "productName": "KassirON",
+  "version": "1.0.0",
+  "description": "KassirON — do'kon kassasi (kompyuter dasturi)",
+  "main": "main.js",
+  "private": true,
+  "author": "KassirON",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "prepare-build": "node scripts/prepare-build.js",
+    "dist:win": "npm run prepare-build && electron-builder --win --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "44.4.5",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "uz.kassiron.desktop",
+    "productName": "KassirON",
+    "copyright": "KassirON",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "lib/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "build/php",
+        "to": "php"
+      },
+      {
+        "from": "build/app-code",
+        "to": "app-code"
+      },
+      {
+        "from": "build/cacert.pem",
+        "to": "cacert.pem"
+      },
+      {
+        "from": "build/license-public-key.pem",
+        "to": "license-public-key.pem"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "KassirON",
+      "artifactName": "KassirON-Setup-${version}.exe"
+    }
+  }
+}
