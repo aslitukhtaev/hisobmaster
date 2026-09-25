@@ -428,3 +428,10 @@ CREATE TABLE IF NOT EXISTS sync_rejects (
     error TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- The desktop app's own bookkeeping (device credentials, license token, sync
+-- cursor, receipt counter...), key => value. Empty on the server.
+CREATE TABLE IF NOT EXISTS desktop_state (
+    key TEXT PRIMARY KEY,
+    value TEXT
+);

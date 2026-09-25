@@ -873,3 +873,13 @@ img.logo-for-dark-theme { display: none; }
 .faq-item summary::after { content: '+'; color: var(--muted); font-weight: 400; font-size: 1.2rem; flex-shrink: 0; }
 .faq-item[open] summary::after { content: '−'; }
 .faq-item p { margin: 10px 0 0; color: var(--muted); font-size: .9rem; line-height: 1.5; }
+
+/* ---------- Desktop app: sync status bar ---------- */
+.desktop-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; margin-bottom: 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); font-size: .85rem; }
+.desktop-bar-label { font-weight: 700; }
+.desktop-bar-sub { font-size: .78rem; }
+.desktop-bar-form { margin-left: auto; }
+.desktop-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.desktop-dot-green { background: var(--success); }
+.desktop-dot-amber { background: var(--warning); }
+.desktop-dot-red { background: var(--danger); }

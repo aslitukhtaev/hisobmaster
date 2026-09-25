@@ -13,7 +13,10 @@ class Database
     public static function connect(): PDO
     {
         if (self::$pdo === null) {
-            $path = BASE_PATH . '/' . env('DB_PATH', 'database/kassiron.db');
+            // Relative to the project, or absolute — the desktop app keeps its
+            // database in the user's profile, outside the (read-only) install.
+            $configured = (string) env('DB_PATH', 'database/kassiron.db');
+            $path = preg_match('#^(/|[A-Za-z]:[\\\\/])#', $configured) ? $configured : BASE_PATH . '/' . $configured;
             $dir = dirname($path);
             if (!is_dir($dir)) {
                 mkdir($dir, 0775, true);

@@ -56,6 +56,7 @@ $router->setMiddlewareMap([
     'csrf' => App\Middleware\CsrfMiddleware::class,
     'permission' => App\Middleware\PermissionMiddleware::class,
     'role' => App\Middleware\RoleMiddleware::class,
+    'web_only' => App\Middleware\WebOnlyMiddleware::class,
 ]);
 
 require BASE_PATH . '/routes.php';

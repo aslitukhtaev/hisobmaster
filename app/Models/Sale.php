@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Core\Database;
+use App\Desktop\Desktop;
 use RuntimeException;
 
 class Sale
@@ -133,10 +134,13 @@ class Sale
             $status = 'completed';
 
             $stmt = $pdo->prepare(
-                'INSERT INTO sales (shop_id, cashier_id, customer_id, total, discount, payment_type, paid_amount, status, cash_received)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO sales (shop_id, cashier_id, customer_id, total, discount, payment_type, paid_amount, status, cash_received, receipt_no)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
-            $stmt->execute([$shopId, $cashierId, $customerId, $total, $discount, $paymentType, $paidAmount, $status, $cashReceived]);
+            // On a shop's computer the receipt gets that computer's own
+            // number ("K2-000145"), which stays the same on the server.
+            $receiptNo = Desktop::enabled() ? Desktop::nextReceiptNo() : null;
+            $stmt->execute([$shopId, $cashierId, $customerId, $total, $discount, $paymentType, $paidAmount, $status, $cashReceived, $receiptNo]);
             $saleId = (int) $pdo->lastInsertId();
 
             $paymentStmt = $pdo->prepare(

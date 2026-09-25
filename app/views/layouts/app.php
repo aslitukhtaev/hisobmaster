@@ -35,9 +35,15 @@ if (Auth::isSuperAdmin()) {
     ];
 
     if (Auth::isOwner()) {
-        $navItems[] = ['href' => '/employees', 'label' => t('employees'), 'icon' => 'userplus', 'implemented' => true, 'permission' => null];
+        // Employees and computers are managed on the website (see
+        // WebOnlyMiddleware); the desktop app links attendance directly.
+        $navItems[] = App\Desktop\Desktop::enabled()
+            ? ['href' => '/employees/attendance', 'label' => t('attendance_history_title'), 'icon' => 'userplus', 'implemented' => true, 'permission' => null]
+            : ['href' => '/employees', 'label' => t('employees'), 'icon' => 'userplus', 'implemented' => true, 'permission' => null];
         $navItems[] = ['href' => '/activity', 'label' => t('activity_log'), 'icon' => 'clock', 'implemented' => true, 'permission' => null];
-        $navItems[] = ['href' => '/devices', 'label' => t('devices_title'), 'icon' => 'monitor', 'implemented' => true, 'permission' => null];
+        if (!App\Desktop\Desktop::enabled()) {
+            $navItems[] = ['href' => '/devices', 'label' => t('devices_title'), 'icon' => 'monitor', 'implemented' => true, 'permission' => null];
+        }
     }
 
     $navItems[] = ['href' => '/help', 'label' => t('help_nav'), 'icon' => 'help', 'implemented' => true, 'permission' => null];
@@ -151,6 +157,7 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
             </header>
 
             <main class="content">
+                <?php if (App\Desktop\Desktop::enabled()) { require BASE_PATH . '/app/views/desktop/_status-bar.php'; } ?>
                 <?php require BASE_PATH . '/app/views/partials/flash.php'; ?>
                 <?= $content ?>
             </main>

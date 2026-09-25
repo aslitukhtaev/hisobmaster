@@ -8,6 +8,7 @@ use App\Controllers\AttendanceController;
 use App\Controllers\AuthController;
 use App\Controllers\CustomerController;
 use App\Controllers\DashboardController;
+use App\Controllers\DesktopController;
 use App\Controllers\DeviceController;
 use App\Controllers\EmployeeController;
 use App\Controllers\ExpenseController;
@@ -37,8 +38,8 @@ $router->post('/onboarding/dismiss', [DashboardController::class, 'dismissOnboar
 $router->get('/help', [HelpController::class, 'index'], ['auth']);
 
 $router->get('/profile', [ProfileController::class, 'show'], ['auth']);
-$router->post('/profile', [ProfileController::class, 'update'], ['auth', 'csrf']);
-$router->post('/profile/shop', [ProfileController::class, 'updateShop'], ['auth', 'role:owner', 'csrf']);
+$router->post('/profile', [ProfileController::class, 'update'], ['auth', 'web_only', 'csrf']);
+$router->post('/profile/shop', [ProfileController::class, 'updateShop'], ['auth', 'role:owner', 'web_only', 'csrf']);
 
 $router->get('/superadmin/shops', [SuperAdminController::class, 'shops'], ['auth', 'role:super_admin']);
 $router->get('/superadmin/reports', [SuperAdminController::class, 'reports'], ['auth', 'role:super_admin']);
@@ -56,8 +57,8 @@ $router->get('/superadmin/shops/{id}/devices', [SuperAdminController::class, 'de
 $router->post('/superadmin/shops/{id}/devices/{deviceId}/revoke', [SuperAdminController::class, 'revokeDevice'], ['auth', 'role:super_admin', 'csrf']);
 $router->post('/superadmin/shops/{id}/offline-days', [SuperAdminController::class, 'updateOfflineDays'], ['auth', 'role:super_admin', 'csrf']);
 
-$router->get('/devices', [DeviceController::class, 'index'], ['auth', 'role:owner']);
-$router->post('/devices/{id}/revoke', [DeviceController::class, 'revoke'], ['auth', 'role:owner', 'csrf']);
+$router->get('/devices', [DeviceController::class, 'index'], ['auth', 'role:owner', 'web_only']);
+$router->post('/devices/{id}/revoke', [DeviceController::class, 'revoke'], ['auth', 'role:owner', 'web_only', 'csrf']);
 
 $router->get('/products', [ProductController::class, 'index'], ['auth', 'permission:products']);
 $router->get('/products/create', [ProductController::class, 'createForm'], ['auth', 'permission:products']);
@@ -122,17 +123,17 @@ $router->get('/reports/leaderboard', [ReportController::class, 'leaderboard'], [
 $router->post('/attendance/clock-in', [AttendanceController::class, 'clockIn'], ['auth', 'csrf']);
 $router->post('/attendance/clock-out', [AttendanceController::class, 'clockOut'], ['auth', 'csrf']);
 
-$router->get('/employees', [EmployeeController::class, 'index'], ['auth', 'role:owner']);
+$router->get('/employees', [EmployeeController::class, 'index'], ['auth', 'role:owner', 'web_only']);
 $router->get('/employees/attendance', [AttendanceController::class, 'history'], ['auth', 'role:owner']);
-$router->get('/employees/invite', [EmployeeController::class, 'inviteForm'], ['auth', 'role:owner']);
-$router->post('/employees/invite', [EmployeeController::class, 'createInvite'], ['auth', 'role:owner', 'csrf']);
-$router->post('/employees/invites/{id}/revoke', [EmployeeController::class, 'revokeInvite'], ['auth', 'role:owner', 'csrf']);
-$router->get('/employees/{id}/edit', [EmployeeController::class, 'editPermissions'], ['auth', 'role:owner']);
-$router->post('/employees/{id}', [EmployeeController::class, 'updatePermissions'], ['auth', 'role:owner', 'csrf']);
-$router->post('/employees/{id}/toggle-status', [EmployeeController::class, 'toggleStatus'], ['auth', 'role:owner', 'csrf']);
+$router->get('/employees/invite', [EmployeeController::class, 'inviteForm'], ['auth', 'role:owner', 'web_only']);
+$router->post('/employees/invite', [EmployeeController::class, 'createInvite'], ['auth', 'role:owner', 'web_only', 'csrf']);
+$router->post('/employees/invites/{id}/revoke', [EmployeeController::class, 'revokeInvite'], ['auth', 'role:owner', 'web_only', 'csrf']);
+$router->get('/employees/{id}/edit', [EmployeeController::class, 'editPermissions'], ['auth', 'role:owner', 'web_only']);
+$router->post('/employees/{id}', [EmployeeController::class, 'updatePermissions'], ['auth', 'role:owner', 'web_only', 'csrf']);
+$router->post('/employees/{id}/toggle-status', [EmployeeController::class, 'toggleStatus'], ['auth', 'role:owner', 'web_only', 'csrf']);
 
-$router->get('/join/{token}', [JoinController::class, 'show'], ['guest']);
-$router->post('/join/{token}', [JoinController::class, 'register'], ['guest', 'csrf']);
+$router->get('/join/{token}', [JoinController::class, 'show'], ['guest', 'web_only']);
+$router->post('/join/{token}', [JoinController::class, 'register'], ['guest', 'web_only', 'csrf']);
 
 $router->post('/telegram/webhook', [TelegramController::class, 'webhook'], []);
 
@@ -144,3 +145,10 @@ $router->post('/api/device/activate', [ApiController::class, 'activate']);
 $router->post('/api/sync/push', [ApiController::class, 'push']);
 $router->post('/api/sync/pull', [ApiController::class, 'pull']);
 $router->get('/api/license/public-key', [ApiController::class, 'publicKey']);
+
+// Desktop app only (404 on the website — see DesktopController::desktopOnly()).
+$router->get('/desktop/activate', [DesktopController::class, 'activateForm']);
+$router->post('/desktop/activate', [DesktopController::class, 'activate'], ['csrf']);
+$router->get('/desktop/web-only', [DesktopController::class, 'webOnly'], ['auth']);
+$router->post('/desktop/sync', [DesktopController::class, 'syncNow'], ['auth', 'csrf']);
+$router->get('/desktop/status', [DesktopController::class, 'status']);
