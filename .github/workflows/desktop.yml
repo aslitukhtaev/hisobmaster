@@ -12,6 +12,9 @@ on:
       - 'desktop/**'
       - '.github/workflows/desktop.yml'
 
+permissions:
+  contents: write
+
 jobs:
   windows:
     runs-on: windows-latest
@@ -20,6 +23,13 @@ jobs:
       run:
         working-directory: desktop
     steps:
+      # Keep the files byte-identical to the server's (LF), or the bundled
+      # code's version hash would differ from the server's and every fresh
+      # install would immediately "update" to identical code.
+      - name: No line-ending conversion
+        run: git config --global core.autocrlf false
+        working-directory: .
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
@@ -37,8 +47,24 @@ jobs:
       - name: Smoke test with the bundled PHP
         run: node scripts/smoke-test.js
 
-      - name: Build installer
-        run: npx electron-builder --win --x64 --publish never
+      # A new desktop/package.json version is published as a GitHub release
+      # (the installer + latest.yml the app's auto-updater reads); the same
+      # version again only builds. Code changes don't need a new version:
+      # they reach the computers from kassiron.uz directly.
+      - name: Build installer (and release a new version)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          gh release view "v$version" --repo "${{ github.repository }}" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "v$version is already released: build only"
+            npx electron-builder --win --x64 --publish never
+          } else {
+            Write-Host "releasing v$version"
+            npx electron-builder --win --x64 --publish always
+          }
 
       - uses: actions/upload-artifact@v4
         with:

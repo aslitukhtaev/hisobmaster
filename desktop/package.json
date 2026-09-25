@@ -65,7 +65,18 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "KassirON",
-      "artifactName": "KassirON-Setup-${version}.exe"
-    }
+      "artifactName": "KassirON-Setup.exe"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "aslitukhtaev",
+        "repo": "hisobmaster",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
   }
 }

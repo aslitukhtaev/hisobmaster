@@ -161,7 +161,7 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
             </header>
 
             <main class="content">
-                <?php if (App\Desktop\Desktop::enabled()) { require BASE_PATH . '/app/views/desktop/_status-bar.php'; } ?>
+                <?php if (App\Desktop\Desktop::enabled()) { require BASE_PATH . '/app/views/desktop/_update-banner.php'; require BASE_PATH . '/app/views/desktop/_status-bar.php'; } ?>
                 <?php require BASE_PATH . '/app/views/partials/flash.php'; ?>
                 <?= $content ?>
             </main>

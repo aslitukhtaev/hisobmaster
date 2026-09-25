@@ -56,6 +56,16 @@ final class License
         return $body . '.' . self::base64url($signature);
     }
 
+    /** Base64 signature of arbitrary bytes (e.g. a desktop code package). */
+    public static function sign(string $bytes): string
+    {
+        if (!openssl_sign($bytes, $signature, self::privateKey(), OPENSSL_ALGO_SHA256)) {
+            throw new RuntimeException('license_sign_failed');
+        }
+
+        return base64_encode($signature);
+    }
+
     /**
      * The payload of a token with a valid signature, or null. Only checks
      * the signature — whether it's still in date and for this computer is

@@ -9,6 +9,7 @@ use App\Core\View;
 use App\Desktop\Desktop;
 use App\Desktop\DesktopSync;
 use App\Desktop\SyncHttpException;
+use App\Sync\CodePackage;
 use Throwable;
 
 /** Pages only the desktop app has: activation, "only on the website", sync. */
@@ -95,7 +96,7 @@ class DesktopController
         $this->desktopOnly();
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-store');
-        echo json_encode(Desktop::status(), JSON_UNESCAPED_UNICODE);
+        echo json_encode(Desktop::status() + ['code_version' => CodePackage::version(BASE_PATH)], JSON_UNESCAPED_UNICODE);
     }
 
     private function desktopOnly(): void

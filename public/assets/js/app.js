@@ -133,3 +133,97 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(function () {});
     });
 })();
+
+// Desktop app: code updates announced by the shell — what's new, "Hozir
+// yangilash" / "Keyinroq" (the update is applied at the next start anyway),
+// and never while a sale is being rung up.
+(function () {
+    var bridge = window.kassironDesktop;
+    var box = document.getElementById('desktop-update');
+    if (!bridge || !box || typeof bridge.onUpdateReady !== 'function') {
+        return;
+    }
+    var lang = document.documentElement.lang === 'ru' ? 'ru' : 'uz';
+    var text = function (name) { return box.getAttribute('data-' + name) || ''; };
+
+    function el(tag, className, content) {
+        var node = document.createElement(tag);
+        if (className) { node.className = className; }
+        if (content) { node.textContent = content; }
+        return node;
+    }
+
+    function button(label, primary, onClick) {
+        var b = el('button', 'btn btn-sm ' + (primary ? 'btn-primary' : 'btn-ghost'), label);
+        b.type = 'button';
+        b.addEventListener('click', onClick);
+        return b;
+    }
+
+    function render(title, info, actions) {
+        box.innerHTML = '';
+        box.appendChild(el('strong', null, title));
+        if (info && info.notes !== undefined) {
+            box.appendChild(el('div', 'desktop-update-sub', text('whats-new')));
+            var list = el('ul', 'desktop-update-notes');
+            var notes = (info.notes || []).filter(function (n) { return n && n[lang]; });
+            if (notes.length === 0) {
+                list.appendChild(el('li', null, text('generic-note')));
+            }
+            notes.slice(0, 5).forEach(function (n) { list.appendChild(el('li', null, n[lang])); });
+            box.appendChild(list);
+        }
+        var row = el('div', 'row-actions desktop-update-actions');
+        actions.forEach(function (a) { row.appendChild(a); });
+        box.appendChild(row);
+        box.hidden = false;
+    }
+
+    function cartHasItems() {
+        return document.querySelectorAll('#cart-list .cart-row').length > 0;
+    }
+
+    function dismissedKey(info) { return 'kassiron-update-later-' + (info && info.version); }
+
+    bridge.onUpdateReady(function (info) {
+        try { if (sessionStorage.getItem(dismissedKey(info))) { return; } } catch (e) { /* no storage */ }
+        render(text('ready-title'), info, [
+            button(text('apply'), true, function () {
+                if (cartHasItems()) {
+                    window.alert(text('cart-warning'));
+                    return;
+                }
+                box.hidden = true;
+                bridge.applyUpdate();
+            }),
+            button(text('later'), false, function () {
+                try { sessionStorage.setItem(dismissedKey(info), '1'); } catch (e) { /* no storage */ }
+                box.hidden = true;
+            }),
+        ]);
+        box.appendChild(el('div', 'desktop-update-sub', text('later-hint')));
+    });
+
+    bridge.onUpdateApplied(function (info) {
+        render(text('applied-title'), info, [button(text('close'), false, function () { box.hidden = true; })]);
+    });
+
+    bridge.onUpdateFailed(function () {
+        render(text('failed'), null, [button(text('close'), false, function () { box.hidden = true; })]);
+    });
+
+    if (typeof bridge.onShellUpdateReady === 'function') {
+        bridge.onShellUpdateReady(function () {
+            render(text('shell-ready'), null, [
+                button(text('shell-restart'), true, function () {
+                    if (cartHasItems()) {
+                        window.alert(text('cart-warning'));
+                        return;
+                    }
+                    bridge.restartForShellUpdate();
+                }),
+                button(text('later'), false, function () { box.hidden = true; }),
+            ]);
+        });
+    }
+})();

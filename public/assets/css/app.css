@@ -883,3 +883,7 @@ img.logo-for-dark-theme { display: none; }
 .desktop-dot-green { background: var(--success); }
 .desktop-dot-amber { background: var(--warning); }
 .desktop-dot-red { background: var(--danger); }
+.desktop-update { display: flex; flex-direction: column; gap: 6px; }
+.desktop-update-sub { font-size: .8rem; font-weight: 500; opacity: .85; }
+.desktop-update-notes { margin: 0 0 4px 18px; padding: 0; font-weight: 500; }
+.desktop-update-actions { margin-top: 4px; }

@@ -160,6 +160,9 @@ function money(float $amount, ?string $currency = null): string
  */
 const MONEY_MAX = 1000000000000;
 
+/** The Windows installer of the desktop app (latest GitHub release). */
+const DESKTOP_DOWNLOAD_URL = 'https://github.com/aslitukhtaev/hisobmaster/releases/latest/download/KassirON-Setup.exe';
+
 /** Same idea for quantities (stock, sale/purchase/refund qty). */
 const QTY_MAX = 1000000000;
 

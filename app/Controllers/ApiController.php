@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\Request;
+use App\Sync\CodePackage;
 use App\Sync\DeviceService;
 use App\Sync\License;
 use App\Sync\SyncService;
@@ -84,6 +85,56 @@ class ApiController
                 + SyncService::shopState($auth['shop'])
                 + ['license' => License::issue($auth['shop'], $auth['device'])];
         });
+    }
+
+    /**
+     * Is there newer code for this computer? It sends the version of the code
+     * it runs and the date of its newest changelog entry; the answer carries
+     * the package's size, hash, signature and what's new since then.
+     */
+    public function updateCheck(Request $request): void
+    {
+        $this->handle(function () use ($request): array {
+            $this->device($request);
+            $body = $this->body();
+            $package = CodePackage::current();
+            $theirs = (string) ($body['version'] ?? '');
+            $lastDate = isset($body['changelog_date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $body['changelog_date'])
+                ? (string) $body['changelog_date']
+                : null;
+
+            return [
+                'available' => $theirs !== $package['version'],
+                'version' => $package['version'],
+                'created_at' => $package['created_at'],
+                'size' => $package['size'],
+                'sha256' => $package['sha256'],
+                'signature' => $package['signature'],
+                'notes' => CodePackage::notesSince($lastDate),
+            ];
+        });
+    }
+
+    /** The code package itself (the version updateCheck announced). */
+    public function package(Request $request): void
+    {
+        try {
+            $this->device($request);
+            $package = CodePackage::current();
+            if ((string) ($this->body()['version'] ?? '') !== $package['version']) {
+                $this->json(409, ['error' => 'version_changed']);
+            }
+        } catch (RuntimeException $e) {
+            $this->json(self::STATUS[$e->getMessage()] ?? 500, ['error' => isset(self::STATUS[$e->getMessage()]) ? $e->getMessage() : 'server_error']);
+        }
+
+        http_response_code(200);
+        header('Content-Type: application/octet-stream');
+        header('Content-Length: ' . $package['size']);
+        header('X-Code-Version: ' . $package['version']);
+        header('Cache-Control: no-store');
+        readfile($package['file']);
+        exit;
     }
 
     /** Built into the desktop app at build time (not a secret). */

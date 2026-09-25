@@ -144,6 +144,8 @@ $router->get('/activity/export', [ActivityLogController::class, 'exportCsv'], ['
 $router->post('/api/device/activate', [ApiController::class, 'activate']);
 $router->post('/api/sync/push', [ApiController::class, 'push']);
 $router->post('/api/sync/pull', [ApiController::class, 'pull']);
+$router->post('/api/desktop/update', [ApiController::class, 'updateCheck']);
+$router->post('/api/desktop/package', [ApiController::class, 'package']);
 $router->get('/api/license/public-key', [ApiController::class, 'publicKey']);
 
 // Desktop app only (404 on the website — see DesktopController::desktopOnly()).

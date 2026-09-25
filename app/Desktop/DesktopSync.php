@@ -416,11 +416,22 @@ final class DesktopSync
     }
 
     /**
-     * POSTs JSON to the server. Throws SyncHttpException with the server's
-     * error code ("unauthorized", "device_revoked", ...) or "offline" when it
-     * can't be reached at all.
+     * POSTs JSON to the server and returns the decoded answer. Throws
+     * SyncHttpException with the server's error code ("unauthorized",
+     * "device_revoked", ...) or "offline" when it can't be reached at all.
      */
-    private static function request(string $path, array $body, bool $authenticated = true): array
+    public static function request(string $path, array $body, bool $authenticated = true): array
+    {
+        $data = json_decode(self::requestRaw($path, $body, $authenticated), true);
+        if (!is_array($data)) {
+            throw new SyncHttpException('server_error');
+        }
+
+        return $data;
+    }
+
+    /** The same, returning the body as is (a code package is binary). */
+    public static function requestRaw(string $path, array $body, bool $authenticated = true, int $timeout = self::TIMEOUT_SECONDS): string
     {
         $headers = ['Content-Type: application/json', 'X-App-Version: ' . Desktop::appVersion()];
         if ($authenticated) {
@@ -434,7 +445,7 @@ final class DesktopSync
             CURLOPT_HTTPHEADER => $headers,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CONNECTTIMEOUT => 8,
-            CURLOPT_TIMEOUT => self::TIMEOUT_SECONDS,
+            CURLOPT_TIMEOUT => $timeout,
             CURLOPT_ENCODING => '',
         ]);
         $caBundle = (string) env('SSL_CERT_FILE', '');
@@ -450,15 +461,12 @@ final class DesktopSync
             throw new SyncHttpException('offline');
         }
 
-        $data = json_decode((string) $raw, true);
-        if (!is_array($data)) {
-            throw new SyncHttpException('server_error');
-        }
         if ($status !== 200) {
-            throw new SyncHttpException((string) ($data['error'] ?? 'server_error'));
+            $data = json_decode((string) $raw, true);
+            throw new SyncHttpException(is_array($data) ? (string) ($data['error'] ?? 'server_error') : 'server_error');
         }
 
-        return $data;
+        return (string) $raw;
     }
 
     /** @return list<string> */

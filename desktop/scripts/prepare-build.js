@@ -29,13 +29,42 @@ function sha256(file) {
     return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 }
 
+/**
+ * Same algorithm as App\Sync\CodePackage::version(): sha256 over the sorted
+ * "path:sha256(content)" lines of every code file, first 16 hex chars — so
+ * the app can tell whether the server has different code than it runs.
+ */
+function codeVersion(root) {
+    const lines = [];
+    const walk = (relative) => {
+        const absolute = path.join(root, relative);
+        const stat = fs.statSync(absolute);
+        if (stat.isFile()) {
+            lines.push(relative + ':' + sha256(absolute));
+            return;
+        }
+        for (const entry of fs.readdirSync(absolute)) {
+            walk(relative + '/' + entry);
+        }
+    };
+    for (const item of ['app', 'public', 'bin', 'routes.php', 'database/migrations']) {
+        if (fs.existsSync(path.join(root, item))) {
+            walk(item);
+        }
+    }
+    lines.sort((a, b) => (a.split(':')[0] < b.split(':')[0] ? -1 : 1));
+    return crypto.createHash('sha256').update(lines.join('\n')).digest('hex').slice(0, 16);
+}
+
 function copyCode() {
     const target = path.join(BUILD, 'app-code');
     fs.rmSync(target, { recursive: true, force: true });
     for (const item of CODE_ITEMS) {
         fs.cpSync(path.join(ROOT, item), path.join(target, item), { recursive: true });
     }
-    console.log('code copied ->', target);
+    const version = codeVersion(target);
+    fs.writeFileSync(path.join(target, 'code-version.json'), JSON.stringify({ version, created_at: Math.floor(Date.now() / 1000) }));
+    console.log('code copied ->', target, 'version', version);
 }
 
 async function fetchPhp() {

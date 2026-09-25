@@ -42,6 +42,11 @@ So'ng brauzerda `http://localhost:8000` ni oching va `.env`dagi super admin logi
 
 4. Botga `/start` yozing — bot "Ilovani ochish" tugmasi bilan javob beradi, u bosilganda sayt Telegram ichida WebApp sifatida ochiladi. Kirish baribir login/parol orqali amalga oshadi — Telegram faqat qulay kirish kanali.
 
+## Kompyuter dasturi (desktop)
+
+Windows uchun dastur: `desktop/` (batafsil — `desktop/README.md`). Internetsiz
+ishlaydi, internet bo'lganda o'zi sinxronlanadi va yangilanadi.
+
 ## Kompyuter dasturi (desktop) uchun server API
 
 Kompyuter dasturi offline ishlaydi va internet bo'lganda server bilan sinxronlanadi.
@@ -51,6 +56,7 @@ Litsenziya: bitta do'kon — bitta umrbod litsenziya, kompyuterlar soni cheklanm
   Javobda kompyuter kodi (`K1`, `K2`...), maxfiy kalit va imzolangan ruxsatnoma qaytadi.
 - `POST /api/sync/push` — kompyuterda qilingan o'zgarishlar (`X-Device-Auth: Device <uuid>:<secret>`).
 - `POST /api/sync/pull` — boshqa joylarda (sayt, Telegram, boshqa kassalar) bo'lgan o'zgarishlar.
+- `POST /api/desktop/update`, `POST /api/desktop/package` — kod yangilanishi (imzolangan paket).
 - `GET /api/license/public-key` — ruxsatnoma imzosini tekshiradigan ochiq kalit (dastur yig'ilganda qo'shiladi).
 
 Ruxsatnoma ECDSA P-256 (OpenSSL) bilan imzolanadi; kalit birinchi ishlatilganda yaratilib, bazadagi

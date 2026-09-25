@@ -712,4 +712,20 @@ return [
     'desktop_locked_clock' => "Kompyuter soati orqaga surilgan — yangi amallar to'xtatildi. Soatni to'g'rilab, internetga ulaning va «Sinxronlash» tugmasini bosing.",
     'desktop_locked_invalid' => "Ruxsatnoma yaroqsiz — yangi amallar to'xtatildi. Internetga ulanib, «Sinxronlash» tugmasini bosing.",
     'desktop_locked_not_activated' => 'Dastur faollashtirilmagan.',
+
+    // --- Desktop app: updates ---
+    'desktop_update_ready_title' => 'Dasturning yangi versiyasi tayyor',
+    'desktop_update_applied_title' => 'Dastur yangilandi',
+    'desktop_update_failed' => "Yangilab bo'lmadi — dastur avvalgi versiyada ishlashda davom etadi.",
+    'desktop_update_whats_new' => 'Nima yangi:',
+    'desktop_update_generic_note' => 'Kichik tuzatishlar va yaxshilanishlar.',
+    'desktop_update_apply' => 'Hozir yangilash',
+    'desktop_update_later' => 'Keyinroq',
+    'desktop_update_later_hint' => "Keyinroq tanlansa, dastur keyingi safar ochilganda o'zi yangilanadi.",
+    'desktop_update_cart_warning' => "Savatda mahsulot bor. Avval sotuvni yakunlang, keyin yangilang.",
+    'desktop_shell_update_ready' => "Dasturning yangi to'liq versiyasi yuklab olindi. U dastur yopilganda o'rnatiladi.",
+    'desktop_shell_update_restart' => 'Hozir qayta ishga tushirish',
+
+    'desktop_download' => 'Kompyuter dasturini yuklab olish',
+    'desktop_download_hint' => "Windows 10/11 uchun. O'rnatgach, dasturni oching va do'kon egasining login-paroli bilan bir marta faollashtiring. Dastur internetsiz ham ishlaydi, internet bo'lganda o'zi sinxronlanadi va yangilanadi.",
 ];

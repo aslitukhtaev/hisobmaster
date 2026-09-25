@@ -42,23 +42,31 @@ function waitUntilUp(url, timeoutMs) {
     });
 }
 
+/**
+ * A -d value in INI syntax. Paths are quoted: unquoted, "C:\Users\RUNNER~1"
+ * is a syntax error ("~" is an INI operator), and so would be spaces.
+ */
+function iniPath(value) {
+    return `"${String(value).replace(/"/g, '')}"`;
+}
+
 /** PHP -d options shared by the web server and the sync process. */
 function phpIniArgs(cfg) {
     const args = [
-        '-d', `session.save_path=${cfg.sessionDir}`,
+        '-d', `session.save_path=${iniPath(cfg.sessionDir)}`,
         '-d', 'display_errors=0',
         '-d', 'log_errors=1',
-        '-d', `error_log=${cfg.errorLog}`,
+        '-d', `error_log=${iniPath(cfg.errorLog)}`,
         '-d', 'memory_limit=256M',
     ];
     if (cfg.caBundle) {
-        args.push('-d', `curl.cainfo=${cfg.caBundle}`, '-d', `openssl.cafile=${cfg.caBundle}`);
+        args.push('-d', `curl.cainfo=${iniPath(cfg.caBundle)}`, '-d', `openssl.cafile=${iniPath(cfg.caBundle)}`);
     }
     if (cfg.phpIni) {
         // The bundled PHP: its own php.ini, and extensions from its own ext/
         // folder (an absolute path — a relative extension_dir would be
         // resolved against the working directory).
-        args.unshift('-c', cfg.phpIni, '-d', `extension_dir=${path.join(path.dirname(cfg.phpIni), 'ext')}`);
+        args.unshift('-c', cfg.phpIni, '-d', `extension_dir=${iniPath(path.join(path.dirname(cfg.phpIni), 'ext'))}`);
     }
     return args;
 }
@@ -82,13 +90,20 @@ class PhpServer {
             '-S', `127.0.0.1:${this.port}`,
             '-t', path.join(this.cfg.codeDir, 'public'),
         ];
-        this.child = spawn(this.cfg.php, args, {
+        this.stopping = false;
+        const child = spawn(this.cfg.php, args, {
             cwd: this.cfg.codeDir,
             env: this.cfg.env,
             windowsHide: true,
             stdio: 'ignore',
         });
-        this.child.on('exit', (code) => {
+        this.child = child;
+        child.on('exit', (code) => {
+            // Only the current process exiting on its own is a crash; one
+            // we stopped (or already replaced) is expected to go.
+            if (this.child !== child) {
+                return;
+            }
             this.child = null;
             if (!this.stopping && this.cfg.onCrash) {
                 this.cfg.onCrash(code);
@@ -97,12 +112,19 @@ class PhpServer {
         await waitUntilUp(`${this.url}/desktop/status`, 15000);
     }
 
+    /** Resolves once the process has really exited (and freed the port). */
     stop() {
         this.stopping = true;
-        if (this.child) {
-            this.child.kill();
-            this.child = null;
+        const child = this.child;
+        this.child = null;
+        if (!child || child.exitCode !== null) {
+            return Promise.resolve();
         }
+        return new Promise((resolve) => {
+            child.once('exit', () => resolve());
+            child.kill();
+            setTimeout(resolve, 5000);
+        });
     }
 }
 

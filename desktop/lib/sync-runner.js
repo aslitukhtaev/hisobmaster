@@ -23,6 +23,16 @@ class SyncRunner {
 
     stop() {
         clearInterval(this.timer);
+        this.timer = null;
+        this.again = false;
+    }
+
+    /** Resolves when no run is in progress (e.g. before switching code). */
+    idle() {
+        return new Promise((resolve) => {
+            const wait = () => (this.running ? setTimeout(wait, 200) : resolve());
+            wait();
+        });
     }
 
     /** Starts a run now, or right after the current one if one is running. */
@@ -51,7 +61,7 @@ class SyncRunner {
             if (this.cfg.onResult) {
                 this.cfg.onResult(parsed);
             }
-            if (this.again) {
+            if (this.again && this.timer) {
                 this.again = false;
                 setTimeout(() => this.run(), 500);
             }
