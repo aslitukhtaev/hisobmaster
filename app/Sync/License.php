@@ -10,9 +10,10 @@ use RuntimeException;
 /**
  * The desktop app's permission to work: a small JSON document naming the
  * shop and the one computer it was issued to, signed with the server's
- * Ed25519 key. The app checks the signature with the public key built into
- * it, so it works offline, can't be forged, and a copy moved to another
- * computer doesn't match that computer's fingerprint.
+ * private key (ECDSA P-256 / SHA-256 via OpenSSL — available in every PHP
+ * build, unlike the sodium extension). The app checks the signature with the
+ * public key built into it, so it works offline, can't be forged, and a copy
+ * moved to another computer doesn't match that computer's fingerprint.
  *
  * License model: one shop, one lifetime license, any number of computers.
  * `valid_until` is not a payment deadline — every sync issues a fresh token
@@ -20,12 +21,14 @@ use RuntimeException;
  * switched off (lost, sold) or whose shop was blocked stops within that
  * many days even if it never comes back online.
  *
- * Token format: base64url(payload JSON) "." base64url(signature of that
+ * Token format: base64url(payload JSON) "." base64url(DER signature of that
  * first part).
  */
 final class License
 {
-    private const KEY_NAME = 'license_ed25519_secret';
+    public const ALGORITHM = 'ecdsa-p256-sha256';
+
+    private const KEY_NAME = 'license_ecdsa_p256_private';
 
     /** @param array $shop shops row; @param array $device devices row */
     public static function issue(array $shop, array $device, ?int $now = null): string
@@ -46,7 +49,9 @@ final class License
         ];
 
         $body = self::base64url(json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
-        $signature = sodium_crypto_sign_detached($body, self::secretKey());
+        if (!openssl_sign($body, $signature, self::privateKey(), OPENSSL_ALGO_SHA256)) {
+            throw new RuntimeException('license_sign_failed');
+        }
 
         return $body . '.' . self::base64url($signature);
     }
@@ -56,7 +61,7 @@ final class License
      * the signature — whether it's still in date and for this computer is
      * the caller's decision.
      */
-    public static function verify(string $token, ?string $publicKeyBase64 = null): ?array
+    public static function verify(string $token, ?string $publicKeyPem = null): ?array
     {
         $parts = explode('.', $token);
         if (count($parts) !== 2) {
@@ -64,14 +69,13 @@ final class License
         }
         [$body, $signature] = $parts;
 
-        $publicKey = $publicKeyBase64 !== null ? base64_decode($publicKeyBase64, true) : self::publicKeyRaw();
         $signatureRaw = self::base64urlDecode($signature);
-        if ($publicKey === false || strlen($publicKey) !== SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES
-            || $signatureRaw === null || strlen($signatureRaw) !== SODIUM_CRYPTO_SIGN_BYTES) {
+        $publicKey = openssl_pkey_get_public($publicKeyPem ?? self::publicKey());
+        if ($signatureRaw === null || $publicKey === false) {
             return null;
         }
 
-        if (!sodium_crypto_sign_verify_detached($signatureRaw, $body, $publicKey)) {
+        if (openssl_verify($body, $signatureRaw, $publicKey, OPENSSL_ALGO_SHA256) !== 1) {
             return null;
         }
 
@@ -81,56 +85,57 @@ final class License
         return is_array($payload) ? $payload : null;
     }
 
-    /** Base64 public key — what the desktop app is built with. */
+    /** PEM public key — what the desktop app is built with (not a secret). */
     public static function publicKey(): string
     {
-        return base64_encode(self::publicKeyRaw());
-    }
+        $details = openssl_pkey_get_details(self::privateKey());
 
-    private static function publicKeyRaw(): string
-    {
-        return sodium_crypto_sign_publickey_from_secretkey(self::secretKey());
+        return (string) $details['key'];
     }
 
     /**
-     * LICENSE_SECRET_KEY from .env when set (base64 of a 64-byte Ed25519
-     * secret key); otherwise a key generated on first use and kept in the
+     * LICENSE_PRIVATE_KEY_B64 from .env when set (base64 of a PEM EC P-256
+     * private key); otherwise a key generated on first use and kept in the
      * server_keys table, so it survives deploys and is part of every
      * database backup. Losing it would invalidate every issued license.
      */
-    private static function secretKey(): string
+    private static function privateKey(): \OpenSSLAsymmetricKey
     {
         static $key = null;
         if ($key !== null) {
             return $key;
         }
 
-        $fromEnv = (string) env('LICENSE_SECRET_KEY', '');
-        if ($fromEnv !== '') {
-            $decoded = base64_decode($fromEnv, true);
-            if ($decoded === false || strlen($decoded) !== SODIUM_CRYPTO_SIGN_SECRETKEYBYTES) {
-                throw new RuntimeException('LICENSE_SECRET_KEY is not a base64 Ed25519 secret key');
-            }
+        $pem = (string) base64_decode((string) env('LICENSE_PRIVATE_KEY_B64', ''), true);
 
-            return $key = $decoded;
-        }
-
-        $pdo = Database::connect();
-        $stmt = $pdo->prepare('SELECT value FROM server_keys WHERE name = ?');
-        $stmt->execute([self::KEY_NAME]);
-        $stored = $stmt->fetchColumn();
-
-        if ($stored === false) {
-            $generated = base64_encode(sodium_crypto_sign_secretkey(sodium_crypto_sign_keypair()));
-            // OR IGNORE + re-read: two first requests racing both end up
-            // with whichever key was written first.
-            $pdo->prepare('INSERT OR IGNORE INTO server_keys (name, value) VALUES (?, ?)')
-                ->execute([self::KEY_NAME, $generated]);
+        if ($pem === '') {
+            $pdo = Database::connect();
+            $stmt = $pdo->prepare('SELECT value FROM server_keys WHERE name = ?');
             $stmt->execute([self::KEY_NAME]);
             $stored = $stmt->fetchColumn();
+
+            if ($stored === false) {
+                $generated = openssl_pkey_new(['private_key_type' => OPENSSL_KEYTYPE_EC, 'curve_name' => 'prime256v1']);
+                if ($generated === false || !openssl_pkey_export($generated, $generatedPem)) {
+                    throw new RuntimeException('license_key_generation_failed');
+                }
+                // OR IGNORE + re-read: two first requests racing both end up
+                // with whichever key was written first.
+                $pdo->prepare('INSERT OR IGNORE INTO server_keys (name, value) VALUES (?, ?)')
+                    ->execute([self::KEY_NAME, $generatedPem]);
+                $stmt->execute([self::KEY_NAME]);
+                $stored = $stmt->fetchColumn();
+            }
+
+            $pem = (string) $stored;
         }
 
-        return $key = (string) base64_decode((string) $stored, true);
+        $key = openssl_pkey_get_private($pem);
+        if ($key === false) {
+            throw new RuntimeException('license_key_invalid');
+        }
+
+        return $key;
     }
 
     public static function base64url(string $raw): string

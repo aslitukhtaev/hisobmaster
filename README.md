@@ -53,8 +53,8 @@ Litsenziya: bitta do'kon — bitta umrbod litsenziya, kompyuterlar soni cheklanm
 - `POST /api/sync/pull` — boshqa joylarda (sayt, Telegram, boshqa kassalar) bo'lgan o'zgarishlar.
 - `GET /api/license/public-key` — ruxsatnoma imzosini tekshiradigan ochiq kalit (dastur yig'ilganda qo'shiladi).
 
-Ruxsatnoma Ed25519 bilan imzolanadi; kalit birinchi ishlatilganda yaratilib, bazadagi
-`server_keys` jadvalida saqlanadi (yoki `.env` dagi `LICENSE_SECRET_KEY`). U yo'qolsa,
+Ruxsatnoma ECDSA P-256 (OpenSSL) bilan imzolanadi; kalit birinchi ishlatilganda yaratilib, bazadagi
+`server_keys` jadvalida saqlanadi (yoki `.env` dagi `LICENSE_PRIVATE_KEY_B64`). U yo'qolsa,
 barcha kompyuterlar qayta faollashtirilishi kerak — bazaning zaxira nusxasida bor.
 Har bir o'zgarish triggerlar orqali `sync_changes` jurnaliga avtomatik yoziladi
 (`app/Core/SyncSchema.php`), shuning uchun sayt kodini sinxron uchun o'zgartirish shart emas.

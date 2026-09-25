@@ -89,7 +89,7 @@ class ApiController
     /** Built into the desktop app at build time (not a secret). */
     public function publicKey(Request $request): void
     {
-        $this->handle(static fn (): array => ['public_key' => License::publicKey(), 'algorithm' => 'ed25519']);
+        $this->handle(static fn (): array => ['public_key' => License::publicKey(), 'algorithm' => License::ALGORITHM]);
     }
 
     /**
