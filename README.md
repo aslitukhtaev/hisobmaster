@@ -64,6 +64,8 @@ Ruxsatnoma ECDSA P-256 (OpenSSL) bilan imzolanadi; kalit birinchi ishlatilganda 
 barcha kompyuterlar qayta faollashtirilishi kerak — bazaning zaxira nusxasida bor.
 Har bir o'zgarish triggerlar orqali `sync_changes` jurnaliga avtomatik yoziladi
 (`app/Core/SyncSchema.php`), shuning uchun sayt kodini sinxron uchun o'zgartirish shart emas.
+Jurnalning 120 kundan eski yozuvlari kuniga bir marta o'chiriladi (kompyuter sinxronida yoki
+saytga kirishda); undan ham uzoq ulanmagan kompyuter do'konni boshidan qayta yuklab oladi.
 Do'kon kompyuterlari: egasi — "Kompyuterlar" bo'limi, superadmin — do'konlar ro'yxatidagi
 "Kompyuterlar" tugmasi (internetsiz ishlash muddati ham shu yerda).
 

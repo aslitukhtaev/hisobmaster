@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Request;
 use App\Core\View;
+use App\Sync\SyncService;
 
 class AuthController
 {
@@ -29,6 +30,7 @@ class AuthController
         if (Auth::attempt($login, $password)) {
             $user = Auth::user();
             $_SESSION['lang'] = $user['lang'] ?? env('APP_DEFAULT_LANG', 'uz');
+            SyncService::pruneJournalQuietly();
             redirect('/');
         }
 

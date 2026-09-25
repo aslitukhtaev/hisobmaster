@@ -81,6 +81,8 @@ class ApiController
             $cursor = isset($body['cursor']) && is_numeric($body['cursor']) ? (int) $body['cursor'] : null;
             $snap = isset($body['snap']) && is_array($body['snap']) ? $body['snap'] : null;
 
+            SyncService::pruneJournalQuietly();
+
             return SyncService::pull($auth['device'], $cursor, $snap)
                 + SyncService::shopState($auth['shop'])
                 + ['license' => License::issue($auth['shop'], $auth['device'])];

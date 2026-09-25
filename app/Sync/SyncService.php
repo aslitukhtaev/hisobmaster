@@ -6,6 +6,7 @@ namespace App\Sync;
 
 use App\Core\Database;
 use App\Core\SyncSchema;
+use App\Desktop\Desktop;
 use PDO;
 use RuntimeException;
 use Throwable;
@@ -27,6 +28,18 @@ use Throwable;
 final class SyncService
 {
     public const PULL_LIMIT = 500;
+
+    /**
+     * How long journal entries are kept. Longer than a computer can work
+     * offline (offline_days is at most 90), so a computer that syncs at all
+     * finds every change it missed; one that comes back after even longer
+     * downloads the shop again (see pull()).
+     */
+    public const JOURNAL_KEEP_DAYS = 120;
+
+    private const PRUNED_UPTO_KEY = 'sync_journal_pruned_upto';
+
+    private const PRUNED_AT_KEY = 'sync_journal_pruned_at';
 
     /** @var array<string, array<string, string>> */
     private static array $columnCache = [];
@@ -219,6 +232,13 @@ final class SyncService
             return self::snapshotPage($pdo, $shopId, $snap, $limit);
         }
 
+        // Entries this computer hasn't seen were already pruned: start over
+        // with a snapshot (rows are sent at their current state, so the ones
+        // it already has are simply overwritten with the same values).
+        if ($cursor < self::prunedUpto($pdo)) {
+            return self::snapshotPage($pdo, $shopId, null, $limit);
+        }
+
         $stmt = $pdo->prepare('SELECT * FROM sync_changes WHERE shop_id = ? AND id > ? ORDER BY id LIMIT ?');
         $stmt->bindValue(1, $shopId, PDO::PARAM_INT);
         $stmt->bindValue(2, $cursor, PDO::PARAM_INT);
@@ -299,6 +319,79 @@ final class SyncService
         }
 
         return ['changes' => $changes, 'cursor' => null, 'snap' => ['t' => $tableIndex, 'after' => $afterId, 'upto' => $upto], 'more' => true];
+    }
+
+    /**
+     * Deletes journal entries older than JOURNAL_KEEP_DAYS — at most once a
+     * day, whoever calls it first (a computer's sync, a login on the site).
+     * Every change of every shop is journaled, so without this the table
+     * would only ever grow. Returns how many entries were deleted.
+     */
+    public static function pruneJournal(?int $now = null): int
+    {
+        // The desktop app keeps its own journal only until it's pushed
+        // (DesktopSync::pruneJournal()).
+        if (Desktop::enabled()) {
+            return 0;
+        }
+
+        $now ??= time();
+        $pdo = Database::connect();
+
+        $stmt = $pdo->prepare('SELECT value FROM server_keys WHERE name = ?');
+        $stmt->execute([self::PRUNED_AT_KEY]);
+        if ((int) $stmt->fetchColumn() > $now - 86400) {
+            return 0;
+        }
+
+        $pdo = Database::beginImmediate();
+        try {
+            $horizon = gmdate('Y-m-d H:i:s', $now - self::JOURNAL_KEEP_DAYS * 86400);
+            $stmt = $pdo->prepare('SELECT MAX(id) FROM sync_changes WHERE changed_at < ?');
+            $stmt->execute([$horizon]);
+            $upto = (int) $stmt->fetchColumn();
+
+            $deleted = 0;
+            if ($upto > 0) {
+                $delete = $pdo->prepare('DELETE FROM sync_changes WHERE id <= ?');
+                $delete->execute([$upto]);
+                $deleted = $delete->rowCount();
+                self::setKey($pdo, self::PRUNED_UPTO_KEY, (string) max($upto, self::prunedUpto($pdo)));
+            }
+            self::setKey($pdo, self::PRUNED_AT_KEY, (string) $now);
+
+            Database::commit($pdo);
+
+            return $deleted;
+        } catch (Throwable $e) {
+            Database::rollback($pdo);
+            throw $e;
+        }
+    }
+
+    /** pruneJournal() for request handlers: housekeeping never fails a request. */
+    public static function pruneJournalQuietly(): void
+    {
+        try {
+            self::pruneJournal();
+        } catch (Throwable $e) {
+            log_exception($e);
+        }
+    }
+
+    /** The newest journal entry already pruned (0 = none). */
+    private static function prunedUpto(PDO $pdo): int
+    {
+        $stmt = $pdo->prepare('SELECT value FROM server_keys WHERE name = ?');
+        $stmt->execute([self::PRUNED_UPTO_KEY]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    private static function setKey(PDO $pdo, string $name, string $value): void
+    {
+        $pdo->prepare('INSERT INTO server_keys (name, value) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET value = excluded.value')
+            ->execute([$name, $value]);
     }
 
     /** The shop row and settings the app needs; small, so sent whole every pull. */
