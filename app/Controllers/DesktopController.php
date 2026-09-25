@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Core\Auth;
 use App\Core\Request;
 use App\Core\View;
 use App\Desktop\Desktop;
 use App\Desktop\DesktopSync;
 use App\Desktop\SyncHttpException;
+use App\Models\Shop;
 use App\Sync\CodePackage;
 use Throwable;
 
-/** Pages only the desktop app has: activation, "only on the website", sync. */
+/** Pages only the desktop app has: activation, "only on the website", sync, printer. */
 class DesktopController
 {
     private const ACTIVATION_ERRORS = ['offline', 'login_failed', 'login_locked', 'owner_only', 'shop_blocked'];
@@ -97,6 +99,27 @@ class DesktopController
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-store');
         echo json_encode(Desktop::status() + ['code_version' => CodePackage::version(BASE_PATH)], JSON_UNESCAPED_UNICODE);
+    }
+
+    /** This computer's receipt printer — the choice itself is kept by the shell. */
+    public function printer(Request $request): void
+    {
+        $this->desktopOnly();
+        $shop = Shop::find((int) Auth::shopId());
+        View::render('desktop/printer', ['paperWidth' => (int) ($shop['receipt_printer_width'] ?? 80)]);
+    }
+
+    /** The sample receipt "Sinov cheki" prints. */
+    public function printerTest(Request $request): void
+    {
+        $this->desktopOnly();
+        $shop = Shop::find((int) Auth::shopId());
+        header('Cache-Control: no-store');
+        View::render('desktop/printer-test', [
+            'shop' => $shop,
+            'paperWidth' => (int) ($shop['receipt_printer_width'] ?? 80),
+            'deviceCode' => Desktop::get('device_code'),
+        ], 'layouts/receipt-print');
     }
 
     private function desktopOnly(): void

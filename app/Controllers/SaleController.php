@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Request;
 use App\Core\View;
+use App\Desktop\Desktop;
 use App\Models\ActivityLog;
 use App\Models\Customer;
 use App\Models\Product;
@@ -272,6 +273,11 @@ class SaleController
         ]);
 
         flash('success', t('sale_completed'));
+        if (Desktop::enabled()) {
+            // The receipt page prints this sale by itself once (if this
+            // computer's printer is set to) — not again on a reload.
+            $_SESSION['autoprint_sale'] = $saleId;
+        }
         redirect("/sales/{$saleId}");
     }
 
@@ -291,6 +297,9 @@ class SaleController
             false
         );
 
+        $autoPrint = isset($_SESSION['autoprint_sale']) && (int) $_SESSION['autoprint_sale'] === (int) $id;
+        unset($_SESSION['autoprint_sale']);
+
         View::render('sales/receipt', [
             'sale' => $sale,
             'items' => Sale::items((int) $id),
@@ -298,7 +307,30 @@ class SaleController
             'refunds' => Refund::historyForSale((int) $id),
             'canRefund' => $canRefund,
             'shop' => Shop::find($shopId),
+            'autoPrint' => $autoPrint,
         ]);
+    }
+
+    /** The receipt alone at the paper's width — what the desktop app prints. */
+    public function printReceipt(Request $request, string $id): void
+    {
+        $shopId = (int) Auth::shopId();
+        $sale = Sale::find((int) $id, $shopId);
+
+        if (!$sale) {
+            abort_404();
+        }
+
+        $shop = Shop::find($shopId);
+        header('Cache-Control: no-store');
+        View::render('sales/print', [
+            'sale' => $sale,
+            'items' => Sale::items((int) $id),
+            'payments' => Sale::payments((int) $id),
+            'refunds' => Refund::historyForSale((int) $id),
+            'shop' => $shop,
+            'paperWidth' => (int) ($shop['receipt_printer_width'] ?? 80),
+        ], 'layouts/receipt-print');
     }
 
     public function refundForm(Request $request, string $id): void

@@ -9,6 +9,11 @@
 return [
     [
         'date' => '2026-09-25',
+        'uz' => "Chek termoprinterga oynasiz, darhol chiqadi; sotuvdan keyin avtomatik chop etish. Printer bo'limida printerni tanlang.",
+        'ru' => 'Чек печатается на термопринтер сразу, без окна печати; автоматическая печать после продажи. Выберите принтер в разделе «Принтер».',
+    ],
+    [
+        'date' => '2026-09-25',
         'uz' => "Yordam bo'limida biz bilan bog'lanish: telefon va Telegram.",
         'ru' => 'В разделе «Помощь» — контакты для связи: телефон и Telegram.',
     ],

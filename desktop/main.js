@@ -19,6 +19,7 @@ const { SyncRunner } = require('./lib/sync-runner');
 const { checkLicense } = require('./lib/license');
 const { fingerprint } = require('./lib/fingerprint');
 const { CodeUpdates, backupDatabase } = require('./lib/code-updates');
+const { ReceiptPrinter } = require('./lib/receipt-printer');
 
 const SERVER = process.env.KASSIRON_SERVER || 'https://kassiron.uz';
 const DEV = !app.isPackaged;
@@ -51,6 +52,7 @@ let runningCode = null;
 let pendingUpdate = null;
 let appliedUpdate = null;
 let cfgShared = null;
+let receiptPrinter = null;
 
 function resourcePath(...parts) {
     return DEV ? path.join(__dirname, 'build', ...parts) : path.join(process.resourcesPath, ...parts);
@@ -346,6 +348,13 @@ async function boot() {
     });
     syncRunner.start();
 
+    receiptPrinter = new ReceiptPrinter({
+        userData: cfg.userData,
+        origin: () => phpServer.url,
+        logError,
+        pdfDir: DEV ? process.env.KASSIRON_PRINT_TO_PDF || null : null,
+    });
+
     createWindow(phpServer.url + '/');
 
     setTimeout(checkForCodeUpdate, 15 * 1000);
@@ -356,9 +365,26 @@ async function boot() {
 ipcMain.on('sync-now', () => syncRunner && syncRunner.run());
 ipcMain.on('apply-update', () => { applyCodeUpdate(); });
 ipcMain.on('check-update', () => { checkForCodeUpdate(); });
-ipcMain.on('print-silently', (event) => {
-    event.sender.print({ silent: true, printBackground: true });
+// Receipt printer (lib/receipt-printer.js) — only for the till window's own
+// pages, never for anything else that might end up in a window.
+function fromTillWindow(event) {
+    return Boolean(mainWindow && !mainWindow.isDestroyed() && event.sender === mainWindow.webContents
+        && phpServer && receiptPrinter && event.senderFrame && event.senderFrame.url.startsWith(phpServer.url + '/'));
+}
+ipcMain.handle('printer-list', (event) => (fromTillWindow(event) ? receiptPrinter.list(event.sender) : []));
+ipcMain.handle('printer-settings', (event) => (fromTillWindow(event) ? receiptPrinter.settings() : null));
+ipcMain.handle('printer-save', (event, input) => {
+    if (!fromTillWindow(event)) {
+        return { ok: false, error: 'forbidden' };
+    }
+    try {
+        return { ok: true, settings: receiptPrinter.save(input) };
+    } catch (e) {
+        logError('printer save', e);
+        return { ok: false, error: e.message };
+    }
 });
+ipcMain.handle('printer-print', (event, request) => (fromTillWindow(event) ? receiptPrinter.print(request) : { ok: false, error: 'forbidden' }));
 
 app.on('second-instance', () => {
     if (mainWindow) {

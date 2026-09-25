@@ -46,6 +46,9 @@ if (Auth::isSuperAdmin()) {
         }
     }
 
+    if (App\Desktop\Desktop::enabled()) {
+        $navItems[] = ['href' => '/desktop/printer', 'label' => t('printer_nav'), 'icon' => 'printer', 'implemented' => true, 'permission' => null];
+    }
     $navItems[] = ['href' => '/help', 'label' => t('help_nav'), 'icon' => 'help', 'implemented' => true, 'permission' => null];
     $navItems[] = ['href' => '/profile', 'label' => t('profile'), 'icon' => 'user', 'implemented' => true, 'permission' => null];
 }
@@ -71,6 +74,7 @@ $icon = static function (string $name): string {
         'clock' => '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
         'more' => '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
         'truck' => '<rect x="2.5" y="7" width="12" height="9"/><path d="M14.5 10h4l3 3.5V16h-7z"/><circle cx="7" cy="18.5" r="1.6"/><circle cx="17" cy="18.5" r="1.6"/>',
+        'printer' => '<path d="M7 8V3.5h10V8"/><rect x="3" y="8" width="18" height="8.5" rx="1.5"/><path d="M7 14h10v6.5H7z"/><circle cx="17.5" cy="11" r=".1" stroke-width="2.2"/>',
         'help' => '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.5 2.5 0 1 1 3.7 2.4c-.8.5-1.2 1-1.2 2"/><circle cx="12" cy="16.7" r=".1" stroke-width="2.4"/>',
     ];
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' . ($paths[$name] ?? '') . '</svg>';

@@ -95,6 +95,7 @@ $router->post('/sales', [SaleController::class, 'store'], ['auth', 'permission:s
 $router->get('/sales/shift-report', [SaleController::class, 'shiftReport'], ['auth', 'permission:sales']);
 $router->get('/sales/export', [SaleController::class, 'exportCsv'], ['auth', 'permission:sales']);
 $router->get('/sales/{id}/refund', [SaleController::class, 'refundForm'], ['auth', 'permission:sales']);
+$router->get('/sales/{id}/print', [SaleController::class, 'printReceipt'], ['auth', 'permission:sales']);
 $router->post('/sales/{id}/refund', [SaleController::class, 'refundStore'], ['auth', 'permission:sales', 'csrf']);
 $router->get('/sales/{id}', [SaleController::class, 'receipt'], ['auth', 'permission:sales']);
 
@@ -155,3 +156,5 @@ $router->get('/desktop/web-only', [DesktopController::class, 'webOnly'], ['auth'
 $router->post('/desktop/sync', [DesktopController::class, 'syncNow'], ['auth', 'csrf']);
 $router->get('/desktop/status', [DesktopController::class, 'status']);
 $router->get('/desktop/status-bar', [DesktopController::class, 'statusBar'], ['auth']);
+$router->get('/desktop/printer', [DesktopController::class, 'printer'], ['auth']);
+$router->get('/desktop/printer/test', [DesktopController::class, 'printerTest'], ['auth']);

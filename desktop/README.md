@@ -23,6 +23,14 @@ kompyuterlar soni cheklanmagan.
   (`%APPDATA%\KassirON\backups`), xato bo'lsa oldingi versiyaga qaytadi.
 - **Qobiq yangilanishi** (Electron/PHP) — GitHub Releases orqali
   (electron-updater); `desktop/package.json` dagi `version` oshirilganda.
+- **Chek printeri** — "Printer" bo'limida har bir kompyuter o'z printerini
+  tanlaydi (`%APPDATA%\KassirON\printer.json`: printer, sotuvdan keyin
+  avtomatik chiqarish, nusxalar soni). Chek oynasiz chiqadi
+  (`lib/receipt-printer.js`): `/sales/{id}/print` sahifasi yashirin oynada
+  qog'oz kengligida (80/58 mm, do'kon sozlamasi) ochiladi va sahifa aynan chek
+  uzunligida chop etiladi — bo'sh qog'oz ketmaydi. Printer tanlanmagan bo'lsa,
+  odatdagi chop etish oynasi. Ishlab chiqishda `KASSIRON_PRINT_TO_PDF=<papka>`
+  — printer o'rniga PDF.
 
 ## Yig'ish
 

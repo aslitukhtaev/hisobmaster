@@ -884,6 +884,13 @@ img.logo-for-dark-theme { display: none; }
 .faq-item[open] summary::after { content: '−'; }
 .faq-item p { margin: 10px 0 0; color: var(--muted); font-size: .9rem; line-height: 1.5; }
 
+/* ---------- Desktop app: silent receipt printing ---------- */
+.print-status { margin: 0 0 14px; padding: 10px 12px; border-radius: var(--radius-sm); font-size: .9rem; background: var(--primary-light); color: var(--text); display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.print-status[hidden] { display: none; }
+.print-status.is-error { background: var(--danger-bg); color: var(--danger); }
+.print-status .btn { margin-left: auto; }
+.print-status a { font-weight: 600; }
+
 /* ---------- Help: support contacts ---------- */
 .support-card { margin-bottom: 14px; }
 .support-card h2 { margin: 0 0 4px; font-size: 1.05rem; }

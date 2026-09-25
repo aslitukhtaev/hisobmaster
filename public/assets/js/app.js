@@ -94,6 +94,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (printBtns.length) {
         printBtns.forEach(function (btn) {
             btn.addEventListener('click', function () {
+                // In the desktop app a receipt goes straight to the receipt
+                // printer instead (see "silent receipt printing" below).
+                if (btn.hasAttribute('data-print-path') && window.kassironDesktop
+                    && typeof window.kassironDesktop.printPage === 'function') {
+                    return;
+                }
                 window.print();
             });
         });
@@ -226,4 +232,193 @@ document.addEventListener('DOMContentLoaded', function () {
             ]);
         });
     }
+})();
+
+// Desktop app, silent receipt printing: "Chop etish" sends the receipt
+// straight to this computer's receipt printer (chosen on /desktop/printer,
+// kept by the shell) with no print dialog, and right after a sale the
+// receipt prints by itself if the printer is set to. No printer chosen yet:
+// the ordinary print dialog, with a pointer to the printer settings.
+(function () {
+    var bridge = window.kassironDesktop;
+    var btn = document.getElementById('receipt-print-btn');
+    var box = document.getElementById('print-status');
+    if (!bridge || !btn || !box || typeof bridge.printPage !== 'function') {
+        return;
+    }
+    var text = function (name) { return box.getAttribute('data-' + name) || ''; };
+    var busy = false;
+
+    function show(message, isError, actions) {
+        box.innerHTML = '';
+        box.classList.toggle('is-error', !!isError);
+        var span = document.createElement('span');
+        span.textContent = message;
+        box.appendChild(span);
+        (actions || []).forEach(function (action) {
+            if (action === 'dialog') {
+                var dialogBtn = document.createElement('button');
+                dialogBtn.type = 'button';
+                dialogBtn.className = 'btn btn-sm btn-ghost';
+                dialogBtn.textContent = text('dialog');
+                dialogBtn.addEventListener('click', function () { window.print(); });
+                box.appendChild(dialogBtn);
+            } else if (action === 'settings') {
+                var link = document.createElement('a');
+                link.href = '/desktop/printer';
+                link.textContent = text('settings');
+                box.appendChild(link);
+            }
+        });
+        box.hidden = false;
+    }
+
+    function failed(reason) {
+        show(text('failed').replace(':reason', reason || '?'), true, ['dialog', 'settings']);
+    }
+
+    function print(auto) {
+        if (busy) {
+            return;
+        }
+        busy = true;
+        btn.disabled = true;
+        show(text('printing'));
+        bridge.printPage({ path: btn.getAttribute('data-print-path'), paper: Number(btn.getAttribute('data-paper')) || 80 })
+            .then(function (result) {
+                if (result && result.ok) {
+                    show(text('sent'));
+                } else if (result && result.error === 'no_printer') {
+                    if (auto) {
+                        box.hidden = true;
+                    } else {
+                        show(text('no-printer'), false, ['settings']);
+                        window.print();
+                    }
+                } else {
+                    failed(result && result.error);
+                }
+            })
+            .catch(function (e) { failed(e && e.message); })
+            .then(function () {
+                busy = false;
+                btn.disabled = false;
+            });
+    }
+
+    btn.addEventListener('click', function () { print(false); });
+
+    if (btn.getAttribute('data-autoprint') === '1' && typeof bridge.printerSettings === 'function') {
+        bridge.printerSettings().then(function (settings) {
+            if (settings && settings.deviceName && settings.autoPrint) {
+                print(true);
+            }
+        }).catch(function () {});
+    }
+})();
+
+// Desktop app: the receipt printer settings page (/desktop/printer). The
+// printers and the choice live in the shell; this page only shows them.
+(function () {
+    var root = document.getElementById('printer-settings');
+    if (!root) {
+        return;
+    }
+    var bridge = window.kassironDesktop;
+    var text = function (name) { return root.getAttribute('data-' + name) || ''; };
+    var form = document.getElementById('printer-form');
+    var select = document.getElementById('printer-select');
+    var auto = document.getElementById('printer-auto');
+    var copies = document.getElementById('printer-copies');
+    var status = document.getElementById('printer-status');
+    var buttons = ['printer-save', 'printer-test', 'printer-refresh'].map(function (id) { return document.getElementById(id); });
+    var saved = { deviceName: '', autoPrint: true, copies: 1 };
+
+    function show(message, isError) {
+        status.textContent = message;
+        status.classList.toggle('is-error', !!isError);
+        status.hidden = !message;
+    }
+
+    function option(value, label) {
+        var node = document.createElement('option');
+        node.value = value;
+        node.textContent = label;
+        select.appendChild(node);
+    }
+
+    if (!bridge || typeof bridge.printerList !== 'function') {
+        select.innerHTML = '';
+        option('', text('none'));
+        show(text('old-app'), true);
+        return;
+    }
+
+    function fill(printers) {
+        select.innerHTML = '';
+        option('', text('none'));
+        var names = [];
+        printers.forEach(function (printer) {
+            names.push(printer.name);
+            option(printer.name, (printer.displayName || printer.name) + (printer.isDefault ? ' ' + text('default-mark') : ''));
+        });
+        // A saved printer that isn't connected right now stays selected.
+        if (saved.deviceName && names.indexOf(saved.deviceName) === -1) {
+            option(saved.deviceName, saved.deviceName);
+        }
+        select.value = saved.deviceName || '';
+        select.disabled = false;
+        buttons.forEach(function (b) { b.disabled = false; });
+        show(printers.length ? '' : text('no-printers'), !printers.length);
+    }
+
+    function load() {
+        Promise.all([bridge.printerSettings(), bridge.printerList()]).then(function (results) {
+            saved = results[0] || saved;
+            auto.checked = saved.autoPrint !== false;
+            copies.value = String(saved.copies || 1);
+            fill(results[1] || []);
+        }).catch(function (e) { show(text('save-failed') + ' ' + (e && e.message ? e.message : ''), true); });
+    }
+
+    function save() {
+        return bridge.savePrinterSettings({
+            deviceName: select.value,
+            autoPrint: auto.checked,
+            copies: Number(copies.value) || 1,
+        }).then(function (result) {
+            if (!result || !result.ok) {
+                throw new Error(result && result.error ? result.error : '');
+            }
+            saved = result.settings;
+            return saved;
+        });
+    }
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        save().then(function () { show(text('saved')); })
+            .catch(function () { show(text('save-failed'), true); });
+    });
+
+    document.getElementById('printer-test').addEventListener('click', function () {
+        if (!select.value) {
+            show(text('choose-first'), true);
+            return;
+        }
+        show(text('printing'));
+        save().then(function () {
+            return bridge.printPage({ path: '/desktop/printer/test', paper: Number(root.getAttribute('data-paper')) || 80 });
+        }).then(function (result) {
+            if (result && result.ok) {
+                show(text('test-sent'));
+            } else {
+                show(text('failed').replace(':reason', (result && result.error) || '?'), true);
+            }
+        }).catch(function (e) { show(text('failed').replace(':reason', (e && e.message) || '?'), true); });
+    });
+
+    document.getElementById('printer-refresh').addEventListener('click', load);
+
+    load();
 })();

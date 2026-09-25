@@ -1,7 +1,7 @@
 {
   "name": "kassiron-desktop",
   "productName": "KassirON",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "KassirON — do'kon kassasi (kompyuter dasturi)",
   "main": "main.js",
   "private": true,
