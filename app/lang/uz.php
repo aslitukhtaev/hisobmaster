@@ -578,6 +578,9 @@ return [
     'help_a_backup' => "Super admin panelida \"Zaxira nusxalar\" bo'limi mavjud: cron sozlangan bo'lsa avtomatik ishlaydi, aks holda tizim panelga har kirilganda (oxirgi zaxiradan 24 soatdan ko'proq vaqt o'tgan bo'lsa) o'zi zaxira oladi. Har qanday zaxirani istalgan vaqtda qo'lda ham yaratish, yuklab olish yoki o'chirish mumkin.",
     'help_q_theme' => "Til yoki mavzuni (kun/tun) qanday almashtiraman?",
     'help_a_theme' => "Profil sahifasida tilni (o'zbek/rus) o'zgartirasiz. Kun/tun mavzusi almashtirgichi har sahifaning yuqori qismida joylashgan.",
+    'support_title' => "Biz bilan bog'lanish",
+    'support_hint' => "Savol yoki muammo bo'lsa, qo'ng'iroq qiling yoki Telegram'da yozing.",
+    'support_phone' => "Telefon",
 
     // --- QA fixes: products, barcodes, validation ---
     'currency_symbol' => "so'm",

@@ -24,9 +24,18 @@ function base_url(string $path = ''): string
     return $url . '/' . ltrim($path, '/');
 }
 
+/**
+ * URL of a file in public/assets, carrying its modification time
+ * (?v=1790319726) so a changed file gets a new URL: browsers and the service
+ * worker (public/sw.js) may then keep every version for good, and a deploy
+ * still reaches everyone at once.
+ */
 function asset(string $path): string
 {
-    return '/assets/' . ltrim($path, '/');
+    $path = ltrim($path, '/');
+    $mtime = @filemtime(BASE_PATH . '/public/assets/' . $path);
+
+    return '/assets/' . $path . ($mtime !== false ? '?v=' . $mtime : '');
 }
 
 function redirect(string $path): never
@@ -162,6 +171,11 @@ const MONEY_MAX = 1000000000000;
 
 /** The Windows installer of the desktop app (latest GitHub release). */
 const DESKTOP_DOWNLOAD_URL = 'https://github.com/aslitukhtaev/hisobmaster/releases/latest/download/KassirON-Setup.exe';
+
+/** KassirON support contacts, shown in the help section. */
+const SUPPORT_PHONE = '+998997026720';
+const SUPPORT_PHONE_DISPLAY = '+998 99 702 67 20';
+const SUPPORT_TELEGRAM = 'aslitukhtaev';
 
 /** Same idea for quantities (stock, sale/purchase/refund qty). */
 const QTY_MAX = 1000000000;

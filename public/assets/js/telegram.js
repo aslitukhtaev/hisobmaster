@@ -18,4 +18,20 @@
     }
 
     document.documentElement.classList.add('in-telegram');
+
+    // A chat link (the support contact on the help page) opens that chat in
+    // Telegram itself; followed as a plain link it would load t.me inside
+    // the Mini App's own view.
+    document.addEventListener('click', function (e) {
+        var link = e.target.closest ? e.target.closest('a[data-telegram-chat]') : null;
+        if (!link || !tg.initData || typeof tg.openTelegramLink !== 'function') {
+            return;
+        }
+        e.preventDefault();
+        try {
+            tg.openTelegramLink(link.href);
+        } catch (err) {
+            window.open(link.href, '_blank');
+        }
+    });
 })();

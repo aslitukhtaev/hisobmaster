@@ -280,14 +280,24 @@ img.logo-for-dark-theme { display: none; }
 .role-badge {
     background: var(--primary-light); color: var(--primary-dark);
     font-size: .78rem; font-weight: 700; padding: 5px 10px; border-radius: 999px;
-    white-space: nowrap;
+    white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis;
 }
 .shop-name-label {
     font-size: .85rem; font-weight: 700; color: var(--text);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     display: none;
 }
-.topbar-actions { display: flex; align-items: center; gap: 10px; }
+.topbar-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+/* Phones: the actions (theme, language, profile, logout) keep their size and
+   the role badge gives way — shortened, and hidden where even that won't fit. */
+@media (max-width: 520px) {
+    .topbar { padding: 0 12px; }
+    .topbar-actions { gap: 6px; }
+    .role-badge { padding: 4px 8px; font-size: .72rem; }
+}
+@media (max-width: 360px) {
+    .role-badge { display: none; }
+}
 .user-chip { display: flex; align-items: center; gap: 8px; font-size: .88rem; font-weight: 600; }
 .user-chip .user-name { display: none; }
 .user-avatar {
@@ -873,6 +883,27 @@ img.logo-for-dark-theme { display: none; }
 .faq-item summary::after { content: '+'; color: var(--muted); font-weight: 400; font-size: 1.2rem; flex-shrink: 0; }
 .faq-item[open] summary::after { content: '−'; }
 .faq-item p { margin: 10px 0 0; color: var(--muted); font-size: .9rem; line-height: 1.5; }
+
+/* ---------- Help: support contacts ---------- */
+.support-card { margin-bottom: 14px; }
+.support-card h2 { margin: 0 0 4px; font-size: 1.05rem; }
+.support-card > p { margin: 0 0 14px; font-size: .9rem; }
+.support-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.support-link {
+    display: flex; align-items: center; gap: 12px; min-width: 0;
+    padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    color: var(--text); text-decoration: none; transition: border-color .15s, background .15s;
+}
+.support-link:hover, .support-link:focus-visible { border-color: var(--primary); background: var(--primary-light); }
+.support-icon {
+    width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--primary-light); color: var(--primary);
+}
+.support-icon svg { width: 20px; height: 20px; }
+.support-text { display: flex; flex-direction: column; min-width: 0; }
+.support-text strong { overflow-wrap: anywhere; }
+.support-label { font-size: .78rem; color: var(--muted); }
 
 /* ---------- Desktop app: sync status bar ---------- */
 .desktop-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; margin-bottom: 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); font-size: .85rem; }
