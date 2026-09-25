@@ -9,15 +9,26 @@ use Throwable;
 
 class DebtTransaction
 {
+    /**
+     * A ledger row's effect on the balance: a 'qarz' adds to what the
+     * customer owes, a 'tolov' (payment) or 'refund' takes it off.
+     *
+     * The balance is always this summed over every row, never "the
+     * balance_after of the newest row": once the shop's computers sync
+     * ledger rows recorded offline, rows no longer arrive in the order they
+     * happened, and a newest-row balance would silently be wrong. A sum
+     * doesn't depend on order at all.
+     */
+    public const SIGNED_AMOUNT_SQL = "CASE WHEN type = 'qarz' THEN amount ELSE -amount END";
+
     public static function currentBalance(int $customerId): float
     {
         $stmt = Database::connect()->prepare(
-            'SELECT balance_after FROM debt_transactions WHERE customer_id = ? ORDER BY id DESC LIMIT 1'
+            'SELECT COALESCE(SUM(' . self::SIGNED_AMOUNT_SQL . '), 0) FROM debt_transactions WHERE customer_id = ?'
         );
         $stmt->execute([$customerId]);
-        $balance = $stmt->fetchColumn();
 
-        return $balance !== false ? (float) $balance : 0.0;
+        return round((float) $stmt->fetchColumn(), 2);
     }
 
     /**
@@ -76,31 +87,44 @@ class DebtTransaction
         }
     }
 
+    /**
+     * The customer's ledger, newest first, with balance_after recomputed as
+     * the running balance in the order the entries actually happened
+     * (created_at, then id) — the stored value is only what the recording
+     * database knew at that moment, which a synced entry from another
+     * computer can make out of date.
+     */
     public static function historyByCustomer(int $customerId): array
     {
         $stmt = Database::connect()->prepare(
-            'SELECT * FROM debt_transactions WHERE customer_id = ? ORDER BY id DESC'
+            'SELECT * FROM debt_transactions WHERE customer_id = ? ORDER BY created_at ASC, id ASC'
         );
         $stmt->execute([$customerId]);
+        $rows = $stmt->fetchAll();
 
-        return $stmt->fetchAll();
+        $running = 0.0;
+        foreach ($rows as &$row) {
+            $running = round($running + ($row['type'] === 'qarz' ? (float) $row['amount'] : -(float) $row['amount']), 2);
+            $row['balance_after'] = $running;
+        }
+        unset($row);
+
+        return array_reverse($rows);
     }
 
     public static function totalDebtByShop(int $shopId): float
     {
-        // Each customer's current balance is their most recent balance_after row.
+        // Per customer, so one customer's overpayment (a negative balance)
+        // never reduces what the others owe.
         $stmt = Database::connect()->prepare(
-            'SELECT dt.customer_id, dt.balance_after FROM debt_transactions dt
-             INNER JOIN (
-                 SELECT customer_id, MAX(id) AS max_id FROM debt_transactions WHERE shop_id = ? GROUP BY customer_id
-             ) latest ON latest.max_id = dt.id'
+            'SELECT customer_id, SUM(' . self::SIGNED_AMOUNT_SQL . ') AS balance
+             FROM debt_transactions WHERE shop_id = ? GROUP BY customer_id'
         );
         $stmt->execute([$shopId]);
-        $rows = $stmt->fetchAll();
 
         $total = 0.0;
-        foreach ($rows as $row) {
-            $total += max(0.0, (float) $row['balance_after']);
+        foreach ($stmt->fetchAll() as $row) {
+            $total += max(0.0, round((float) $row['balance'], 2));
         }
 
         return $total;

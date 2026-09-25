@@ -1,5 +1,11 @@
 PRAGMA foreign_keys = ON;
 
+-- Columns and objects added on top of these tables by app/Core/Migrator.php
+-- rather than here: the `uuid` column, its unique index and the trigger that
+-- fills it on every table in App\Core\SyncSchema::TABLES (see
+-- Migrator::addSyncIdentity()), plus any column added after a table first
+-- shipped (Migrator::apply()).
+
 CREATE TABLE IF NOT EXISTS shops (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,

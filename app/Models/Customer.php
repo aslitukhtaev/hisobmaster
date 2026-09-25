@@ -105,30 +105,28 @@ class Customer
     }
 
     /**
-     * All customers in the shop with their current debt balance
-     * (the balance_after of each customer's most recent ledger entry).
+     * All customers in the shop with their current debt balance — the sum
+     * of their ledger (see DebtTransaction::SIGNED_AMOUNT_SQL for why it's a
+     * sum and not the newest row's balance_after).
      */
     public static function allWithBalance(int $shopId, bool $onlyDebtors = false): array
     {
-        $sql = "SELECT c.*, COALESCE(latest.balance_after, 0) AS balance
+        $sql = 'SELECT c.*, ROUND(COALESCE(ledger.balance, 0), 2) AS balance
                 FROM customers c
                 LEFT JOIN (
-                    SELECT dt1.customer_id, dt1.balance_after
-                    FROM debt_transactions dt1
-                    INNER JOIN (
-                        SELECT customer_id, MAX(id) AS max_id FROM debt_transactions GROUP BY customer_id
-                    ) dt2 ON dt2.customer_id = dt1.customer_id AND dt2.max_id = dt1.id
-                ) latest ON latest.customer_id = c.id
-                WHERE c.shop_id = ?";
+                    SELECT customer_id, SUM(' . DebtTransaction::SIGNED_AMOUNT_SQL . ') AS balance
+                    FROM debt_transactions WHERE shop_id = ? GROUP BY customer_id
+                ) ledger ON ledger.customer_id = c.id
+                WHERE c.shop_id = ?';
 
         if ($onlyDebtors) {
-            $sql .= ' AND COALESCE(latest.balance_after, 0) > 0';
+            $sql .= ' AND ROUND(COALESCE(ledger.balance, 0), 2) > 0';
         }
 
         $sql .= ' ORDER BY balance DESC, c.full_name';
 
         $stmt = Database::connect()->prepare($sql);
-        $stmt->execute([$shopId]);
+        $stmt->execute([$shopId, $shopId]);
 
         return $stmt->fetchAll();
     }

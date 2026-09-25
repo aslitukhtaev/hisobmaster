@@ -1,7 +1,7 @@
 <?php $pageTitle = t('refund_title'); ?>
 <section class="page-head page-head-row">
     <div>
-        <h1><?= e(t('refund_title')) ?> #<?= (int) $sale['id'] ?></h1>
+        <h1><?= e(t('refund_title')) ?> #<?= e(receipt_number($sale)) ?></h1>
         <p class="muted"><?= e(t('refund_hint')) ?></p>
     </div>
     <a href="/sales/<?= (int) $sale['id'] ?>" class="btn btn-ghost"><?= e(t('back_to_receipt')) ?></a>

@@ -24,7 +24,8 @@ if (is_file($envFile)) {
 }
 
 // Deliberately not app/bootstrap.php (no session/router needed here) — just
-// the two classes the migration itself uses.
+// the classes the migration itself uses.
+require_once BASE_PATH . '/app/Core/SyncSchema.php';
 require_once BASE_PATH . '/app/Core/Migrator.php';
 require_once BASE_PATH . '/app/Models/Refund.php';
 

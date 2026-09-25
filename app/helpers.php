@@ -375,6 +375,18 @@ function abort_404(): never
     exit;
 }
 
+/**
+ * The number shown and printed for a sale: its receipt_no when it has one
+ * (sales made on a shop's computer, e.g. "K2-000145", keep the number their
+ * paper receipt was printed with), otherwise its id.
+ */
+function receipt_number(array $sale): string
+{
+    $receiptNo = trim((string) ($sale['receipt_no'] ?? ''));
+
+    return $receiptNo !== '' ? $receiptNo : (string) (int) ($sale['id'] ?? 0);
+}
+
 function can(string $permission): bool
 {
     return Auth::can($permission);

@@ -11,7 +11,7 @@ $debtAmount = round((float) $sale['total'] - (float) $sale['paid_amount'], 2);
 </style>
 <section class="page-head page-head-row no-print">
     <div>
-        <h1><?= e(t('receipt_title')) ?> #<?= (int) $sale['id'] ?></h1>
+        <h1><?= e(t('receipt_title')) ?> #<?= e(receipt_number($sale)) ?></h1>
     </div>
     <div class="row-actions">
         <?php if ($canRefund): ?>
@@ -28,7 +28,7 @@ $debtAmount = round((float) $sale['total'] - (float) $sale['paid_amount'], 2);
         <div class="receipt-shop-name"><?= e($shop['name'] ?? '') ?></div>
         <?php if (!empty($shop['address'])): ?><div class="receipt-meta"><?= e($shop['address']) ?></div><?php endif; ?>
         <?php if (!empty($shop['phone'])): ?><div class="receipt-meta"><?= e($shop['phone']) ?></div><?php endif; ?>
-        <div class="receipt-meta">№<?= (int) $sale['id'] ?> · <?= e(local_datetime($sale['created_at'])) ?></div>
+        <div class="receipt-meta">№<?= e(receipt_number($sale)) ?> · <?= e(local_datetime($sale['created_at'])) ?></div>
         <div class="receipt-meta"><?= e(t('cashier')) ?>: <?= e($sale['cashier_name'] ?? '') ?></div>
     </div>
 

@@ -267,7 +267,7 @@ class SaleController
 
         $sale = Sale::find($saleId, $shopId);
         ActivityLog::record($shopId, $cashierId, 'sale_created', [
-            'sale_id' => $saleId,
+            'sale_id' => $sale !== null ? receipt_number($sale) : (string) $saleId,
             'total' => money((float) ($sale['total'] ?? 0)),
         ]);
 
@@ -377,7 +377,7 @@ class SaleController
         }
 
         ActivityLog::record($shopId, $userId, 'refund_created', [
-            'sale_id' => (int) $id,
+            'sale_id' => receipt_number($sale),
             'amount' => money((float) ($refund['total_amount'] ?? 0)),
         ]);
 

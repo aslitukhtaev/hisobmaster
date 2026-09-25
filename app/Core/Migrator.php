@@ -22,7 +22,7 @@ use Throwable;
  */
 final class Migrator
 {
-    public const VERSION = 3;
+    public const VERSION = 4;
 
     public static function ensureUpToDate(PDO $pdo): void
     {
@@ -96,10 +96,52 @@ final class Migrator
             'variant_label' => 'TEXT',
         ]);
 
+        self::addColumns($pdo, $log, 'sales', [
+            // The number printed on the receipt when it isn't the plain id —
+            // a sale rung up on a shop's computer gets e.g. "K2-000145"
+            // (computer 2, its 145th sale), which stays the same once the sale
+            // reaches the server under a different id. NULL = use the id.
+            'receipt_no' => 'TEXT',
+        ]);
+
         self::backfillRefundPayments($pdo, $log);
 
         if ($fromVersion < 3) {
             self::grantDiscountPermission($pdo, $log);
+        }
+
+        // Last, so rows inserted by the steps above get their uuid too.
+        self::addSyncIdentity($pdo, $log);
+    }
+
+    /**
+     * Gives every synced table (SyncSchema::TABLES) a `uuid` column that is
+     * unique and always filled: existing rows are backfilled here, and an
+     * AFTER INSERT trigger fills it for every new row, so none of the INSERTs
+     * across the models have to know about it. A row created elsewhere (the
+     * desktop app) arrives with its own uuid, which the trigger leaves alone.
+     *
+     * The trigger rather than a column DEFAULT: SQLite can't add a column
+     * with an expression default to an existing table.
+     */
+    private static function addSyncIdentity(PDO $pdo, callable $log): void
+    {
+        foreach (SyncSchema::TABLES as $table) {
+            self::addColumns($pdo, $log, $table, ['uuid' => 'TEXT']);
+
+            $filled = $pdo->exec("UPDATE $table SET uuid = lower(hex(randomblob(16))) WHERE uuid IS NULL");
+            if ($filled > 0) {
+                $log("$table: $filled ta yozuvga uuid berildi.");
+            }
+
+            $pdo->exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_{$table}_uuid ON $table(uuid)");
+            $pdo->exec(
+                "CREATE TRIGGER IF NOT EXISTS trg_{$table}_uuid AFTER INSERT ON $table
+                 WHEN NEW.uuid IS NULL
+                 BEGIN
+                     UPDATE $table SET uuid = lower(hex(randomblob(16))) WHERE rowid = NEW.rowid;
+                 END"
+            );
         }
     }
 
