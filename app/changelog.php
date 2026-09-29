@@ -8,6 +8,11 @@
 
 return [
     [
+        'date' => '2026-09-29',
+        'uz' => "Yangi KassirON ikonkasi.",
+        'ru' => 'Новая иконка KassirON.',
+    ],
+    [
         'date' => '2026-09-25',
         'uz' => "Chek termoprinterga oynasiz, darhol chiqadi; sotuvdan keyin avtomatik chop etish. Printer bo'limida printerni tanlang.",
         'ru' => 'Чек печатается на термопринтер сразу, без окна печати; автоматическая печать после продажи. Выберите принтер в разделе «Принтер».',
