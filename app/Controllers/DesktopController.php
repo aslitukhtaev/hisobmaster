@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\RememberMe;
 use App\Core\Request;
 use App\Core\View;
 use App\Desktop\Desktop;
@@ -56,6 +57,15 @@ class DesktopController
             flash('error', t('desktop_error_generic'));
             keep_old(['login' => $login]);
             redirect('/desktop/activate');
+        }
+
+        // The owner just typed their password: they are signed in and this
+        // computer remembers them — no second login right after activation.
+        if (Auth::attempt($login, $password)) {
+            RememberMe::issue((int) Auth::id());
+            $_SESSION['lang'] = Auth::user()['lang'] ?? env('APP_DEFAULT_LANG', 'uz');
+            flash('success', t('desktop_activated'));
+            redirect('/');
         }
 
         flash('success', t('desktop_activated'));

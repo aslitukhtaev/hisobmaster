@@ -762,4 +762,20 @@ return [
     'printer_not_chosen' => "Принтер чеков не выбран, поэтому открыто окно печати.",
     'printer_use_dialog' => "Печать через окно",
     'printer_settings_link' => "Настройки принтера",
+
+    // --- Staying signed in ---
+    'remember_me' => "Запомнить меня (на этом устройстве пароль больше не спросят)",
+    'telegram_signing_in' => "Вход через Telegram…",
+    'devices_signed_in_title' => "Устройства со входом",
+    'devices_signed_in_hint' => "На этих устройствах ваш аккаунт запомнен — пароль не спрашивается. Если телефон потерян или вы входили на чужом компьютере, отключите это устройство.",
+    'devices_none' => "Пока нет запомненных устройств.",
+    'device_this' => "Это устройство",
+    'device_last_used' => "Последний раз: :date",
+    'device_remove' => "Отключить",
+    'device_remove_confirm' => "Отключить это устройство? Там снова спросят пароль.",
+    'device_removed' => "Устройство отключено.",
+    'devices_sign_out_others' => "Выйти на всех других устройствах",
+    'devices_sign_out_others_confirm' => "Выйти из аккаунта везде, кроме этого устройства?",
+    'devices_signed_out_others' => "Выполнен выход на всех других устройствах.",
+    'device_unknown_browser' => "Браузер",
 ];

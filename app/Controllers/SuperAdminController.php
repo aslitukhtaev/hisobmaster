@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Core\Auth;
 use App\Core\Request;
 use App\Core\View;
 use App\Models\Backup;
@@ -236,6 +237,8 @@ class SuperAdminController
 
         $password = $this->generatePassword();
         User::updatePassword((int) $owner['id'], $password);
+        // Whoever was signed in with the old password is signed out.
+        Auth::signOutEverywhere((int) $owner['id'], keepCurrent: false);
 
         $shop = Shop::find((int) $id);
         $_SESSION['new_credentials'] = [

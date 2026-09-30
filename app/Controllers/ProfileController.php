@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\RememberMe;
 use App\Core\Request;
+use App\Core\TelegramAuth;
 use App\Core\View;
+use App\Desktop\Desktop;
 use App\Models\Settings;
 use App\Models\Shop;
 use App\Models\User;
@@ -18,7 +21,39 @@ class ProfileController
         $shop = Auth::isOwner() ? Shop::find((int) Auth::shopId()) : null;
         $lowStockThresholdDefault = $shop ? Settings::lowStockThresholdDefault((int) Auth::shopId()) : null;
 
-        View::render('profile/show', ['shop' => $shop, 'lowStockThresholdDefault' => $lowStockThresholdDefault]);
+        $userId = (int) Auth::id();
+        View::render('profile/show', [
+            'shop' => $shop,
+            'lowStockThresholdDefault' => $lowStockThresholdDefault,
+            // Where this account stays signed in (website only: the desktop
+            // app has its own, local sign-ins).
+            'devices' => Desktop::enabled() ? null : RememberMe::forUser($userId),
+            'telegramLinks' => Desktop::enabled() ? null : TelegramAuth::forUser($userId),
+            'currentSelector' => $_SESSION['remember_selector'] ?? null,
+            'currentTelegramId' => $_SESSION['telegram_user_id'] ?? null,
+        ]);
+    }
+
+    /** "Boshqa qurilmalardan chiqish": every other device must sign in again. */
+    public function signOutOthers(Request $request): void
+    {
+        Auth::signOutEverywhere((int) Auth::id(), keepCurrent: true);
+        flash('success', t('devices_signed_out_others'));
+        redirect('/profile#devices');
+    }
+
+    public function removeDevice(Request $request, string $id): void
+    {
+        RememberMe::remove((int) $id, (int) Auth::id());
+        flash('success', t('device_removed'));
+        redirect('/profile#devices');
+    }
+
+    public function removeTelegram(Request $request, string $id): void
+    {
+        TelegramAuth::remove((int) $id, (int) Auth::id());
+        flash('success', t('device_removed'));
+        redirect('/profile#devices');
     }
 
     public function update(Request $request): void
@@ -77,6 +112,8 @@ class ProfileController
             }
 
             User::updatePassword($userId, $newPassword);
+            // A new password signs every other device out.
+            Auth::signOutEverywhere($userId, keepCurrent: true);
         }
 
         User::updateProfile($userId, [

@@ -762,4 +762,20 @@ return [
     'printer_not_chosen' => "Chek printeri tanlanmagan, shuning uchun chop etish oynasi ochildi.",
     'printer_use_dialog' => "Oyna orqali chop etish",
     'printer_settings_link' => "Printer sozlamalari",
+
+    // --- Staying signed in ---
+    'remember_me' => "Meni eslab qol (bu qurilmada parol qayta so'ralmaydi)",
+    'telegram_signing_in' => "Telegram orqali kirilmoqda…",
+    'devices_signed_in_title' => "Kirilgan qurilmalar",
+    'devices_signed_in_hint' => "Bu qurilmalarda akkauntingiz eslab qolingan — parol so'ralmaydi. Telefon yo'qolsa yoki begona kompyuterda kirgan bo'lsangiz, o'sha qurilmani chiqarib yuboring.",
+    'devices_none' => "Hozircha eslab qolingan qurilma yo'q.",
+    'device_this' => "Shu qurilma",
+    'device_last_used' => "Oxirgi marta: :date",
+    'device_remove' => "Chiqarish",
+    'device_remove_confirm' => "Bu qurilmadan chiqarilsinmi? U yerda qayta parol so'raladi.",
+    'device_removed' => "Qurilma chiqarildi.",
+    'devices_sign_out_others' => "Boshqa barcha qurilmalardan chiqish",
+    'devices_sign_out_others_confirm' => "Shu qurilmadan boshqa hamma joyda akkauntdan chiqilsinmi?",
+    'devices_signed_out_others' => "Boshqa barcha qurilmalardan chiqildi.",
+    'device_unknown_browser' => "Brauzer",
 ];

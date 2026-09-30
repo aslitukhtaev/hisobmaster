@@ -22,7 +22,7 @@ use Throwable;
  */
 final class Migrator
 {
-    public const VERSION = 6;
+    public const VERSION = 7;
 
     public static function ensureUpToDate(PDO $pdo): void
     {
@@ -114,6 +114,12 @@ final class Migrator
             // How long the shop's computers keep working without reaching
             // the server (see App\Sync\License).
             'offline_days' => 'INTEGER NOT NULL DEFAULT 7',
+        ]);
+
+        self::addColumns($pdo, $log, 'users', [
+            // "Sign out everywhere" / a password change: sessions signed in
+            // before this moment end (App\Core\Auth::user()).
+            'sessions_revoked_at' => 'TEXT',
         ]);
 
         // Last, so rows inserted by the steps above get their uuid too.

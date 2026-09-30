@@ -8,7 +8,9 @@
 
     <?php require BASE_PATH . '/app/views/partials/flash.php'; ?>
 
-    <form method="post" action="/login" class="stack">
+    <p class="muted telegram-login-status" id="telegram-login-status" hidden><?= e(t('telegram_signing_in')) ?></p>
+
+    <form method="post" action="/login" class="stack"<?= !empty($telegramAuto) ? ' data-telegram-auto="1"' : '' ?>>
         <?= csrf_field() ?>
         <label class="field">
             <span><?= e(t('login')) ?></span>
@@ -17,6 +19,10 @@
         <label class="field">
             <span><?= e(t('password')) ?></span>
             <input type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <label class="permission-check">
+            <input type="checkbox" name="remember" value="1" checked>
+            <span><?= e(t('remember_me')) ?></span>
         </label>
         <button type="submit" class="btn btn-primary btn-block"><?= e(t('login_button')) ?></button>
     </form>

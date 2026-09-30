@@ -28,6 +28,7 @@ use App\Controllers\TelegramController;
 
 $router->get('/login', [AuthController::class, 'showLogin'], ['guest']);
 $router->post('/login', [AuthController::class, 'login'], ['guest', 'csrf']);
+$router->post('/login/telegram', [AuthController::class, 'telegram'], ['guest', 'csrf']);
 $router->post('/logout', [AuthController::class, 'logout'], ['auth', 'csrf']);
 
 $router->post('/lang/{lang}', [LocaleController::class, 'switch']);
@@ -40,6 +41,9 @@ $router->get('/help', [HelpController::class, 'index'], ['auth']);
 $router->get('/profile', [ProfileController::class, 'show'], ['auth']);
 $router->post('/profile', [ProfileController::class, 'update'], ['auth', 'web_only', 'csrf']);
 $router->post('/profile/shop', [ProfileController::class, 'updateShop'], ['auth', 'role:owner', 'web_only', 'csrf']);
+$router->post('/profile/devices/sign-out-others', [ProfileController::class, 'signOutOthers'], ['auth', 'web_only', 'csrf']);
+$router->post('/profile/devices/{id}/remove', [ProfileController::class, 'removeDevice'], ['auth', 'web_only', 'csrf']);
+$router->post('/profile/telegram/{id}/remove', [ProfileController::class, 'removeTelegram'], ['auth', 'web_only', 'csrf']);
 
 $router->get('/superadmin/shops', [SuperAdminController::class, 'shops'], ['auth', 'role:super_admin']);
 $router->get('/superadmin/reports', [SuperAdminController::class, 'reports'], ['auth', 'role:super_admin']);

@@ -20,12 +20,103 @@ class Auth
             return false;
         }
 
-        session_regenerate_id(true);
-        $_SESSION['user_id'] = (int) $user['id'];
-        self::$user = $user;
-        self::$loaded = true;
+        self::signIn($user);
 
         return true;
+    }
+
+    /** Starts a signed-in session for an already verified, active user. */
+    private static function signIn(array $user): void
+    {
+        session_regenerate_id(true);
+        $_SESSION['user_id'] = (int) $user['id'];
+        $_SESSION['auth_at'] = microtime(true);
+        unset($_SESSION['remember_selector'], $_SESSION['telegram_user_id']);
+        self::$user = $user;
+        self::$loaded = true;
+    }
+
+    /**
+     * A visit without a session, from a device that was remembered
+     * ("Meni eslab qol"): signs its user in again. Called once per request,
+     * before anything is sent (bootstrap.php).
+     */
+    public static function restoreRemembered(): void
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE || !empty($_SESSION['user_id'])) {
+            return;
+        }
+
+        $token = RememberMe::fromCookie();
+        if ($token === null) {
+            return;
+        }
+
+        $user = self::activeUser($token['user_id']);
+        if ($user === null) {
+            return;
+        }
+
+        self::signIn($user);
+        $_SESSION['remember_selector'] = $token['selector'];
+    }
+
+    /**
+     * Inside the Telegram WebApp: signs in the user this Telegram account is
+     * linked to (App\Core\TelegramAuth). False when it isn't linked, or its
+     * user can't sign in any more.
+     */
+    public static function attemptTelegram(array $telegramUser): bool
+    {
+        $userId = TelegramAuth::linkedUserId((int) $telegramUser['id']);
+        $user = $userId !== null ? self::activeUser($userId) : null;
+        if ($user === null) {
+            return false;
+        }
+
+        self::signIn($user);
+        $_SESSION['telegram_user_id'] = (int) $telegramUser['id'];
+
+        return true;
+    }
+
+    /**
+     * Ends the user's sessions and remembered devices everywhere — "sign out
+     * everywhere", a password change or reset. $keepCurrent: except this
+     * device (its own session, remembered token and Telegram link).
+     */
+    public static function signOutEverywhere(int $userId, bool $keepCurrent): void
+    {
+        $current = $keepCurrent && self::id() === $userId;
+        RememberMe::removeAll($userId, $current ? ($_SESSION['remember_selector'] ?? null) : null);
+        TelegramAuth::removeAll($userId, $current && isset($_SESSION['telegram_user_id']) ? (int) $_SESSION['telegram_user_id'] : null);
+        Database::connect()->prepare("UPDATE users SET sessions_revoked_at = strftime('%Y-%m-%d %H:%M:%f', 'now') WHERE id = ?")->execute([$userId]);
+
+        if ($current) {
+            $_SESSION['auth_at'] = microtime(true);
+        }
+    }
+
+    /** "2026-09-30 09:17:03.512" (UTC) as a Unix timestamp with fractions. */
+    private static function utcMoment(?string $utc): ?float
+    {
+        if ($utc === null || $utc === '') {
+            return null;
+        }
+        try {
+            return (float) (new \DateTimeImmutable($utc, new \DateTimeZone('UTC')))->format('U.u');
+        } catch (\Exception) {
+            return null;
+        }
+    }
+
+    private static function activeUser(int $userId): ?array
+    {
+        $stmt = Database::connect()->prepare('SELECT * FROM users WHERE id = ? AND status = ?');
+        $stmt->execute([$userId, 'active']);
+        $user = $stmt->fetch() ?: null;
+
+        return $user && self::isShopActive($user['shop_id'] !== null ? (int) $user['shop_id'] : null) ? $user : null;
     }
 
     /**
@@ -113,8 +204,14 @@ class Auth
             ->execute([$userId]);
     }
 
+    /** Signing out on this device — it is forgotten too (remembered token, Telegram link). */
     public static function logout(): void
     {
+        RememberMe::forgetThisDevice();
+        if (isset($_SESSION['telegram_user_id'])) {
+            TelegramAuth::unlink((int) $_SESSION['telegram_user_id']);
+        }
+
         self::$user = null;
         self::$loaded = true;
         $_SESSION = [];
@@ -138,12 +235,22 @@ class Auth
             return self::$user = null;
         }
 
-        $stmt = Database::connect()->prepare('SELECT * FROM users WHERE id = ? AND status = ?');
-        $stmt->execute([$_SESSION['user_id'], 'active']);
-        $user = $stmt->fetch() ?: null;
+        $user = self::activeUser((int) $_SESSION['user_id']);
 
-        if ($user && !self::isShopActive($user['shop_id'])) {
-            $user = null;
+        // Signed out from elsewhere: "sign out everywhere" / a new password
+        // since this session began, or this device removed in the profile.
+        if ($user !== null) {
+            // Both to the millisecond: a device that signed in a moment
+            // before "sign out everywhere" is signed out too.
+            $revokedAt = self::utcMoment($user['sessions_revoked_at'] ?? null);
+            $selector = $_SESSION['remember_selector'] ?? null;
+            $telegramId = $_SESSION['telegram_user_id'] ?? null;
+            if (($revokedAt !== null && (float) ($_SESSION['auth_at'] ?? 0) < $revokedAt)
+                || (is_string($selector) && !RememberMe::exists($selector, (int) $user['id']))
+                || ($telegramId !== null && !TelegramAuth::isLinked((int) $telegramId, (int) $user['id']))) {
+                unset($_SESSION['user_id'], $_SESSION['remember_selector'], $_SESSION['telegram_user_id']);
+                $user = null;
+            }
         }
 
         return self::$user = $user;

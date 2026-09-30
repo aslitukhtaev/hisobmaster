@@ -29,6 +29,11 @@ So'ng brauzerda `http://localhost:8000` ni oching va `.env`dagi super admin logi
 - **Hisobotlar**: sof foyda, kunlik tushum grafigi, to'lov turlari taqsimoti, eng ko'p sotilgan mahsulotlar.
 - **Xodimlar**: bir martalik taklif havolasi, har bir xodim uchun granular ruxsatlar (sotuv, mahsulot, narx, qarzdorlar, xarajat, hisobot).
 - **Telegram WebApp**: bot orqali saytni WebApp sifatida ochish (quyida sozlash bo'yicha ko'rsatma).
+- **Kirish**: parol har qurilmada bir marta so'raladi — "Meni eslab qol" (1 yil, har foydalanishda uzayadi;
+  `App\Core\RememberMe`), Telegram ichida akkaunt bog'lanadi (`App\Core\TelegramAuth`), kompyuter dasturida
+  faollashtirish bilan birga kiriladi. Profil → "Kirilgan qurilmalar": qurilmani chiqarish, "Boshqa barcha
+  qurilmalardan chiqish"; parol o'zgarsa yoki superadmin tiklasa, boshqa qurilmalar chiqariladi. Sessiyalar
+  `database/sessions/` da 7 kun saqlanadi (serverning 24 daqiqalik tozalagichi ularga tegmaydi).
 
 ## Telegram bot sozlash (ixtiyoriy)
 
@@ -40,7 +45,7 @@ So'ng brauzerda `http://localhost:8000` ni oching va `.env`dagi super admin logi
    curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=<APP_URL>/telegram/webhook&secret_token=<TELEGRAM_WEBHOOK_SECRET>"
    ```
 
-4. Botga `/start` yozing — bot "Ilovani ochish" tugmasi bilan javob beradi, u bosilganda sayt Telegram ichida WebApp sifatida ochiladi. Kirish baribir login/parol orqali amalga oshadi — Telegram faqat qulay kirish kanali.
+4. Botga `/start` yozing — bot "Ilovani ochish" tugmasi bilan javob beradi, u bosilganda sayt Telegram ichida WebApp sifatida ochiladi. Birinchi marta login/parol bilan kiriladi; shundan keyin shu Telegram akkaunti bilan ochilganda avtomatik kiradi (Telegram imzolagan `initData` bot tokeni bilan tekshiriladi). Telegram ichida "Chiqish" bosilsa, bog'lanish o'chadi.
 
 ## Kompyuter dasturi (desktop)
 

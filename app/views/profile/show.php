@@ -40,6 +40,56 @@
     </form>
 </div>
 
+<?php if ($devices !== null): ?>
+<section class="page-head" style="margin-top:24px;" id="devices">
+    <h1><?= e(t('devices_signed_in_title')) ?></h1>
+    <p class="muted"><?= e(t('devices_signed_in_hint')) ?></p>
+</section>
+
+<div class="card form-card">
+    <?php if ($devices === [] && $telegramLinks === []): ?>
+        <p class="muted"><?= e(t('devices_none')) ?></p>
+    <?php else: ?>
+        <ul class="device-list">
+            <?php foreach ($devices as $device): $isCurrent = $device['selector'] === $currentSelector; ?>
+                <li class="device-row">
+                    <div class="device-info">
+                        <strong><?= e(device_label($device['user_agent'])) ?></strong>
+                        <?php if ($isCurrent): ?><span class="device-current"><?= e(t('device_this')) ?></span><?php endif; ?>
+                        <div class="muted"><?= e(t('device_last_used', ['date' => local_datetime($device['last_used_at'])])) ?></div>
+                    </div>
+                    <?php if (!$isCurrent): ?>
+                        <form method="post" action="/profile/devices/<?= (int) $device['id'] ?>/remove" data-confirm="<?= e(t('device_remove_confirm')) ?>">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-ghost btn-sm"><?= e(t('device_remove')) ?></button>
+                        </form>
+                    <?php endif; ?>
+                </li>
+            <?php endforeach; ?>
+            <?php foreach ($telegramLinks as $link): $isCurrent = $currentTelegramId !== null && (int) $link['telegram_user_id'] === (int) $currentTelegramId; ?>
+                <li class="device-row">
+                    <div class="device-info">
+                        <strong>Telegram<?= $link['telegram_name'] ? ': ' . e($link['telegram_name']) : '' ?></strong>
+                        <?php if ($isCurrent): ?><span class="device-current"><?= e(t('device_this')) ?></span><?php endif; ?>
+                        <div class="muted"><?= e(t('device_last_used', ['date' => local_datetime($link['last_used_at'])])) ?></div>
+                    </div>
+                    <?php if (!$isCurrent): ?>
+                        <form method="post" action="/profile/telegram/<?= (int) $link['id'] ?>/remove" data-confirm="<?= e(t('device_remove_confirm')) ?>">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-ghost btn-sm"><?= e(t('device_remove')) ?></button>
+                        </form>
+                    <?php endif; ?>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
+    <form method="post" action="/profile/devices/sign-out-others" data-confirm="<?= e(t('devices_sign_out_others_confirm')) ?>" style="margin-top:14px;">
+        <?= csrf_field() ?>
+        <button type="submit" class="btn btn-ghost btn-block"><?= e(t('devices_sign_out_others')) ?></button>
+    </form>
+</div>
+<?php endif; ?>
+
 <?php if (!empty($shop)): ?>
 <section class="page-head" style="margin-top:24px;">
     <h1><?= e(t('shop_settings')) ?></h1>

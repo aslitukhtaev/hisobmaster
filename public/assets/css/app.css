@@ -891,6 +891,15 @@ img.logo-for-dark-theme { display: none; }
 .print-status .btn { margin-left: auto; }
 .print-status a { font-weight: 600; }
 
+/* ---------- Profile: signed-in devices ---------- */
+.device-list { list-style: none; margin: 0; padding: 0; }
+.device-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.device-row:first-child { padding-top: 0; }
+.device-info { min-width: 0; overflow-wrap: anywhere; }
+.device-info .muted { font-size: .82rem; margin-top: 2px; }
+.device-current { display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 999px; font-size: .72rem; font-weight: 700; background: var(--primary-light); color: var(--primary-dark); }
+.telegram-login-status { text-align: center; }
+
 /* ---------- Help: support contacts ---------- */
 .support-card { margin-bottom: 14px; }
 .support-card h2 { margin: 0 0 4px; font-size: 1.05rem; }

@@ -92,7 +92,7 @@ final class SyncSchema
 
     /** Local bookkeeping that is neither sent nor treated as a change. */
     public const LOCAL_COLUMNS = [
-        'users' => ['failed_login_attempts', 'locked_until', 'onboarding_seen_at'],
+        'users' => ['failed_login_attempts', 'locked_until', 'onboarding_seen_at', 'sessions_revoked_at'],
     ];
 
     /**

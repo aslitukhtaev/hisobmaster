@@ -8,6 +8,11 @@
 
 return [
     [
+        'date' => '2026-09-30',
+        'uz' => "Login va parol qayta-qayta so'ralmaydi: dastur sizni eslab qoladi. Faollashtirishdan keyin darhol ichkaridasiz.",
+        'ru' => 'Логин и пароль больше не спрашиваются каждый раз: программа запоминает вас. После активации вход выполняется сразу.',
+    ],
+    [
         'date' => '2026-09-29',
         'uz' => "Yangi KassirON ikonkasi.",
         'ru' => 'Новая иконка KassirON.',

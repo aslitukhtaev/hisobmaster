@@ -435,3 +435,30 @@ CREATE TABLE IF NOT EXISTS desktop_state (
     key TEXT PRIMARY KEY,
     value TEXT
 );
+
+-- "Meni eslab qol": a long-lived sign-in per device (App\Core\RememberMe).
+-- The cookie carries "<selector>:<validator>"; only a sha256 of the
+-- validator is stored. Local to each database — never synced.
+CREATE TABLE IF NOT EXISTS remember_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    selector TEXT NOT NULL UNIQUE,
+    validator_hash TEXT NOT NULL,
+    user_agent TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_used_at TEXT NOT NULL DEFAULT (datetime('now')),
+    expires_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_remember_tokens_user ON remember_tokens(user_id);
+
+-- Telegram accounts that signed in inside the bot's WebApp: opening it
+-- again signs the same user in without the password (App\Core\TelegramAuth).
+CREATE TABLE IF NOT EXISTS telegram_links (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    telegram_user_id INTEGER NOT NULL UNIQUE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    telegram_name TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_used_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_telegram_links_user ON telegram_links(user_id);

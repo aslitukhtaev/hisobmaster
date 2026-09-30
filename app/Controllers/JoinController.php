@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\RememberMe;
 use App\Core\Request;
 use App\Core\View;
 use App\Models\EmployeeInvite;
@@ -90,7 +91,9 @@ class JoinController
             return;
         }
 
-        Auth::attempt($login, $password);
+        if (Auth::attempt($login, $password)) {
+            RememberMe::issue((int) Auth::id());
+        }
 
         flash('success', t('employee_registered'));
         redirect('/');

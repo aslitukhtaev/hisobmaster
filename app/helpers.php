@@ -25,6 +25,44 @@ function base_url(string $path = ''): string
 }
 
 /**
+ * A short name for the device behind a User-Agent ("Chrome · Windows",
+ * "Telegram · Android") — for the "signed-in devices" list.
+ */
+function device_label(?string $userAgent): string
+{
+    $ua = (string) $userAgent;
+    $os = match (true) {
+        str_contains($ua, 'Windows') => 'Windows',
+        str_contains($ua, 'Android') => 'Android',
+        (bool) preg_match('/iPhone|iPad|iPod/', $ua) => 'iOS',
+        str_contains($ua, 'Mac OS X') => 'macOS',
+        str_contains($ua, 'Linux') => 'Linux',
+        default => '',
+    };
+    $app = match (true) {
+        str_contains($ua, 'KassirON') || str_contains($ua, 'Electron') => t('app_name'),
+        str_contains($ua, 'Telegram') || (str_contains($ua, 'Android') && str_contains($ua, '; wv)')) => 'Telegram',
+        str_contains($ua, 'YaBrowser') => 'Yandex',
+        str_contains($ua, 'Edg/') => 'Edge',
+        str_contains($ua, 'OPR/') => 'Opera',
+        str_contains($ua, 'Firefox/') => 'Firefox',
+        str_contains($ua, 'Chrome/') || str_contains($ua, 'CriOS/') => 'Chrome',
+        str_contains($ua, 'Safari/') => 'Safari',
+        default => t('device_unknown_browser'),
+    };
+
+    return $os !== '' ? "$app · $os" : $app;
+}
+
+/** Whether this request came over HTTPS (directly or through the proxy in front). */
+function request_is_https(): bool
+{
+    return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['SERVER_PORT'] ?? null) == 443)
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+}
+
+/**
  * URL of a file in public/assets, carrying its modification time
  * (?v=1790319726) so a changed file gets a new URL: browsers and the service
  * worker (public/sw.js) may then keep every version for good, and a deploy
