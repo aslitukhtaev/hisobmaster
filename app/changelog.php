@@ -8,6 +8,11 @@
 
 return [
     [
+        'date' => '2026-10-06',
+        'uz' => "Yangi dizayn: yangi logotip va ikonka, lime ranglar, yangi shriftlar.",
+        'ru' => 'Новый дизайн: новый логотип и иконка, лаймовые цвета, новые шрифты.',
+    ],
+    [
         'date' => '2026-09-30',
         'uz' => "Login va parol qayta-qayta so'ralmaydi: dastur sizni eslab qoladi. Faollashtirishdan keyin darhol ichkaridasiz.",
         'ru' => 'Логин и пароль больше не спрашиваются каждый раз: программа запоминает вас. После активации вход выполняется сразу.',
