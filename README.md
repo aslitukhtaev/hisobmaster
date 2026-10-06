@@ -31,10 +31,17 @@ So'ng brauzerda `http://localhost:8000` ni oching va `.env`dagi super admin logi
 - **Telegram WebApp**: bot orqali saytni WebApp sifatida ochish (quyida sozlash bo'yicha ko'rsatma).
 - **Landing sahifa**: `/` kirmagan mehmonga KassirON'ni tanishtiradi (`app/views/landing/`, `public/assets/css/landing.css`,
   `public/assets/js/landing.js`, skrinshotlar `public/assets/img/landing/` — demo do'kondan, kun/tun varianti bilan);
-  kirgan foydalanuvchiga bosh sahifa. Interaktiv qismlari (sinab ko'riladigan kassa va chek chiqishi, internetni
-  o'chirib-yoqish demosi, ilova ichidagi tour, scroll animatsiyalari) `landing.js` dan; u bo'lmasa ham sahifa to'liq
-  o'qiladi, `prefers-reduced-motion` da animatsiyalar o'chadi. Matnlar `app/lang/uz.php` / `ru.php` dagi `lp_*` kalitlarda.
+  kirgan foydalanuvchiga bosh sahifa. Uslubi: qora hero ustida och bo'limlar, logodagi lime rang, katta yumaloq
+  kartalar. Interaktiv qismlari (sinab ko'riladigan kassa va chek chiqishi, internetni o'chirib-yoqish demosi,
+  ilova ichidagi tour, scroll animatsiyalari) `landing.js` dan; u bo'lmasa ham sahifa to'liq o'qiladi,
+  `prefers-reduced-motion` da animatsiyalar o'chadi. Matnlar `app/lang/uz.php` / `ru.php` dagi `lp_*` kalitlarda.
   Kompyuter dasturida va Telegram WebApp'da landing o'rniga kirish sahifasi ochiladi.
+- **Brend**: logo (`public/assets/img/logo-light.png` — qora fon uchun, `logo-dark.png` — och fon uchun), ikonlar
+  (`icon-*.png`, `icon-maskable-512.png`, `public/favicon.ico`), ijtimoiy tarmoq rasmi (`landing/og.jpg`).
+  Ranglar `public/assets/css/app.css` boshidagi tokenlarda: `--primary` — logodagi lime (#a9fa06), uning ustidagi matn
+  doim `--on-primary` (oq emas); matn/chegara sifatida `--primary-ink`. Shriftlar — Onest (sarlavhalar), Manrope
+  (matn), Geist Mono (kichik yorliqlar), `public/assets/fonts/` da (SIL OFL, litsenziyalari shu yerda); CSP faqat
+  o'z domenidagi shriftga ruxsat beradi, shuning uchun tashqi CDN ishlatilmaydi.
 - **Kirish**: parol har qurilmada bir marta so'raladi — "Meni eslab qol" (1 yil, har foydalanishda uzayadi;
   `App\Core\RememberMe`), Telegram ichida akkaunt bog'lanadi (`App\Core\TelegramAuth`), kompyuter dasturida
   faollashtirish bilan birga kiriladi. Profil → "Kirilgan qurilmalar": qurilmani chiqarish, "Boshqa barcha

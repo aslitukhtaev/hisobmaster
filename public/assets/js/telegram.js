@@ -11,8 +11,8 @@
     try {
         tg.ready();
         tg.expand();
-        tg.setHeaderColor(isDark ? '#121e2e' : '#059669');
-        tg.setBackgroundColor(isDark ? '#0a1420' : '#f4f6f8');
+        tg.setHeaderColor(isDark ? '#11150e' : '#a9fa06');
+        tg.setBackgroundColor(isDark ? '#090c07' : '#f4f6f1');
     } catch (e) {
         // Older Telegram clients may not support every WebApp call.
     }

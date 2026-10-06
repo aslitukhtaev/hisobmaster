@@ -76,8 +76,10 @@
         document.querySelectorAll('.lp-nav a[href^="#"]').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
         var spy = new IntersectionObserver(function (entries) {
             entries.forEach(function (entry) {
-                if (!entry.isIntersecting) { return; }
-                Object.keys(links).forEach(function (id) { links[id].classList.toggle('is-active', id === entry.target.id); });
+                if (!entry.isIntersecting && links[entry.target.id]) { links[entry.target.id].classList.remove('is-active'); }
+            });
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting && links[entry.target.id]) { links[entry.target.id].classList.add('is-active'); }
             });
         }, { rootMargin: '-45% 0px -50% 0px' });
         Object.keys(links).forEach(function (id) {
@@ -126,27 +128,6 @@
             hero.style.removeProperty('--sx');
             hero.style.removeProperty('--sy');
         });
-        // The till tilts toward the pointer and the floating cards drift against
-        // it — but the till lies flat while the pointer is over it, so its
-        // buttons never move under a cursor that is about to click them.
-        if (stage && posEl) {
-            hero.addEventListener('pointermove', function (e) {
-                var r = stage.getBoundingClientRect();
-                var nx = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (window.innerWidth / 2)));
-                var ny = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (window.innerHeight / 2)));
-                var flat = posEl.contains(e.target);
-                posEl.style.setProperty('--ry', flat ? '0deg' : (nx * 6).toFixed(2) + 'deg');
-                posEl.style.setProperty('--rx', flat ? '0deg' : (-ny * 4).toFixed(2) + 'deg');
-                stage.style.setProperty('--mx', nx.toFixed(3));
-                stage.style.setProperty('--my', ny.toFixed(3));
-            });
-            hero.addEventListener('pointerleave', function () {
-                posEl.style.setProperty('--ry', '0deg');
-                posEl.style.setProperty('--rx', '0deg');
-                stage.style.setProperty('--mx', 0);
-                stage.style.setProperty('--my', 0);
-            });
-        }
     }
 
     /* ---------- The playable till ---------- */
@@ -164,7 +145,8 @@
         var againBtn = $('lp-again');
         var toast = $('lp-toast');
         var revEl = $('lp-rev');
-        var revCard = document.querySelector('.lp-float-rev');
+        var revCard = document.querySelector('.lp-stat-rev');
+        var hotBar = document.querySelector('.lp-weekbars .is-hot');
         var syncCard = $('lp-sync');
         var payBtns = pos.querySelectorAll('.lp-pay button');
 
@@ -343,6 +325,10 @@
                     void revCard.offsetWidth;
                     revCard.classList.add('is-bump');
                 }
+                if (hotBar) {
+                    var h = parseFloat(hotBar.style.getPropertyValue('--h')) || 88;
+                    hotBar.style.setProperty('--h', Math.min(100, h + 4) + '%');
+                }
             }
             if (syncCard) {
                 var label = syncCard.querySelector('[data-sync-text]');
@@ -415,7 +401,7 @@
         if (hasIO && stage) {
             var autoIO = new IntersectionObserver(function (entries) {
                 if (entries[0].isIntersecting) { autoIO.disconnect(); startAuto(); }
-            }, { threshold: 0.5 });
+            }, { threshold: 0.3 });
             autoIO.observe(stage);
         }
 

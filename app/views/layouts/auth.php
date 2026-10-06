@@ -14,13 +14,15 @@
         })();
     </script>
     <title><?= isset($pageTitle) ? e($pageTitle) . ' — ' . e(t('app_name')) : e(t('app_name')) ?></title>
+    <link rel="preload" href="/assets/fonts/manrope-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/onest-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="<?= asset('img/icon-32.png') ?>" type="image/png" sizes="32x32">
     <link rel="icon" href="<?= asset('img/icon-192.png') ?>" type="image/png" sizes="192x192">
     <link rel="apple-touch-icon" href="<?= asset('img/icon-180.png') ?>">
-    <meta name="theme-color" content="#059669" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#121e2e" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#a9fa06" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#11150e" media="(prefers-color-scheme: dark)">
     <?php if (!App\Desktop\Desktop::enabled()): /* Telegram WebApp SDK: website only — the desktop app works offline */ ?>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <?php endif; ?>

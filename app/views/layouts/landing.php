@@ -48,36 +48,37 @@ $siteUrl = $appUrl !== '' ? $appUrl : (request_is_https() ? 'https://' : 'http:/
     <meta property="og:image:height" content="630">
     <meta property="og:locale" content="<?= current_lang() === 'ru' ? 'ru_RU' : 'uz_UZ' ?>">
     <meta name="twitter:card" content="summary_large_image">
+    <link rel="preload" href="/assets/fonts/manrope-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/onest-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
     <link rel="stylesheet" href="<?= asset('css/landing.css') ?>">
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="<?= asset('img/icon-32.png') ?>" type="image/png" sizes="32x32">
     <link rel="icon" href="<?= asset('img/icon-192.png') ?>" type="image/png" sizes="192x192">
     <link rel="apple-touch-icon" href="<?= asset('img/icon-180.png') ?>">
-    <meta name="theme-color" content="#059669" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#121e2e" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#a9fa06" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#11150e" media="(prefers-color-scheme: dark)">
 </head>
 <body class="lp-body">
     <a class="lp-skip" href="#main"><?= e(t('lp_skip_to_content')) ?></a>
     <div class="lp-progress" aria-hidden="true"><i></i></div>
     <header class="lp-header" id="lp-header">
         <div class="lp-container">
-            <div class="lp-pill">
+            <div class="lp-header-row">
                 <a href="/" class="lp-logo" aria-label="KassirON">
-                    <img class="logo-for-light-theme" src="<?= asset('img/logo-dark.png') ?>" alt="KassirON" width="640" height="213">
-                    <img class="logo-for-dark-theme" src="<?= asset('img/logo-light.png') ?>" alt="KassirON" width="640" height="213">
+                    <img src="<?= asset('img/logo-light.png') ?>" alt="KassirON" width="640" height="148">
                 </a>
                 <nav class="lp-nav" aria-label="<?= e(t('lp_nav_label')) ?>">
                     <a href="#features"><?= e(t('lp_nav_features')) ?></a>
                     <a href="#tour"><?= e(t('lp_nav_tour')) ?></a>
                     <a href="#desktop"><?= e(t('lp_nav_desktop')) ?></a>
-                    <a href="#start"><?= e(t('lp_nav_start')) ?></a>
+                    <a href="#faq"><?= e(t('lp_nav_faq')) ?></a>
                     <a href="#contact"><?= e(t('lp_nav_contact')) ?></a>
                 </nav>
                 <div class="lp-header-actions">
                     <?php require BASE_PATH . '/app/views/partials/theme-toggle.php'; ?>
                     <?php require BASE_PATH . '/app/views/partials/lang-switcher.php'; ?>
-                    <a href="/login" class="btn btn-primary lp-login"><?= e(t('lp_login')) ?></a>
+                    <a href="/login" class="lp-pillbtn lp-login"><span><?= e(t('lp_login')) ?></span><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></i></a>
                     <button type="button" class="lp-burger" id="lp-burger" aria-expanded="false" aria-controls="lp-mnav" aria-label="<?= e(t('lp_menu')) ?>">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
                             <path class="lp-burger-open" d="M4 7h16M4 12h16M4 17h16"/>
@@ -90,7 +91,7 @@ $siteUrl = $appUrl !== '' ? $appUrl : (request_is_https() ? 'https://' : 'http:/
                 <a href="#features"><?= e(t('lp_nav_features')) ?></a>
                 <a href="#tour"><?= e(t('lp_nav_tour')) ?></a>
                 <a href="#desktop"><?= e(t('lp_nav_desktop')) ?></a>
-                <a href="#start"><?= e(t('lp_nav_start')) ?></a>
+                <a href="#faq"><?= e(t('lp_nav_faq')) ?></a>
                 <a href="#contact"><?= e(t('lp_nav_contact')) ?></a>
                 <a href="/login" class="lp-mnav-login"><?= e(t('lp_login')) ?></a>
             </nav>
@@ -102,19 +103,31 @@ $siteUrl = $appUrl !== '' ? $appUrl : (request_is_https() ? 'https://' : 'http:/
     </main>
 
     <footer class="lp-footer">
-        <div class="lp-container lp-footer-row">
-            <div class="lp-footer-brand">
-                <img class="logo-for-light-theme" src="<?= asset('img/logo-dark.png') ?>" alt="KassirON" width="640" height="213" loading="lazy">
-                <img class="logo-for-dark-theme" src="<?= asset('img/logo-light.png') ?>" alt="KassirON" width="640" height="213" loading="lazy">
-                <p><?= e(t('lp_footer_tagline')) ?></p>
+        <div class="lp-container">
+            <div class="lp-footer-grid">
+                <div class="lp-footer-brand">
+                    <img src="<?= asset('img/logo-light.png') ?>" alt="KassirON" width="640" height="148" loading="lazy">
+                    <p><?= e(t('lp_footer_tagline')) ?></p>
+                </div>
+                <nav class="lp-footer-col" aria-label="<?= e(t('lp_footer_product')) ?>">
+                    <h3><?= e(t('lp_footer_product')) ?></h3>
+                    <a href="#features"><?= e(t('lp_nav_features')) ?></a>
+                    <a href="#tour"><?= e(t('lp_nav_tour')) ?></a>
+                    <a href="#desktop"><?= e(t('lp_nav_desktop')) ?></a>
+                    <a href="#start"><?= e(t('lp_nav_start')) ?></a>
+                    <a href="#faq"><?= e(t('lp_nav_faq')) ?></a>
+                </nav>
+                <nav class="lp-footer-col" aria-label="<?= e(t('lp_footer_contact')) ?>">
+                    <h3><?= e(t('lp_footer_contact')) ?></h3>
+                    <a href="tel:<?= e(SUPPORT_PHONE) ?>"><?= e(SUPPORT_PHONE_DISPLAY) ?></a>
+                    <a href="https://t.me/<?= e(SUPPORT_TELEGRAM) ?>" target="_blank" rel="noopener noreferrer">Telegram</a>
+                    <a href="/login"><?= e(t('lp_login')) ?></a>
+                </nav>
             </div>
-            <nav class="lp-footer-links" aria-label="<?= e(t('lp_nav_label')) ?>">
-                <a href="/login"><?= e(t('lp_login')) ?></a>
-                <a href="#desktop"><?= e(t('lp_nav_desktop')) ?></a>
-                <a href="tel:<?= e(SUPPORT_PHONE) ?>"><?= e(SUPPORT_PHONE_DISPLAY) ?></a>
-                <a href="https://t.me/<?= e(SUPPORT_TELEGRAM) ?>" target="_blank" rel="noopener noreferrer">Telegram</a>
-            </nav>
-            <p class="lp-copy">© <?= date('Y') ?> KassirON</p>
+            <div class="lp-footer-bar">
+                <span>© <?= date('Y') ?> KassirON</span>
+                <span>kassiron.uz</span>
+            </div>
         </div>
         <div class="lp-wordmark" aria-hidden="true">KassirON</div>
     </footer>
