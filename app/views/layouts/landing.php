@@ -1,7 +1,8 @@
 <?php
 // The public landing page at "/" for visitors (HomeController). Uses
 // app.css's tokens and components, so the day/night themes and the language
-// switch work as everywhere else.
+// switch work as everywhere else; landing.js adds the interactive parts
+// (the page is complete and readable without it).
 $appUrl = rtrim((string) env('APP_URL', ''), '/');
 $siteUrl = $appUrl !== '' ? $appUrl : (request_is_https() ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? 'kassiron.uz');
 ?>
@@ -24,6 +25,14 @@ $siteUrl = $appUrl !== '' ? $appUrl : (request_is_https() ? 'https://' : 'http:/
                     document.documentElement.setAttribute('data-theme', t);
                 }
             } catch (e) {}
+            // Scroll-reveal hides content until landing.js shows it: if that
+            // script never arrives, show everything after a few seconds.
+            document.documentElement.classList.add('lp-js');
+            setTimeout(function () {
+                if (!window.__lpReady) {
+                    document.documentElement.classList.remove('lp-js');
+                }
+            }, 4000);
         })();
     </script>
     <title><?= e(t('lp_meta_title')) ?></title>
@@ -50,23 +59,41 @@ $siteUrl = $appUrl !== '' ? $appUrl : (request_is_https() ? 'https://' : 'http:/
 </head>
 <body class="lp-body">
     <a class="lp-skip" href="#main"><?= e(t('lp_skip_to_content')) ?></a>
-    <header class="lp-header">
-        <div class="lp-container lp-header-row">
-            <a href="/" class="lp-logo" aria-label="KassirON">
-                <img class="logo-for-light-theme" src="<?= asset('img/logo-dark.png') ?>" alt="KassirON" width="640" height="213">
-                <img class="logo-for-dark-theme" src="<?= asset('img/logo-light.png') ?>" alt="KassirON" width="640" height="213">
-            </a>
-            <nav class="lp-nav" aria-label="<?= e(t('lp_nav_label')) ?>">
+    <div class="lp-progress" aria-hidden="true"><i></i></div>
+    <header class="lp-header" id="lp-header">
+        <div class="lp-container">
+            <div class="lp-pill">
+                <a href="/" class="lp-logo" aria-label="KassirON">
+                    <img class="logo-for-light-theme" src="<?= asset('img/logo-dark.png') ?>" alt="KassirON" width="640" height="213">
+                    <img class="logo-for-dark-theme" src="<?= asset('img/logo-light.png') ?>" alt="KassirON" width="640" height="213">
+                </a>
+                <nav class="lp-nav" aria-label="<?= e(t('lp_nav_label')) ?>">
+                    <a href="#features"><?= e(t('lp_nav_features')) ?></a>
+                    <a href="#tour"><?= e(t('lp_nav_tour')) ?></a>
+                    <a href="#desktop"><?= e(t('lp_nav_desktop')) ?></a>
+                    <a href="#start"><?= e(t('lp_nav_start')) ?></a>
+                    <a href="#contact"><?= e(t('lp_nav_contact')) ?></a>
+                </nav>
+                <div class="lp-header-actions">
+                    <?php require BASE_PATH . '/app/views/partials/theme-toggle.php'; ?>
+                    <?php require BASE_PATH . '/app/views/partials/lang-switcher.php'; ?>
+                    <a href="/login" class="btn btn-primary lp-login"><?= e(t('lp_login')) ?></a>
+                    <button type="button" class="lp-burger" id="lp-burger" aria-expanded="false" aria-controls="lp-mnav" aria-label="<?= e(t('lp_menu')) ?>">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                            <path class="lp-burger-open" d="M4 7h16M4 12h16M4 17h16"/>
+                            <path class="lp-burger-close" d="M6 6l12 12M18 6 6 18"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <nav class="lp-mnav" id="lp-mnav" hidden aria-label="<?= e(t('lp_nav_label')) ?>">
                 <a href="#features"><?= e(t('lp_nav_features')) ?></a>
+                <a href="#tour"><?= e(t('lp_nav_tour')) ?></a>
                 <a href="#desktop"><?= e(t('lp_nav_desktop')) ?></a>
                 <a href="#start"><?= e(t('lp_nav_start')) ?></a>
                 <a href="#contact"><?= e(t('lp_nav_contact')) ?></a>
+                <a href="/login" class="lp-mnav-login"><?= e(t('lp_login')) ?></a>
             </nav>
-            <div class="lp-header-actions">
-                <?php require BASE_PATH . '/app/views/partials/theme-toggle.php'; ?>
-                <?php require BASE_PATH . '/app/views/partials/lang-switcher.php'; ?>
-                <a href="/login" class="btn btn-primary lp-login"><?= e(t('lp_login')) ?></a>
-            </div>
         </div>
     </header>
 
@@ -89,7 +116,9 @@ $siteUrl = $appUrl !== '' ? $appUrl : (request_is_https() ? 'https://' : 'http:/
             </nav>
             <p class="lp-copy">© <?= date('Y') ?> KassirON</p>
         </div>
+        <div class="lp-wordmark" aria-hidden="true">KassirON</div>
     </footer>
     <script src="<?= asset('js/app.js') ?>" defer></script>
+    <script src="<?= asset('js/landing.js') ?>" defer></script>
 </body>
 </html>

@@ -30,7 +30,10 @@ So'ng brauzerda `http://localhost:8000` ni oching va `.env`dagi super admin logi
 - **Xodimlar**: bir martalik taklif havolasi, har bir xodim uchun granular ruxsatlar (sotuv, mahsulot, narx, qarzdorlar, xarajat, hisobot).
 - **Telegram WebApp**: bot orqali saytni WebApp sifatida ochish (quyida sozlash bo'yicha ko'rsatma).
 - **Landing sahifa**: `/` kirmagan mehmonga KassirON'ni tanishtiradi (`app/views/landing/`, `public/assets/css/landing.css`,
-  skrinshotlar `public/assets/img/landing/` — demo do'kondan, kun/tun varianti bilan); kirgan foydalanuvchiga bosh sahifa.
+  `public/assets/js/landing.js`, skrinshotlar `public/assets/img/landing/` — demo do'kondan, kun/tun varianti bilan);
+  kirgan foydalanuvchiga bosh sahifa. Interaktiv qismlari (sinab ko'riladigan kassa va chek chiqishi, internetni
+  o'chirib-yoqish demosi, ilova ichidagi tour, scroll animatsiyalari) `landing.js` dan; u bo'lmasa ham sahifa to'liq
+  o'qiladi, `prefers-reduced-motion` da animatsiyalar o'chadi. Matnlar `app/lang/uz.php` / `ru.php` dagi `lp_*` kalitlarda.
   Kompyuter dasturida va Telegram WebApp'da landing o'rniga kirish sahifasi ochiladi.
 - **Kirish**: parol har qurilmada bir marta so'raladi — "Meni eslab qol" (1 yil, har foydalanishda uzayadi;
   `App\Core\RememberMe`), Telegram ichida akkaunt bog'lanadi (`App\Core\TelegramAuth`), kompyuter dasturida
