@@ -13,6 +13,7 @@ use App\Controllers\DeviceController;
 use App\Controllers\EmployeeController;
 use App\Controllers\ExpenseController;
 use App\Controllers\HelpController;
+use App\Controllers\HomeController;
 use App\Controllers\JoinController;
 use App\Controllers\LocaleController;
 use App\Controllers\ProductController;
@@ -33,7 +34,7 @@ $router->post('/logout', [AuthController::class, 'logout'], ['auth', 'csrf']);
 
 $router->post('/lang/{lang}', [LocaleController::class, 'switch']);
 
-$router->get('/', [DashboardController::class, 'index'], ['auth']);
+$router->get('/', [HomeController::class, 'index']);
 $router->post('/onboarding/dismiss', [DashboardController::class, 'dismissOnboarding'], ['auth', 'csrf']);
 
 $router->get('/help', [HelpController::class, 'index'], ['auth']);

@@ -25,6 +25,13 @@ final class CodePackage
     /** What the desktop app runs — the same list as prepare-build.js's CODE_ITEMS. */
     public const ITEMS = ['app', 'public', 'bin', 'routes.php', 'database/migrations'];
 
+    /**
+     * Never shown in the desktop app (the landing page is for website
+     * visitors) and heavy: left out of every package — the same list as
+     * prepare-build.js's CODE_EXCLUDE.
+     */
+    public const EXCLUDE = ['public/assets/img/landing/'];
+
     private const KEEP_PACKAGES = 3;
 
     /** @return array<string, string> relative path => absolute path, sorted by path */
@@ -44,13 +51,26 @@ final class CodePackage
             foreach ($iterator as $file) {
                 if ($file->isFile()) {
                     $relative = $item . '/' . str_replace('\\', '/', substr($file->getPathname(), strlen($path) + 1));
-                    $files[$relative] = $file->getPathname();
+                    if (!self::excluded($relative)) {
+                        $files[$relative] = $file->getPathname();
+                    }
                 }
             }
         }
         ksort($files, SORT_STRING);
 
         return $files;
+    }
+
+    private static function excluded(string $relative): bool
+    {
+        foreach (self::EXCLUDE as $prefix) {
+            if (str_starts_with($relative, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static function version(string $root): string

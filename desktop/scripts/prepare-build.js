@@ -16,6 +16,9 @@ const SERVER = process.env.KASSIRON_SERVER || 'https://kassiron.uz';
 const PHP_LINE = '8.3';
 
 const CODE_ITEMS = ['app', 'public', 'bin', 'routes.php', path.join('database', 'migrations')];
+// Website-only and heavy (the landing page's screenshots) — the same list as
+// App\Sync\CodePackage::EXCLUDE, so the bundled code's version matches.
+const CODE_EXCLUDE = [path.join('public', 'assets', 'img', 'landing')];
 
 async function download(url, dest) {
     const res = await fetch(url);
@@ -60,7 +63,10 @@ function copyCode() {
     const target = path.join(BUILD, 'app-code');
     fs.rmSync(target, { recursive: true, force: true });
     for (const item of CODE_ITEMS) {
-        fs.cpSync(path.join(ROOT, item), path.join(target, item), { recursive: true });
+        fs.cpSync(path.join(ROOT, item), path.join(target, item), {
+            recursive: true,
+            filter: (source) => !CODE_EXCLUDE.some((excluded) => source.startsWith(path.join(ROOT, excluded))),
+        });
     }
     const version = codeVersion(target);
     fs.writeFileSync(path.join(target, 'code-version.json'), JSON.stringify({ version, created_at: Math.floor(Date.now() / 1000) }));

@@ -50,7 +50,9 @@ class TelegramController
             'text' => t('telegram_welcome_message'),
             'reply_markup' => json_encode([
                 'inline_keyboard' => [[
-                    ['text' => t('telegram_open_app_button'), 'web_app' => ['url' => $appUrl]],
+                    // /login: signs in by itself once this Telegram account is
+                    // linked, and goes straight on to the app when signed in.
+                    ['text' => t('telegram_open_app_button'), 'web_app' => ['url' => $appUrl . '/login']],
                 ]],
             ]),
         ]);
