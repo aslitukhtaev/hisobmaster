@@ -9,6 +9,11 @@
 return [
     [
         'date' => '2026-10-06',
+        'uz' => "Yangi ilova ikonkasi: lime fon va power belgisi, kichik o'lchamda ham aniq ko'rinadi.",
+        'ru' => 'Новая иконка приложения: лаймовый фон и значок питания, чётко читается даже в маленьком размере.',
+    ],
+    [
+        'date' => '2026-10-06',
         'uz' => "Yangi dizayn: yangi logotip va ikonka, lime ranglar, yangi shriftlar.",
         'ru' => 'Новый дизайн: новый логотип и иконка, лаймовые цвета, новые шрифты.',
     ],
