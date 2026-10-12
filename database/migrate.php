@@ -52,7 +52,7 @@ $stmt = $pdo->prepare('SELECT id FROM users WHERE role = ? LIMIT 1');
 $stmt->execute(['super_admin']);
 
 if ($stmt->fetch()) {
-    echo "Super admin allaqachon mavjud, seed o'tkazib yuborildi.\n";
+    echo "Super admin allaqachon mavjud, seed o'tkazib yuborildi (.env dagi parol mavjud akkauntni o'zgartirmaydi; buning uchun: php database/set-admin.php <login> <parol>).\n";
 } else {
     $insert = $pdo->prepare(
         'INSERT INTO users (shop_id, role, full_name, phone, login, password_hash, lang, status)
@@ -68,5 +68,5 @@ if ($stmt->fetch()) {
         'active',
     ]);
     echo "Super admin yaratildi. Login: {$adminLogin}\n";
-    echo "Parolni .env faylidagi SUPER_ADMIN_PASSWORD orqali o'zgartiring va qayta migratsiya qiling.\n";
+    echo "Keyinchalik login/parolni o'zgartirish: php database/set-admin.php <login> <parol>\n";
 }
