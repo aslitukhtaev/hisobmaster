@@ -24,7 +24,7 @@ $envFile = BASE_PATH . '/.env';
 if (is_file($envFile)) {
     foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
         $line = trim($line);
-        if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) {
+        if ($line === '' || $line[0] === '#' || strpos($line, '=') === false) {
             continue;
         }
         [$key, $value] = explode('=', $line, 2);
