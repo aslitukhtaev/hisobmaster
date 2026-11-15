@@ -105,6 +105,10 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
                 if (t === 'light' || t === 'dark') {
                     document.documentElement.setAttribute('data-theme', t);
                 }
+                // POS monitor mode (bigger buttons), chosen per computer on the till page.
+                if (localStorage.getItem('kassiron-pos') === 'on') {
+                    document.documentElement.setAttribute('data-pos', 'on');
+                }
             } catch (e) {}
         })();
     </script>

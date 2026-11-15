@@ -765,6 +765,62 @@ img.logo-for-dark-theme { display: none; }
     .pos-cart { flex: 1; position: sticky; top: calc(var(--header-h) + 20px); max-width: 380px; }
 }
 
+/* The sale just rung up, shown once above the empty till. */
+.last-sale {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px;
+    margin: 0 0 14px; padding: 12px 14px; border-radius: var(--radius-sm);
+    background: var(--success-bg); color: var(--text);
+}
+.last-sale-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
+.last-sale-main strong { color: var(--success); }
+.last-sale-change { font-size: 1.15rem; }
+.pos-shortcuts { display: none; text-align: center; margin-top: 8px; font-size: .78rem; }
+.pos-more { padding: 8px 2px; }
+.pos-mode-toggle { display: none; }
+.pos-mode-toggle[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+
+@media (min-width: 900px) {
+    .pos-shortcuts { display: block; }
+    .pos-mode-toggle { display: inline-flex; }
+
+    /* ---------- POS monitor mode (toggle on the till page) ----------
+       Everything a size up across the app, and the till itself laid out for
+       fingers: product tiles, big quantity/payment/complete buttons. */
+    :root[data-pos="on"] { font-size: 112.5%; }
+    :root[data-pos="on"] .btn { padding: 14px 22px; }
+    :root[data-pos="on"] .btn-sm { padding: 10px 16px; }
+
+    :root[data-pos="on"] .pos-cart { max-width: 470px; flex: 1.1; }
+    :root[data-pos="on"] .pos-search { padding: 16px 18px; font-size: 1.1rem; }
+    :root[data-pos="on"] .pos-product-list {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;
+        max-height: calc(100vh - 250px); align-content: start;
+    }
+    :root[data-pos="on"] .pos-product {
+        flex-direction: column; align-items: flex-start; justify-content: space-between;
+        min-height: 92px; padding: 14px;
+    }
+    :root[data-pos="on"] .pos-product-name { overflow-wrap: anywhere; line-height: 1.25; }
+    :root[data-pos="on"] .pos-product-meta { margin-left: 0; font-size: .82rem; white-space: normal; }
+    :root[data-pos="on"] .pos-product-group,
+    :root[data-pos="on"] .pos-product-list > p { grid-column: 1 / -1; }
+    :root[data-pos="on"] .pos-product-group > .pos-product { min-height: 0; flex-direction: row; align-items: center; }
+    :root[data-pos="on"] .pos-variant-btn { padding-top: 14px; padding-bottom: 14px; }
+
+    :root[data-pos="on"] .cart-row-name { font-size: .95rem; }
+    :root[data-pos="on"] .qty-stepper button { width: 44px; height: 44px; font-size: 1.3rem; border-radius: 10px; }
+    :root[data-pos="on"] .qty-stepper span { min-width: 32px; font-size: 1.05rem; }
+    :root[data-pos="on"] .qty-stepper-fractional .qty-direct-input { width: 76px; padding: 10px 4px; font-size: 1rem; }
+    :root[data-pos="on"] .cart-row-subtotal { font-size: .95rem; }
+    :root[data-pos="on"] .cart-remove { font-size: 1.3rem; padding: 10px; }
+    :root[data-pos="on"] .cart-total-row { font-size: 1.6rem; }
+    :root[data-pos="on"] .cart-change-row { font-size: 1.3rem; }
+    :root[data-pos="on"] .payment-btn { padding: 16px 10px; font-size: 1rem; }
+    :root[data-pos="on"] .discount-mode-btn { padding: 0 18px; font-size: .95rem; }
+    :root[data-pos="on"] #complete-sale-btn { padding: 20px; font-size: 1.25rem; }
+    :root[data-pos="on"] .last-sale-change { font-size: 1.4rem; }
+}
+
 /* ---------- Receipt / chek ---------- */
 /* Always white paper + dark ink, independent of the app theme — this is printed on physical thermal paper. */
 .receipt {

@@ -46,7 +46,7 @@ class AuthController
                 $_SESSION['telegram_user_id'] = (int) $telegramUser['id'];
             }
             SyncService::pruneJournalQuietly();
-            redirect('/');
+            redirect(start_path());
         }
 
         flash('error', Auth::wasLockedOut() ? t('login_locked') : t('login_failed'));
@@ -70,7 +70,7 @@ class AuthController
         }
 
         $_SESSION['lang'] = Auth::user()['lang'] ?? env('APP_DEFAULT_LANG', 'uz');
-        echo json_encode(['ok' => true, 'redirect' => '/']);
+        echo json_encode(['ok' => true, 'redirect' => start_path()]);
     }
 
     public function logout(Request $request): void

@@ -121,6 +121,12 @@ return [
 
     // Sales / POS
     'new_sale' => 'Yangi sotuv',
+    'last_sale_done' => "Sotuv #:number yakunlandi",
+    'view_receipt' => "Chekni ko'rish",
+    'pos_mode' => "POS rejimi",
+    'pos_mode_hint' => "POS monitor uchun: tugmalar va yozuvlar kattaroq. Shu kompyuterda saqlanadi.",
+    'pos_shortcuts_hint' => "F2 — qidiruv · F9 — sotuvni yakunlash",
+    'pos_more_products' => "Yana :count ta mahsulot — nomi yoki shtrix-kodi bilan qidiring",
     'cart' => 'Savat',
     'cart_empty_hint' => 'Savat bo\'sh. Mahsulotni tanlab qo\'shing.',
     'discount' => 'Chegirma',

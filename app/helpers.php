@@ -82,6 +82,20 @@ function redirect(string $path): never
     exit;
 }
 
+/**
+ * Where a user lands after signing in or starting the desktop app: the till
+ * for whoever is there to sell (everyone on a shop computer, employees
+ * anywhere), the dashboard otherwise.
+ */
+function start_path(): string
+{
+    if (Auth::isSuperAdmin() || !Auth::can('sales')) {
+        return '/';
+    }
+
+    return App\Desktop\Desktop::enabled() || !Auth::isOwner() ? '/sales/new' : '/';
+}
+
 function e(?string $value): string
 {
     return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');

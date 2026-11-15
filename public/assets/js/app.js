@@ -51,6 +51,26 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // POS monitor mode: bigger buttons and text, remembered on this computer
+    // (the <head> script applies it before the page paints).
+    var posToggle = document.getElementById('pos-mode-toggle');
+    if (posToggle) {
+        var posOn = function () { return document.documentElement.getAttribute('data-pos') === 'on'; };
+        posToggle.setAttribute('aria-pressed', posOn() ? 'true' : 'false');
+        posToggle.addEventListener('click', function () {
+            var next = !posOn();
+            if (next) {
+                document.documentElement.setAttribute('data-pos', 'on');
+            } else {
+                document.documentElement.removeAttribute('data-pos');
+            }
+            posToggle.setAttribute('aria-pressed', next ? 'true' : 'false');
+            try {
+                localStorage.setItem('kassiron-pos', next ? 'on' : 'off');
+            } catch (e) {}
+        });
+    }
+
     var moreToggle = document.getElementById('more-nav-toggle');
     var drawer = document.getElementById('mobile-drawer');
     if (moreToggle && drawer) {
@@ -249,6 +269,22 @@ document.addEventListener('DOMContentLoaded', function () {
     var text = function (name) { return box.getAttribute('data-' + name) || ''; };
     var busy = false;
 
+    // On the till page (the sale just rung up) there is no receipt on screen
+    // to print through the dialog — that goes through the receipt's own page.
+    var receiptUrl = btn.getAttribute('data-receipt-url');
+    function printDialog() {
+        if (receiptUrl) {
+            window.location.href = receiptUrl;
+        } else {
+            window.print();
+        }
+    }
+
+    // A sale finished on the till page goes to the server right away.
+    if (receiptUrl && typeof bridge.syncNow === 'function') {
+        bridge.syncNow();
+    }
+
     function show(message, isError, actions) {
         box.innerHTML = '';
         box.classList.toggle('is-error', !!isError);
@@ -261,7 +297,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 dialogBtn.type = 'button';
                 dialogBtn.className = 'btn btn-sm btn-ghost';
                 dialogBtn.textContent = text('dialog');
-                dialogBtn.addEventListener('click', function () { window.print(); });
+                dialogBtn.addEventListener('click', printDialog);
                 box.appendChild(dialogBtn);
             } else if (action === 'settings') {
                 var link = document.createElement('a');
@@ -293,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         box.hidden = true;
                     } else {
                         show(text('no-printer'), false, ['settings']);
-                        window.print();
+                        printDialog();
                     }
                 } else {
                     failed(result && result.error);

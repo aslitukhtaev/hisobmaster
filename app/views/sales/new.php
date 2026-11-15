@@ -1,7 +1,35 @@
 <?php $pageTitle = t('new_sale'); ?>
-<section class="page-head">
+<section class="page-head page-head-row">
     <h1><?= e(t('new_sale')) ?></h1>
+    <button type="button" class="btn btn-ghost btn-sm pos-mode-toggle" id="pos-mode-toggle" aria-pressed="false"
+            title="<?= e(t('pos_mode_hint')) ?>"><?= e(t('pos_mode')) ?></button>
 </section>
+
+<?php if (!empty($lastSale)): ?>
+<div class="last-sale" id="last-sale">
+    <div class="last-sale-main">
+        <strong>✓ <?= e(t('last_sale_done', ['number' => receipt_number($lastSale)])) ?></strong>
+        <span><?= e(t('total')) ?>: <b><?= money((float) $lastSale['total']) ?></b></span>
+        <?php if ($lastChange > 0): ?>
+            <span class="last-sale-change"><?= e(t('change_due')) ?>: <b><?= money($lastChange) ?></b></span>
+        <?php endif; ?>
+    </div>
+    <div class="row-actions">
+        <?php if ($isDesktop): ?>
+            <button type="button" class="btn btn-ghost btn-sm" id="receipt-print-btn"
+                    data-print-path="/sales/<?= (int) $lastSale['id'] ?>/print" data-paper="<?= (int) $paperWidth ?>"
+                    data-receipt-url="/sales/<?= (int) $lastSale['id'] ?>" data-autoprint="1"><?= e(t('print')) ?></button>
+        <?php endif; ?>
+        <a href="/sales/<?= (int) $lastSale['id'] ?>" class="btn btn-ghost btn-sm"><?= e(t('view_receipt')) ?></a>
+    </div>
+</div>
+<?php if ($isDesktop): ?>
+<div class="print-status" id="print-status" role="status" aria-live="polite" hidden
+     data-sent="<?= e(t('printer_sent')) ?>" data-printing="<?= e(t('printer_printing')) ?>"
+     data-failed="<?= e(t('printer_failed')) ?>" data-no-printer="<?= e(t('printer_not_chosen')) ?>"
+     data-dialog="<?= e(t('printer_use_dialog')) ?>" data-settings="<?= e(t('printer_settings_link')) ?>"></div>
+<?php endif; ?>
+<?php endif; ?>
 
 <?php if (!$hasProducts): ?>
     <div class="card">
@@ -98,6 +126,7 @@
 
             <div class="alert alert-error" id="sale-form-error" role="alert" hidden></div>
             <button type="submit" id="complete-sale-btn" class="btn btn-primary btn-block"><?= e(t('complete_sale')) ?></button>
+            <p class="muted pos-shortcuts"><?= e(t('pos_shortcuts_hint')) ?></p>
         </form>
     </div>
 </div>
@@ -116,6 +145,7 @@ if (!is_array($oldCart)) {
     window.HM_CUSTOMERS = <?= $customersJson ?>;
     window.HM_I18N = {
         noResults: <?= json_encode(t('no_products_found'), JSON_UNESCAPED_UNICODE) ?>,
+        moreProducts: <?= json_encode(t('pos_more_products'), JSON_UNESCAPED_UNICODE) ?>,
         debtRemainingLabel: <?= json_encode(t('debt_remaining_label'), JSON_UNESCAPED_UNICODE) ?>,
         creditLimitPosLabel: <?= json_encode(t('credit_limit_pos_label'), JSON_UNESCAPED_UNICODE) ?>,
         creditLimitExceededWarning: <?= json_encode(t('credit_limit_exceeded_warning'), JSON_UNESCAPED_UNICODE) ?>,

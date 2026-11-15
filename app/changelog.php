@@ -8,6 +8,16 @@
 
 return [
     [
+        'date' => '2026-11-15',
+        'uz' => "Sotuvdan keyin kassa darhol keyingi mijoz uchun ochiladi (chek o'zi chiqadi, qaytim tepada ko'rinadi); dastur ochilganda ham to'g'ri kassa ochiladi.",
+        'ru' => 'После продажи касса сразу открывается для следующего покупателя (чек печатается сам, сдача видна сверху); при запуске программы тоже сразу открывается касса.',
+    ],
+    [
+        'date' => '2026-11-15',
+        'uz' => "POS rejimi: kassa sahifasidagi tugma bilan yoqiladi — tugmalar va yozuvlar kattaroq. F2 — qidiruv, F9 — sotuvni yakunlash.",
+        'ru' => 'Режим POS: включается кнопкой на странице кассы — кнопки и надписи крупнее. F2 — поиск, F9 — завершить продажу.',
+    ],
+    [
         'date' => '2026-10-06',
         'uz' => "Yangi ilova ikonkasi: lime fon va power belgisi, kichik o'lchamda ham aniq ko'rinadi.",
         'ru' => 'Новая иконка приложения: лаймовый фон и значок питания, чётко читается даже в маленьком размере.',

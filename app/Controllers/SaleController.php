@@ -153,7 +153,28 @@ class SaleController
             ];
         }, Customer::allByShop($shopId));
 
+        // The sale just rung up (SaleController::store()), shown once.
+        $lastSale = null;
+        $lastChange = 0.0;
+        if (isset($_SESSION['last_sale'])) {
+            $lastSale = Sale::find((int) $_SESSION['last_sale'], $shopId);
+            unset($_SESSION['last_sale']);
+        }
+        if ($lastSale !== null && (float) ($lastSale['cash_received'] ?? 0) > 0) {
+            $naqdPaid = 0.0;
+            foreach (Sale::payments((int) $lastSale['id']) as $payment) {
+                if ($payment['payment_type'] === 'naqd') {
+                    $naqdPaid += (float) $payment['amount'];
+                }
+            }
+            $lastChange = max(0.0, (float) $lastSale['cash_received'] - $naqdPaid);
+        }
+
         View::render('sales/new', [
+            'lastSale' => $lastSale,
+            'lastChange' => $lastChange,
+            'paperWidth' => (int) (Shop::find($shopId)['receipt_printer_width'] ?? 80),
+            'isDesktop' => Desktop::enabled(),
             'productsJson' => json_encode($productsJson, JSON_UNESCAPED_UNICODE),
             'customersJson' => json_encode($customersJson, JSON_UNESCAPED_UNICODE),
             'hasProducts' => count($activeProducts) > 0,
@@ -272,13 +293,11 @@ class SaleController
             'total' => money((float) ($sale['total'] ?? 0)),
         ]);
 
-        flash('success', t('sale_completed'));
-        if (Desktop::enabled()) {
-            // The receipt page prints this sale by itself once (if this
-            // computer's printer is set to) — not again on a reload.
-            $_SESSION['autoprint_sale'] = $saleId;
-        }
-        redirect("/sales/{$saleId}");
+        // Straight back to an empty till for the next customer: the new-sale
+        // page shows this sale once (total, change, receipt link) and, in the
+        // desktop app, prints its receipt by itself — not again on a reload.
+        $_SESSION['last_sale'] = $saleId;
+        redirect('/sales/new');
     }
 
     public function receipt(Request $request, string $id): void
@@ -297,9 +316,6 @@ class SaleController
             false
         );
 
-        $autoPrint = isset($_SESSION['autoprint_sale']) && (int) $_SESSION['autoprint_sale'] === (int) $id;
-        unset($_SESSION['autoprint_sale']);
-
         View::render('sales/receipt', [
             'sale' => $sale,
             'items' => Sale::items((int) $id),
@@ -307,7 +323,6 @@ class SaleController
             'refunds' => Refund::historyForSale((int) $id),
             'canRefund' => $canRefund,
             'shop' => Shop::find($shopId),
-            'autoPrint' => $autoPrint,
         ]);
     }
 

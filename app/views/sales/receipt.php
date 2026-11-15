@@ -13,9 +13,9 @@ $printerWidth = (int) ($shop['receipt_printer_width'] ?? 80);
             <a href="/sales/<?= (int) $sale['id'] ?>/refund" class="btn btn-ghost"><?= e(t('refund_action')) ?></a>
         <?php endif; ?>
         <button type="button" class="btn btn-primary js-print-btn" id="receipt-print-btn"
-                data-print-path="/sales/<?= (int) $sale['id'] ?>/print" data-paper="<?= $printerWidth ?>"
-                <?= !empty($autoPrint) ? 'data-autoprint="1"' : '' ?>><?= e(t('print')) ?></button>
+                data-print-path="/sales/<?= (int) $sale['id'] ?>/print" data-paper="<?= $printerWidth ?>"><?= e(t('print')) ?></button>
         <a href="/sales" class="btn btn-ghost"><?= e(t('back_to_list')) ?></a>
+        <a href="/sales/new" class="btn btn-ghost"><?= e(t('new_sale')) ?></a>
     </div>
 </section>
 <p class="muted no-print" id="telegram-print-hint" style="display:none;"><?= e(t('telegram_print_hint')) ?></p>

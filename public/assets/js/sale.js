@@ -14,6 +14,10 @@
     // this list is only the fallback for a product row without that flag.
     var FRACTIONAL_UNITS = ['kg', 'litr', 'l', 'metr', 'm'];
     var FRACTIONAL_STEP = 0.1;
+    // The list shows at most this many products at once: a big catalogue is
+    // found by typing or scanning, and redrawing thousands of rows on every
+    // keystroke would make the till lag.
+    var MAX_LISTED = 60;
 
     // Cart entries are keyed by a composite string ("p12" for a plain product,
     // "v34" for a specific variant) rather than the bare product id, since a
@@ -243,7 +247,12 @@
             return;
         }
 
-        productListEl.innerHTML = list.map(function (p) {
+        var hiddenCount = Math.max(0, list.length - MAX_LISTED);
+        var more = hiddenCount > 0
+            ? '<p class="muted pos-more">' + escapeHtml((i18n.moreProducts || '+:count').replace(':count', hiddenCount)) + '</p>'
+            : '';
+
+        productListEl.innerHTML = list.slice(0, MAX_LISTED).map(function (p) {
             if (!p.variants || p.variants.length === 0) {
                 return '<button type="button" class="pos-product" data-id="' + p.id + '">' +
                     '<span class="pos-product-name">' + escapeHtml(p.name) + '</span>' +
@@ -269,7 +278,7 @@
                 '</div>' +
                 '<div class="pos-variant-list">' + variantButtons + '</div>' +
             '</div>';
-        }).join('');
+        }).join('') + more;
     }
 
     function addToCart(productId, variantId) {
@@ -295,7 +304,7 @@
         // kg) starts from a sensible whole number instead of a stray "0.1".
         var next = roundQty(currentQty + 1);
         if (next > stock) {
-            alert(i18n.stockLimitReached || 'Stock limit reached');
+            showFormError(i18n.stockLimitReached || 'Stock limit reached');
             return;
         }
         cart.set(key, { productId: productId, variantId: variantId || null, qty: next });
@@ -317,7 +326,7 @@
         if (next <= 0) {
             cart.delete(key);
         } else if (next > resolved.stock) {
-            alert(i18n.stockLimitReached || 'Stock limit reached');
+            showFormError(i18n.stockLimitReached || 'Stock limit reached');
             return;
         } else {
             entry.qty = next;
@@ -340,7 +349,7 @@
         } else {
             if (next > resolved.stock) {
                 next = resolved.stock;
-                alert(i18n.stockLimitReached || 'Stock limit reached');
+                showFormError(i18n.stockLimitReached || 'Stock limit reached');
             }
             entry.qty = next;
         }
@@ -703,6 +712,37 @@
             kartaAmount = hasOldKarta ? (parseFloat(oldSale.kartaAmount) || 0) : 0;
         }
     }
+
+    // Keyboard: F2 jumps to the search box, F9 completes the sale, and typing
+    // (or a barcode scanner "typing") while no field is focused goes to the
+    // search box instead of being lost.
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'F2') {
+            e.preventDefault();
+            searchEl.focus();
+            searchEl.select();
+            return;
+        }
+        if (e.key === 'F9') {
+            e.preventDefault();
+            if (!completeBtnEl.disabled) {
+                completeBtnEl.click();
+            }
+            return;
+        }
+        if (e.ctrlKey || e.altKey || e.metaKey || e.key.length !== 1 || e.key === ' ') {
+            return;
+        }
+        var active = document.activeElement;
+        var tag = active ? active.tagName : '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+            return;
+        }
+        if (document.querySelector('.mobile-drawer.open, dialog[open]')) {
+            return;
+        }
+        searchEl.focus();
+    });
 
     populateCustomerSelect();
     renderProducts();

@@ -65,7 +65,7 @@ class DesktopController
             RememberMe::issue((int) Auth::id());
             $_SESSION['lang'] = Auth::user()['lang'] ?? env('APP_DEFAULT_LANG', 'uz');
             flash('success', t('desktop_activated'));
-            redirect('/');
+            redirect(start_path());
         }
 
         flash('success', t('desktop_activated'));

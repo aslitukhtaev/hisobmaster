@@ -19,6 +19,11 @@ class HomeController
     public function index(Request $request): void
     {
         if (Auth::check()) {
+            // The desktop app starting up (no page led here) opens the till;
+            // the "Bosh sahifa" link inside the app still shows the dashboard.
+            if (Desktop::enabled() && empty($_SERVER['HTTP_REFERER']) && start_path() !== '/') {
+                redirect(start_path());
+            }
             (new DashboardController())->index($request);
             return;
         }
