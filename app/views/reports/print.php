@@ -1,6 +1,6 @@
 <?php
 $pageTitle = t('print_report_button');
-$paymentColors = ['naqd' => '#14b8a6', 'karta' => '#4f46e5', 'qarz' => '#dc2626'];
+$paymentColors = ['naqd' => '#14b8a6', 'karta' => '#4f46e5', 'qr' => '#f59e0b', 'qarz' => '#dc2626'];
 $paymentTotal = array_sum($paymentBreakdown) ?: 1;
 $netProfit = (float) $summary['net_profit'];
 $expenseTotal = array_sum(array_column($expenseBreakdown, 'total')) ?: 1;
@@ -55,7 +55,7 @@ $expenseTotal = array_sum(array_column($expenseBreakdown, 'total')) ?: 1;
     <div class="card">
         <h2><?= e(t('payment_breakdown_title')) ?></h2>
         <div class="hbar-list">
-            <?php foreach (['naqd', 'karta', 'qarz'] as $type):
+            <?php foreach (['naqd', 'karta', 'qr', 'qarz'] as $type):
                 $val = $paymentBreakdown[$type];
                 $pct = $paymentTotal > 0 ? round($val / $paymentTotal * 100) : 0;
             ?>

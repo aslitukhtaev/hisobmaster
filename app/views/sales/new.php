@@ -9,12 +9,14 @@
 <div class="last-sale" id="last-sale">
     <div class="last-sale-main">
         <strong>✓ <?= e(t('last_sale_done', ['number' => receipt_number($lastSale)])) ?></strong>
-        <span><?= e(t('total')) ?>: <b><?= money((float) $lastSale['total']) ?></b></span>
+        <span class="last-sale-total"><?= e(t('total')) ?>: <b><?= money((float) $lastSale['total']) ?></b></span>
         <?php if ($lastChange > 0): ?>
             <span class="last-sale-change"><?= e(t('change_due')) ?>: <b><?= money($lastChange) ?></b></span>
         <?php endif; ?>
     </div>
     <div class="row-actions">
+        <button type="button" class="btn btn-ghost btn-sm" data-copy="<?= e((string) (int) round((float) $lastSale['total'])) ?>"
+                data-copied="<?= e(t('copied')) ?>"><?= e(t('copy_amount')) ?></button>
         <?php if ($isDesktop): ?>
             <button type="button" class="btn btn-ghost btn-sm" id="receipt-print-btn"
                     data-print-path="/sales/<?= (int) $lastSale['id'] ?>/print" data-paper="<?= (int) $paperWidth ?>"
@@ -81,10 +83,11 @@
             <div class="payment-types">
                 <button type="button" class="payment-btn active" data-preset="naqd"><?= e(t('payment_naqd')) ?></button>
                 <button type="button" class="payment-btn" data-preset="karta"><?= e(t('payment_karta')) ?></button>
+                <button type="button" class="payment-btn" data-preset="qr"><?= e(t('payment_qr')) ?></button>
                 <button type="button" class="payment-btn" data-preset="qarz"><?= e(t('payment_qarz')) ?></button>
             </div>
 
-            <div class="field-row">
+            <div class="field-row field-row-3">
                 <label class="field">
                     <span><?= e(t('payment_naqd')) ?></span>
                     <input type="number" id="naqd-amount-input" min="0" max="<?= MONEY_MAX ?>" step="0.01" value="0" inputmode="decimal">
@@ -93,6 +96,10 @@
                     <span><?= e(t('payment_karta')) ?></span>
                     <input type="number" id="karta-amount-input" min="0" max="<?= MONEY_MAX ?>" step="0.01" value="0" inputmode="decimal">
                 </label>
+                <label class="field">
+                    <span><?= e(t('payment_qr')) ?></span>
+                    <input type="number" id="qr-amount-input" min="0" max="<?= MONEY_MAX ?>" step="0.01" value="0" inputmode="decimal">
+                </label>
             </div>
             <div class="cart-change-row" id="change-row" hidden>
                 <span><?= e(t('change_due')) ?></span>
@@ -100,6 +107,7 @@
             </div>
             <input type="hidden" name="naqd_amount" id="naqd-amount-field" value="0">
             <input type="hidden" name="karta_amount" id="karta-amount-field" value="0">
+            <input type="hidden" name="qr_amount" id="qr-amount-field" value="0">
 
             <div id="debt-fields" class="stack" style="display:none;">
                 <label class="field">
@@ -168,6 +176,7 @@ if (!is_array($oldCart)) {
         discount: <?= json_encode(old('discount', '0'), JSON_UNESCAPED_UNICODE) ?>,
         naqdAmount: <?= json_encode(old('naqd_amount', ''), JSON_UNESCAPED_UNICODE) ?>,
         kartaAmount: <?= json_encode(old('karta_amount', ''), JSON_UNESCAPED_UNICODE) ?>,
+        qrAmount: <?= json_encode(old('qr_amount', ''), JSON_UNESCAPED_UNICODE) ?>,
         customerId: <?= json_encode(old('customer_id', ''), JSON_UNESCAPED_UNICODE) ?>,
         customerName: <?= json_encode(old('customer_name', ''), JSON_UNESCAPED_UNICODE) ?>,
         customerPhone: <?= json_encode(old('customer_phone', ''), JSON_UNESCAPED_UNICODE) ?>

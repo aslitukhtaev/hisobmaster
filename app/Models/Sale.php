@@ -24,7 +24,8 @@ class Sale
         float $naqdAmount,
         float $kartaAmount,
         float $discount,
-        ?int $customerId
+        ?int $customerId,
+        float $qrAmount = 0.0
     ): int {
         if (empty($items)) {
             throw new RuntimeException('empty_cart');
@@ -118,8 +119,10 @@ class Sale
             // cash_received so the receipt can show it.
             $cashTendered = max(0.0, $naqdAmount);
             $kartaAmount = max(0.0, min($kartaAmount, $total));
-            $naqdAmount = max(0.0, min($cashTendered, round($total - $kartaAmount, 2)));
-            $qarzAmount = max(0.0, round($total - $naqdAmount - $kartaAmount, 2));
+            // QR (a customer's phone payment) is exact too, like a card.
+            $qrAmount = max(0.0, min($qrAmount, round($total - $kartaAmount, 2)));
+            $naqdAmount = max(0.0, min($cashTendered, round($total - $kartaAmount - $qrAmount, 2)));
+            $qarzAmount = max(0.0, round($total - $naqdAmount - $kartaAmount - $qrAmount, 2));
             $cashReceived = $cashTendered > $naqdAmount + 0.005 ? round($cashTendered, 2) : null;
 
             if ($qarzAmount > 0 && $customerId === null) {
@@ -129,8 +132,8 @@ class Sale
             // paid_amount keeps its original meaning (total - debt), so every
             // pre-existing read of it — including this file's own receipt-page
             // debt calculation — stays correct without any change.
-            $paidAmount = round($naqdAmount + $kartaAmount, 2);
-            $paymentType = self::derivePaymentTypeLabel($naqdAmount, $kartaAmount, $qarzAmount);
+            $paidAmount = round($naqdAmount + $kartaAmount + $qrAmount, 2);
+            $paymentType = self::derivePaymentTypeLabel($naqdAmount, $kartaAmount, $qarzAmount, $qrAmount);
             $status = 'completed';
 
             $stmt = $pdo->prepare(
@@ -146,7 +149,7 @@ class Sale
             $paymentStmt = $pdo->prepare(
                 'INSERT INTO sale_payments (sale_id, payment_type, amount) VALUES (?, ?, ?)'
             );
-            foreach (['naqd' => $naqdAmount, 'karta' => $kartaAmount, 'qarz' => $qarzAmount] as $type => $amount) {
+            foreach (['naqd' => $naqdAmount, 'karta' => $kartaAmount, 'qr' => $qrAmount, 'qarz' => $qarzAmount] as $type => $amount) {
                 if ($amount > 0) {
                     $paymentStmt->execute([$saleId, $type, $amount]);
                 }
@@ -244,7 +247,7 @@ class Sale
     {
         $stmt = Database::connect()->prepare(
             "SELECT * FROM sale_payments WHERE sale_id = ?
-             ORDER BY CASE payment_type WHEN 'naqd' THEN 1 WHEN 'karta' THEN 2 WHEN 'qarz' THEN 3 ELSE 4 END"
+             ORDER BY CASE payment_type WHEN 'naqd' THEN 1 WHEN 'karta' THEN 2 WHEN 'qr' THEN 3 WHEN 'qarz' THEN 4 ELSE 5 END"
         );
         $stmt->execute([$saleId]);
 
@@ -259,11 +262,11 @@ class Sale
      * sale's payment_type (karta), or cash for anything else — a legacy
      * 'qarz' sale's partial up-front payment was taken in cash.
      *
-     * @return array{naqd: float, karta: float, qarz: float}
+     * @return array{naqd: float, karta: float, qr: float, qarz: float}
      */
     public static function paymentSplit(array $sale): array
     {
-        $split = ['naqd' => 0.0, 'karta' => 0.0, 'qarz' => 0.0];
+        $split = ['naqd' => 0.0, 'karta' => 0.0, 'qr' => 0.0, 'qarz' => 0.0];
         $rows = self::payments((int) $sale['id']);
 
         if (!empty($rows)) {
@@ -279,7 +282,7 @@ class Sale
         $total = (float) $sale['total'];
         $paid = min((float) $sale['paid_amount'], $total);
         $split['qarz'] = max(0.0, round($total - $paid, 2));
-        $split[$sale['payment_type'] === 'karta' ? 'karta' : 'naqd'] = $paid;
+        $split[in_array($sale['payment_type'], ['karta', 'qr'], true) ? $sale['payment_type'] : 'naqd'] = $paid;
 
         return $split;
     }
@@ -290,10 +293,10 @@ class Sale
      * reports keep reading exactly what they always did), or 'aralash' (mixed)
      * once two or more methods carry a nonzero amount.
      */
-    private static function derivePaymentTypeLabel(float $naqd, float $karta, float $qarz): string
+    private static function derivePaymentTypeLabel(float $naqd, float $karta, float $qarz, float $qr = 0.0): string
     {
         $active = array_keys(array_filter(
-            ['naqd' => $naqd, 'karta' => $karta, 'qarz' => $qarz],
+            ['naqd' => $naqd, 'karta' => $karta, 'qr' => $qr, 'qarz' => $qarz],
             static fn (float $amount): bool => $amount > 0.0
         ));
 

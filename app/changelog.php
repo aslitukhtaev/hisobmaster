@@ -9,6 +9,11 @@
 return [
     [
         'date' => '2026-11-15',
+        'uz' => "Yangi to'lov turi — QR (aralash to'lovda ham). Kunlik hisobot va hisobotlarda QR alohida ko'rinadi; sotuvdan keyin \"Summani nusxalash\" tugmasi. Mahsulotga MXIK, o'ram kodi va QQS maydonlari qo'shildi.",
+        'ru' => 'Новый тип оплаты — QR (в том числе в смешанной оплате). QR виден отдельно в дневном отчёте и отчётах; после продажи — кнопка «Скопировать сумму». В товар добавлены поля МХИК, код упаковки и НДС.',
+    ],
+    [
+        'date' => '2026-11-15',
         'uz' => "Sotuvdan keyin kassa darhol keyingi mijoz uchun ochiladi (chek o'zi chiqadi, qaytim tepada ko'rinadi); dastur ochilganda ham to'g'ri kassa ochiladi.",
         'ru' => 'После продажи касса сразу открывается для следующего покупателя (чек печатается сам, сдача видна сверху); при запуске программы тоже сразу открывается касса.',
     ],

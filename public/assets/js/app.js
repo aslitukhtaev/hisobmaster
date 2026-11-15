@@ -51,6 +51,22 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // "Summani nusxalash": puts a plain number on the clipboard, to paste into
+    // another register app (e.g. the tax cash register).
+    document.querySelectorAll('[data-copy]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var value = btn.getAttribute('data-copy');
+            var label = btn.textContent;
+            var done = function () {
+                btn.textContent = btn.getAttribute('data-copied') || label;
+                setTimeout(function () { btn.textContent = label; }, 1500);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(value).then(done).catch(function () {});
+            }
+        });
+    });
+
     // POS monitor mode: bigger buttons and text, remembered on this computer
     // (the <head> script applies it before the page paints).
     var posToggle = document.getElementById('pos-mode-toggle');

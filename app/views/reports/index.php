@@ -5,7 +5,7 @@ $maxRevenue = $revenues ? max(max($revenues), 1) : 1;
 $hasSales = array_sum($revenues) > 0;
 $labelStep = max(1, (int) ceil(count($dailyRevenue) / 8));
 
-$paymentColors = ['naqd' => '#14b8a6', 'karta' => '#4f46e5', 'qarz' => '#dc2626'];
+$paymentColors = ['naqd' => '#14b8a6', 'karta' => '#4f46e5', 'qr' => '#f59e0b', 'qarz' => '#dc2626'];
 $paymentTotal = array_sum($paymentBreakdown) ?: 1;
 
 $netProfit = (float) $summary['net_profit'];
@@ -171,7 +171,7 @@ $comparisonMetrics = [
 <div class="card">
     <h2><?= e(t('payment_breakdown_title')) ?></h2>
     <div class="hbar-list">
-        <?php foreach (['naqd', 'karta', 'qarz'] as $type):
+        <?php foreach (['naqd', 'karta', 'qr', 'qarz'] as $type):
             $val = $paymentBreakdown[$type];
             $pct = $paymentTotal > 0 ? round($val / $paymentTotal * 100) : 0;
         ?>

@@ -193,9 +193,11 @@ class SaleController
         $discountRaw = $request->input('discount', 0);
         $naqdRaw = $request->input('naqd_amount', 0);
         $kartaRaw = $request->input('karta_amount', 0);
+        $qrRaw = $request->input('qr_amount', 0);
         $discount = is_numeric($discountRaw) ? (float) $discountRaw : 0.0;
         $naqdAmount = is_numeric($naqdRaw) ? (float) $naqdRaw : 0.0;
         $kartaAmount = is_numeric($kartaRaw) ? (float) $kartaRaw : 0.0;
+        $qrAmount = is_numeric($qrRaw) ? (float) $qrRaw : 0.0;
         $customerIdInput = trim((string) $request->input('customer_id', ''));
         $customerName = trim((string) $request->input('customer_name', ''));
         $customerPhone = trim((string) $request->input('customer_phone', ''));
@@ -207,6 +209,7 @@ class SaleController
             'discount' => (string) $discount,
             'naqd_amount' => (string) $naqdAmount,
             'karta_amount' => (string) $kartaAmount,
+            'qr_amount' => (string) $qrAmount,
             'customer_id' => $customerIdInput,
             'customer_name' => $customerName,
             'customer_phone' => $customerPhone,
@@ -218,7 +221,7 @@ class SaleController
             redirect('/sales/new');
         }
 
-        foreach ([$discountRaw, $naqdRaw, $kartaRaw] as $raw) {
+        foreach ([$discountRaw, $naqdRaw, $kartaRaw, $qrRaw] as $raw) {
             if (!valid_money($raw === '' || $raw === null ? 0 : $raw)) {
                 flash('error', is_numeric($raw) && (float) $raw > 0 ? t('amount_too_large') : t('payment_amount_invalid'));
                 keep_old($old);
@@ -267,7 +270,7 @@ class SaleController
         }
 
         try {
-            $saleId = Sale::create($shopId, $cashierId, $items, $naqdAmount, $kartaAmount, $discount, $customerId);
+            $saleId = Sale::create($shopId, $cashierId, $items, $naqdAmount, $kartaAmount, $discount, $customerId, $qrAmount);
         } catch (PDOException $e) {
             // A raw driver-level failure (e.g. a lock-contention edge case) —
             // never shown to the user verbatim, since PDOException extends

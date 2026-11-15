@@ -22,7 +22,7 @@ use Throwable;
  */
 final class Migrator
 {
-    public const VERSION = 7;
+    public const VERSION = 8;
 
     public static function ensureUpToDate(PDO $pdo): void
     {
@@ -76,6 +76,12 @@ final class Migrator
         self::addColumns($pdo, $log, 'products', [
             'low_stock_threshold' => 'REAL',
             'pack_size' => 'INTEGER',
+            // Tax-register data for fiscal receipts (kept ready for the
+            // integration with a virtual cash register): MXIK/IKPU code,
+            // package code and VAT percentage. All optional.
+            'mxik' => 'TEXT',
+            'package_code' => 'TEXT',
+            'vat_rate' => 'REAL',
         ]);
         self::addColumns($pdo, $log, 'sale_items', [
             'variant_id' => 'INTEGER REFERENCES product_variants(id)',

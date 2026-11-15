@@ -121,7 +121,7 @@ class ReportController
 
         csv_row($out, [t('payment_breakdown_title')]);
         csv_row($out, [t('payment_type'), t('amount')]);
-        foreach (['naqd', 'karta', 'qarz'] as $type) {
+        foreach (['naqd', 'karta', 'qr', 'qarz'] as $type) {
             csv_row($out, [t('payment_' . $type), $num((float) $paymentBreakdown[$type])]);
         }
         csv_row($out, []);

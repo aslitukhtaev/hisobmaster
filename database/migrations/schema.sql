@@ -106,6 +106,11 @@ CREATE TABLE IF NOT EXISTS products (
     -- purchase-recording flow (see PurchaseController) and as a hint on the
     -- product form; not a general multi-unit conversion graph.
     pack_size INTEGER,
+    -- Tax-register data (all optional): MXIK/IKPU product code, package code
+    -- and VAT percentage, for fiscal receipts.
+    mxik TEXT,
+    package_code TEXT,
+    vat_rate REAL,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

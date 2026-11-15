@@ -70,6 +70,9 @@ class ProductController
             'barcode' => $data['barcode'] !== '' ? $data['barcode'] : null,
             'low_stock_threshold' => $data['low_stock_threshold'],
             'pack_size' => $data['pack_size'],
+            'mxik' => $data['mxik'],
+            'package_code' => $data['package_code'],
+            'vat_rate' => $data['vat_rate'],
         ]);
 
         ActivityLog::record($shopId, (int) Auth::id(), 'product_created', [
@@ -133,6 +136,9 @@ class ProductController
             'barcode' => $data['barcode'] !== '' ? $data['barcode'] : null,
             'low_stock_threshold' => $data['low_stock_threshold'],
             'pack_size' => $data['pack_size'],
+            'mxik' => $data['mxik'],
+            'package_code' => $data['package_code'],
+            'vat_rate' => $data['vat_rate'],
         ]);
 
         $this->logProductChanges($shopId, $product, $data);
@@ -175,6 +181,9 @@ class ProductController
         $barcode = trim((string) $request->input('barcode', ''));
         $lowStockThresholdRaw = trim((string) $request->input('low_stock_threshold', ''));
         $packSizeRaw = trim((string) $request->input('pack_size', ''));
+        $mxikRaw = trim((string) $request->input('mxik', ''));
+        $packageCodeRaw = trim((string) $request->input('package_code', ''));
+        $vatRateRaw = trim((string) $request->input('vat_rate', ''));
 
         // A product sold through variants keeps its stock on the variants;
         // its own stock_qty can only be brought down (to clear a leftover
@@ -202,6 +211,9 @@ class ProductController
             'barcode' => $barcode,
             'low_stock_threshold' => $lowStockThresholdRaw,
             'pack_size' => $packSizeRaw,
+            'mxik' => $mxikRaw,
+            'package_code' => $packageCodeRaw,
+            'vat_rate' => $vatRateRaw,
         ];
 
         $fail = static function (string $message) use ($old): ?array {
@@ -261,6 +273,15 @@ class ProductController
             return $fail(t('pack_size_invalid'));
         }
 
+        if (($mxikRaw !== '' && (!ctype_digit($mxikRaw) || strlen($mxikRaw) > 20))
+            || ($packageCodeRaw !== '' && (!ctype_digit($packageCodeRaw) || strlen($packageCodeRaw) > 12))) {
+            return $fail(t('mxik_invalid'));
+        }
+
+        if ($vatRateRaw !== '' && (!is_numeric($vatRateRaw) || (float) $vatRateRaw < 0 || (float) $vatRateRaw > 100)) {
+            return $fail(t('vat_rate_invalid'));
+        }
+
         return [
             'name' => $name,
             'category' => $category,
@@ -271,6 +292,9 @@ class ProductController
             'barcode' => $barcode,
             'low_stock_threshold' => $lowStockThresholdRaw !== '' ? (float) $lowStockThresholdRaw : null,
             'pack_size' => $packSizeRaw !== '' ? (int) $packSizeRaw : null,
+            'mxik' => $mxikRaw !== '' ? $mxikRaw : null,
+            'package_code' => $packageCodeRaw !== '' ? $packageCodeRaw : null,
+            'vat_rate' => $vatRateRaw !== '' ? (float) $vatRateRaw : null,
         ];
     }
 
@@ -330,6 +354,9 @@ class ProductController
             ['barcode', $before['barcode'] ?? '', $after['barcode'], $textOrDash],
             ['low_stock_threshold_label', $before['low_stock_threshold'], $after['low_stock_threshold'], $qtyOrDash],
             ['pack_size_label', $before['pack_size'], $after['pack_size'], $qtyOrDash],
+            ['mxik_label', $before['mxik'] ?? null, $after['mxik'], $textOrDash],
+            ['package_code_label', $before['package_code'] ?? null, $after['package_code'], $textOrDash],
+            ['vat_rate_label', $before['vat_rate'] ?? null, $after['vat_rate'], $qtyOrDash],
         ];
 
         $changes = [];
@@ -660,6 +687,9 @@ class ProductController
                         'barcode' => $barcode,
                         'low_stock_threshold' => $existing['low_stock_threshold'],
                         'pack_size' => $existing['pack_size'],
+                        'mxik' => $existing['mxik'] ?? null,
+                        'package_code' => $existing['package_code'] ?? null,
+                        'vat_rate' => $existing['vat_rate'] ?? null,
                     ]);
                     $updated++;
                 } else {

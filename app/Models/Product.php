@@ -61,8 +61,8 @@ class Product
     {
         $pdo = Database::connect();
         $stmt = $pdo->prepare(
-            'INSERT INTO products (shop_id, category_id, name, unit, cost_price, sell_price, stock_qty, barcode, status, low_stock_threshold, pack_size)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO products (shop_id, category_id, name, unit, cost_price, sell_price, stock_qty, barcode, status, low_stock_threshold, pack_size, mxik, package_code, vat_rate)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $data['shop_id'],
@@ -76,6 +76,9 @@ class Product
             'active',
             $data['low_stock_threshold'] ?? null,
             $data['pack_size'] ?? null,
+            $data['mxik'] ?? null,
+            $data['package_code'] ?? null,
+            $data['vat_rate'] ?? null,
         ]);
 
         return (int) $pdo->lastInsertId();
@@ -86,7 +89,8 @@ class Product
         Database::connect()->prepare(
             'UPDATE products
              SET category_id = ?, name = ?, unit = ?, cost_price = ?, sell_price = ?, stock_qty = ?, barcode = ?,
-                 low_stock_threshold = ?, pack_size = ?, updated_at = datetime(\'now\')
+                 low_stock_threshold = ?, pack_size = ?, mxik = ?, package_code = ?, vat_rate = ?,
+                 updated_at = datetime(\'now\')
              WHERE id = ? AND shop_id = ?'
         )->execute([
             $data['category_id'] ?? null,
@@ -98,6 +102,9 @@ class Product
             $data['barcode'] ?? null,
             $data['low_stock_threshold'] ?? null,
             $data['pack_size'] ?? null,
+            $data['mxik'] ?? null,
+            $data['package_code'] ?? null,
+            $data['vat_rate'] ?? null,
             $id,
             $shopId,
         ]);

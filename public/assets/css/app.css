@@ -740,7 +740,7 @@ img.logo-for-dark-theme { display: none; }
 }
 .discount-mode-btn.active { background: var(--primary); color: var(--on-primary); }
 
-.payment-types { display: flex; gap: 8px; margin: 14px 0; }
+.payment-types { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
 .payment-btn {
     flex: 1; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border);
     background: var(--surface); font-weight: 700; font-size: .85rem; cursor: pointer; color: var(--muted);
@@ -774,6 +774,10 @@ img.logo-for-dark-theme { display: none; }
 .last-sale-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
 .last-sale-main strong { color: var(--success); }
 .last-sale-change { font-size: 1.15rem; }
+.last-sale-total { font-size: 1.3rem; }
+.last-sale-total b { font-size: 1.6rem; }
+.field-row-3 { grid-template-columns: 1fr; }
+@media (min-width: 560px) { .field-row-3 { grid-template-columns: 1fr 1fr 1fr; } }
 .pos-shortcuts { display: none; text-align: center; margin-top: 8px; font-size: .78rem; }
 .pos-more { padding: 8px 2px; }
 .pos-mode-toggle { display: none; }

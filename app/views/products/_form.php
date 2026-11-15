@@ -99,6 +99,25 @@ $parentLeftover = $hasActiveVariants ? (float) ($product['stock_qty'] ?? 0) : 0.
             </label>
         </div>
 
+        <div class="field-row field-row-3">
+            <label class="field">
+                <span><?= e(t('mxik_label')) ?> (<?= e(t('optional')) ?>)</span>
+                <input type="text" inputmode="numeric" maxlength="20" name="mxik" autocomplete="off"
+                       value="<?= e(old('mxik', (string) ($product['mxik'] ?? ''))) ?>">
+                <span class="muted"><?= e(t('mxik_hint')) ?></span>
+            </label>
+            <label class="field">
+                <span><?= e(t('package_code_label')) ?> (<?= e(t('optional')) ?>)</span>
+                <input type="text" inputmode="numeric" maxlength="12" name="package_code" autocomplete="off"
+                       value="<?= e(old('package_code', (string) ($product['package_code'] ?? ''))) ?>">
+            </label>
+            <label class="field">
+                <span><?= e(t('vat_rate_label')) ?> (<?= e(t('optional')) ?>)</span>
+                <input type="number" step="0.01" min="0" max="100" inputmode="decimal" name="vat_rate"
+                       value="<?= e(old('vat_rate', isset($product['vat_rate']) && $product['vat_rate'] !== null ? (string) $product['vat_rate'] : '')) ?>">
+            </label>
+        </div>
+
         <button type="submit" class="btn btn-primary btn-block"><?= e($submitLabel) ?></button>
     </form>
 </div>

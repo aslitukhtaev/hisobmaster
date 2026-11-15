@@ -96,6 +96,7 @@ $debtAmount = round((float) $sale['total'] - (float) $sale['paid_amount'], 2);
     <?php endif; ?>
 
     <div class="receipt-header" style="margin-top:14px;">
+        <div class="receipt-meta"><?= e(t('receipt_not_fiscal')) ?></div>
         <div class="receipt-meta"><?= e(t('thank_you_note')) ?></div>
     </div>
 </div>

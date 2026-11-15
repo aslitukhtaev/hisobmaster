@@ -51,13 +51,13 @@ class Refund
      * Pure function (no DB access) — also used by database/migrate.php to
      * backfill refund_payments for refunds recorded before it existed.
      *
-     * @return array{naqd: float, karta: float, qarz: float}
+     * @return array{naqd: float, karta: float, qr: float, qarz: float}
      */
-    public static function allocateByPayment(float $amount, float $naqd, float $karta, float $qarz): array
+    public static function allocateByPayment(float $amount, float $naqd, float $karta, float $qarz, float $qr = 0.0): array
     {
-        $result = ['naqd' => 0.0, 'karta' => 0.0, 'qarz' => 0.0];
-        $split = ['naqd' => $naqd, 'karta' => $karta, 'qarz' => $qarz];
-        $total = $naqd + $karta + $qarz;
+        $result = ['naqd' => 0.0, 'karta' => 0.0, 'qr' => 0.0, 'qarz' => 0.0];
+        $split = ['naqd' => $naqd, 'karta' => $karta, 'qr' => $qr, 'qarz' => $qarz];
+        $total = $naqd + $karta + $qr + $qarz;
 
         if ($amount <= 0 || $total <= 0) {
             $result['naqd'] = max(0.0, $amount);
@@ -89,7 +89,7 @@ class Refund
      * Refunds within a UTC window, summed per payment method they went back
      * through (refund_payments).
      *
-     * @return array{naqd: float, karta: float, qarz: float}
+     * @return array{naqd: float, karta: float, qr: float, qarz: float}
      */
     public static function totalsByPayment(int $shopId, string $startUtc, string $endUtc): array
     {
@@ -102,7 +102,7 @@ class Refund
         );
         $stmt->execute([$shopId, $startUtc, $endUtc]);
 
-        $result = ['naqd' => 0.0, 'karta' => 0.0, 'qarz' => 0.0];
+        $result = ['naqd' => 0.0, 'karta' => 0.0, 'qr' => 0.0, 'qarz' => 0.0];
         foreach ($stmt->fetchAll() as $row) {
             if (isset($result[$row['payment_type']])) {
                 $result[$row['payment_type']] += (float) $row['total'];
@@ -231,7 +231,7 @@ class Refund
             }
 
             $split = Sale::paymentSplit($sale);
-            $allocation = self::allocateByPayment($totalAmount, $split['naqd'], $split['karta'], $split['qarz']);
+            $allocation = self::allocateByPayment($totalAmount, $split['naqd'], $split['karta'], $split['qarz'], $split['qr']);
 
             $paymentStmt = $pdo->prepare(
                 'INSERT INTO refund_payments (refund_id, payment_type, amount) VALUES (?, ?, ?)'

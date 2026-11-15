@@ -34,6 +34,7 @@
     // on the next render.
     var naqdAmount = 0;
     var kartaAmount = 0;
+    var qrAmount = 0;
     var activePreset = 'naqd';
     // Whichever field the cashier last typed into keeps the value they typed
     // (clamped only to the total); the other one yields to make room for it.
@@ -67,6 +68,7 @@
     var saleFormEl = document.getElementById('sale-form');
     var naqdAmountInputEl = document.getElementById('naqd-amount-input');
     var kartaAmountInputEl = document.getElementById('karta-amount-input');
+    var qrAmountInputEl = document.getElementById('qr-amount-input');
     var changeRowEl = document.getElementById('change-row');
     var changeAmountEl = document.getElementById('change-amount');
     var discountErrorEl = document.getElementById('discount-error');
@@ -453,24 +455,42 @@
     // is owed, so a typed naqd amount above the total is kept as-is and the
     // difference is shown as change (Sale::create() applies the same rule).
     function applyPayments(total) {
+        // What is left of the total after `used`, never below zero.
+        function left(used) {
+            return Math.max(0, Math.round((total - used) * 100) / 100);
+        }
+
         if (activePreset === 'naqd') {
             naqdAmount = total;
             kartaAmount = 0;
+            qrAmount = 0;
         } else if (activePreset === 'karta') {
             naqdAmount = 0;
             kartaAmount = total;
+            qrAmount = 0;
+        } else if (activePreset === 'qr') {
+            naqdAmount = 0;
+            kartaAmount = 0;
+            qrAmount = total;
         } else if (activePreset === 'qarz') {
             naqdAmount = 0;
             kartaAmount = 0;
+            qrAmount = 0;
         } else if (lastEditedField === 'karta') {
             kartaAmount = Math.max(0, Math.min(kartaAmount, total));
-            naqdAmount = Math.max(0, Math.min(naqdAmount, Math.round((total - kartaAmount) * 100) / 100));
+            qrAmount = Math.max(0, Math.min(qrAmount, left(kartaAmount)));
+            naqdAmount = Math.max(0, Math.min(naqdAmount, left(kartaAmount + qrAmount)));
+        } else if (lastEditedField === 'qr') {
+            qrAmount = Math.max(0, Math.min(qrAmount, total));
+            kartaAmount = Math.max(0, Math.min(kartaAmount, left(qrAmount)));
+            naqdAmount = Math.max(0, Math.min(naqdAmount, left(kartaAmount + qrAmount)));
         } else {
             naqdAmount = Math.max(0, naqdAmount);
-            kartaAmount = Math.max(0, Math.min(kartaAmount, Math.round((total - Math.min(naqdAmount, total)) * 100) / 100));
+            kartaAmount = Math.max(0, Math.min(kartaAmount, left(Math.min(naqdAmount, total))));
+            qrAmount = Math.max(0, Math.min(qrAmount, left(Math.min(naqdAmount, total) + kartaAmount)));
         }
 
-        var naqdApplied = Math.max(0, Math.min(naqdAmount, Math.round((total - kartaAmount) * 100) / 100));
+        var naqdApplied = Math.max(0, Math.min(naqdAmount, left(kartaAmount + qrAmount)));
         var change = Math.max(0, Math.round((naqdAmount - naqdApplied) * 100) / 100);
         if (changeRowEl) {
             changeRowEl.hidden = !(change > 0 && cart.size > 0);
@@ -479,14 +499,16 @@
 
         naqdAmountInputEl.value = naqdAmount;
         kartaAmountInputEl.value = kartaAmount;
+        qrAmountInputEl.value = qrAmount;
         document.getElementById('naqd-amount-field').value = naqdAmount;
         document.getElementById('karta-amount-field').value = kartaAmount;
+        document.getElementById('qr-amount-field').value = qrAmount;
 
         document.querySelectorAll('.payment-btn').forEach(function (btn) {
             btn.classList.toggle('active', btn.getAttribute('data-preset') === activePreset);
         });
 
-        var remaining = Math.max(0, Math.round((total - naqdApplied - kartaAmount) * 100) / 100);
+        var remaining = left(naqdApplied + kartaAmount + qrAmount);
         debtFieldsEl.style.display = remaining > 0 ? 'block' : 'none';
 
         var labelText = (i18n.debtRemainingLabel || 'Debt: :amount').replace(':amount', formatMoney(remaining));
@@ -629,6 +651,13 @@
         renderCart();
     });
 
+    qrAmountInputEl.addEventListener('input', function () {
+        activePreset = null;
+        lastEditedField = 'qr';
+        qrAmount = Math.max(0, parseFloat(qrAmountInputEl.value) || 0);
+        renderCart();
+    });
+
     customerSelectEl.addEventListener('change', function () {
         updateCustomerFields();
         // Re-run so the debt/credit-limit label picks up the newly selected
@@ -706,10 +735,12 @@
 
         var hasOldNaqd = oldSale.naqdAmount !== undefined && oldSale.naqdAmount !== '';
         var hasOldKarta = oldSale.kartaAmount !== undefined && oldSale.kartaAmount !== '';
-        if (hasOldNaqd || hasOldKarta) {
+        var hasOldQr = oldSale.qrAmount !== undefined && oldSale.qrAmount !== '';
+        if (hasOldNaqd || hasOldKarta || hasOldQr) {
             activePreset = null;
             naqdAmount = hasOldNaqd ? (parseFloat(oldSale.naqdAmount) || 0) : 0;
             kartaAmount = hasOldKarta ? (parseFloat(oldSale.kartaAmount) || 0) : 0;
+            qrAmount = hasOldQr ? (parseFloat(oldSale.qrAmount) || 0) : 0;
         }
     }
 

@@ -215,7 +215,7 @@ class Report
         [$startUtc, $endUtc] = tashkent_day_bounds_utc($from, $to);
         $pdo = Database::connect();
 
-        $result = ['naqd' => 0.0, 'karta' => 0.0, 'qarz' => 0.0];
+        $result = ['naqd' => 0.0, 'karta' => 0.0, 'qr' => 0.0, 'qarz' => 0.0];
 
         $stmt = $pdo->prepare(
             "SELECT sp.payment_type, COALESCE(SUM(sp.amount), 0) AS total
@@ -276,10 +276,12 @@ class Report
                     'cashier_name' => $name,
                     'naqd' => 0.0,
                     'karta' => 0.0,
+                    'qr' => 0.0,
                     'qarz' => 0.0,
                     'refunds' => 0.0,
                     'refunds_naqd' => 0.0,
                     'refunds_karta' => 0.0,
+                    'refunds_qr' => 0.0,
                     'refunds_qarz' => 0.0,
                 ];
             }
@@ -353,8 +355,8 @@ class Report
         $byCashier = array_values($byCashier);
 
         $totals = [
-            'naqd' => 0.0, 'karta' => 0.0, 'qarz' => 0.0,
-            'refunds' => 0.0, 'refunds_naqd' => 0.0, 'refunds_karta' => 0.0, 'refunds_qarz' => 0.0,
+            'naqd' => 0.0, 'karta' => 0.0, 'qr' => 0.0, 'qarz' => 0.0,
+            'refunds' => 0.0, 'refunds_naqd' => 0.0, 'refunds_karta' => 0.0, 'refunds_qr' => 0.0, 'refunds_qarz' => 0.0,
         ];
         foreach ($byCashier as $row) {
             foreach ($totals as $key => $_) {
