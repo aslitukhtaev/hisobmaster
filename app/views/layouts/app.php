@@ -24,33 +24,39 @@ if (Auth::isSuperAdmin()) {
         ['href' => '/profile', 'label' => t('profile'), 'icon' => 'user', 'implemented' => true, 'permission' => null],
     ];
 } else {
+    // The daily work only; everything set up once or looked at rarely
+    // (profile, employees, suppliers, printer, help, ...) lives on the
+    // settings page (App\Controllers\SettingsController).
     $navItems = [
         ['href' => '/', 'label' => t('dashboard'), 'icon' => 'home', 'implemented' => true, 'permission' => null],
+        ['href' => '/sales/new', 'label' => t('nav_till'), 'icon' => 'till', 'implemented' => true, 'permission' => 'sales'],
         ['href' => '/sales', 'label' => t('sales'), 'icon' => 'cart', 'implemented' => true, 'permission' => 'sales'],
         ['href' => '/products', 'label' => t('products'), 'icon' => 'box', 'implemented' => true, 'permission' => 'products'],
-        ['href' => '/suppliers', 'label' => t('suppliers'), 'icon' => 'truck', 'implemented' => true, 'permission' => 'products'],
         ['href' => '/customers', 'label' => t('customers'), 'icon' => 'users', 'implemented' => true, 'permission' => 'customers'],
         ['href' => '/expenses', 'label' => t('expenses'), 'icon' => 'wallet', 'implemented' => true, 'permission' => 'expenses'],
         ['href' => '/reports', 'label' => t('reports'), 'icon' => 'chart', 'implemented' => true, 'permission' => 'reports'],
+        ['href' => '/settings', 'label' => t('settings_nav'), 'icon' => 'gear', 'implemented' => true, 'permission' => null],
     ];
 
-    if (Auth::isOwner()) {
-        // Employees and computers are managed on the website (see
-        // WebOnlyMiddleware); the desktop app links attendance directly.
-        $navItems[] = App\Desktop\Desktop::enabled()
-            ? ['href' => '/employees/attendance', 'label' => t('attendance_history_title'), 'icon' => 'userplus', 'implemented' => true, 'permission' => null]
-            : ['href' => '/employees', 'label' => t('employees'), 'icon' => 'userplus', 'implemented' => true, 'permission' => null];
-        $navItems[] = ['href' => '/activity', 'label' => t('activity_log'), 'icon' => 'clock', 'implemented' => true, 'permission' => null];
-        if (!App\Desktop\Desktop::enabled()) {
-            $navItems[] = ['href' => '/devices', 'label' => t('devices_title'), 'icon' => 'monitor', 'implemented' => true, 'permission' => null];
-        }
-    }
+    $settingsPaths = ['/settings', '/profile', '/employees', '/suppliers', '/activity', '/devices', '/desktop/printer', '/help'];
+    $isActive = static function (string $href) use ($currentPath, $settingsPaths): bool {
+        $startsWithAny = static function (array $prefixes) use ($currentPath): bool {
+            foreach ($prefixes as $prefix) {
+                if (str_starts_with($currentPath, $prefix)) {
+                    return true;
+                }
+            }
+            return false;
+        };
 
-    if (App\Desktop\Desktop::enabled()) {
-        $navItems[] = ['href' => '/desktop/printer', 'label' => t('printer_nav'), 'icon' => 'printer', 'implemented' => true, 'permission' => null];
-    }
-    $navItems[] = ['href' => '/help', 'label' => t('help_nav'), 'icon' => 'help', 'implemented' => true, 'permission' => null];
-    $navItems[] = ['href' => '/profile', 'label' => t('profile'), 'icon' => 'user', 'implemented' => true, 'permission' => null];
+        return match ($href) {
+            '/' => $currentPath === '/',
+            '/sales/new' => $currentPath === '/sales/new',
+            '/sales' => str_starts_with($currentPath, '/sales') && $currentPath !== '/sales/new',
+            '/settings' => $startsWithAny($settingsPaths),
+            default => str_starts_with($currentPath, $href),
+        };
+    };
 }
 
 foreach ($navItems as &$navItem) {
@@ -60,6 +66,7 @@ unset($navItem);
 
 $icon = static function (string $name): string {
     $paths = [
+        'till' => '<rect x="3" y="11" width="18" height="9" rx="1.5"/><path d="M7 11V5h10v6"/><path d="M10 8h4"/><path d="M8 15.5h8"/>',
         'home' => '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/>',
         'cart' => '<circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M2.5 3h2.4l2.1 11.2A2 2 0 0 0 9 16h8.2a2 2 0 0 0 2-1.6L21 7H6"/>',
         'box' => '<path d="M3.5 7.5 12 3l8.5 4.5L12 12z"/><path d="M3.5 7.5V16L12 20.5 20.5 16V7.5"/><path d="M12 12v8.5"/>',
@@ -94,7 +101,7 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
 }
 ?>
 <!doctype html>
-<html lang="<?= e(current_lang()) ?>">
+<html lang="<?= e(current_lang()) ?>"<?= !empty($pageKind) ? ' data-page="' . e($pageKind) . '"' : '' ?>>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">

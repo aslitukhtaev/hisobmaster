@@ -9,6 +9,16 @@
 return [
     [
         'date' => '2026-11-15',
+        'uz' => "POS rejimi qayta qurildi: kassa butun ekranda, menyusiz — faqat qidiruv, mahsulotlar, savat va to'lov. Chiqish uchun \"Menyu\" tugmasi.",
+        'ru' => 'Режим POS переделан: касса на весь экран, без меню — только поиск, товары, корзина и оплата. Выход — кнопка «Меню».',
+    ],
+    [
+        'date' => '2026-11-15',
+        'uz' => "Menyu qisqardi: yangi \"Kassa\" bandi, kam ishlatiladigan bo'limlar (profil, xodimlar, ta'minotchilar, printer, yordam) \"Sozlamalar\" sahifasida.",
+        'ru' => 'Меню стало короче: новый пункт «Касса», редкие разделы (профиль, сотрудники, поставщики, принтер, помощь) — на странице «Настройки».',
+    ],
+    [
+        'date' => '2026-11-15',
         'uz' => "Yangi to'lov turi — QR (aralash to'lovda ham). Kunlik hisobot va hisobotlarda QR alohida ko'rinadi; sotuvdan keyin \"Summani nusxalash\" tugmasi. Mahsulotga MXIK, o'ram kodi va QQS maydonlari qo'shildi.",
         'ru' => 'Новый тип оплаты — QR (в том числе в смешанной оплате). QR виден отдельно в дневном отчёте и отчётах; после продажи — кнопка «Скопировать сумму». В товар добавлены поля МХИК, код упаковки и НДС.',
     ],

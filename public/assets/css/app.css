@@ -466,6 +466,21 @@ img.logo-for-dark-theme { display: none; }
 .date-filter-bar select { min-width: 160px; }
 .date-filter-bar .field-grow { flex: 1 1 220px; }
 .date-filter-bar .field-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+/* Phones: the two dates share a row evenly instead of overflowing the
+   screen, everything else gets a full row, and the period tabs scroll
+   sideways rather than squeezing or spilling out. */
+@media (max-width: 560px) {
+    .date-filter-bar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: end; }
+    .date-filter-bar .field { min-width: 0; }
+    .date-filter-bar input[type="date"], .date-filter-bar select { width: 100%; min-width: 0; box-sizing: border-box; }
+    .date-filter-bar .field-grow, .date-filter-bar .field-actions,
+    .date-filter-bar .permission-check, .date-filter-bar > .btn { grid-column: 1 / -1; }
+    .date-filter-bar .field-actions .btn { flex: 1; }
+    .filter-tabs { overflow-x: auto; scrollbar-width: none; margin-right: -16px; padding-right: 16px; }
+    .filter-tabs::-webkit-scrollbar { display: none; }
+    .filter-tab { flex-shrink: 0; white-space: nowrap; }
+    .search-bar input { min-width: 0; }
+}
 
 /* ---------- Net profit hero tile ---------- */
 .net-profit-tile {
@@ -779,51 +794,101 @@ img.logo-for-dark-theme { display: none; }
 .field-row-3 { grid-template-columns: 1fr; }
 @media (min-width: 560px) { .field-row-3 { grid-template-columns: 1fr 1fr 1fr; } }
 .pos-shortcuts { display: none; text-align: center; margin-top: 8px; font-size: .78rem; }
+/* Room between the last field and the button that completes the sale. */
+#complete-sale-btn { margin-top: 16px; }
 .pos-more { padding: 8px 2px; }
-.pos-mode-toggle { display: none; }
-.pos-mode-toggle[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.pos-mode-toggle, .pos-exit, .pos-extra-toggle { display: none; }
 
 @media (min-width: 900px) {
     .pos-shortcuts { display: block; }
     .pos-mode-toggle { display: inline-flex; }
 
-    /* ---------- POS monitor mode (toggle on the till page) ----------
-       Everything a size up across the app, and the till itself laid out for
-       fingers: product tiles, big quantity/payment/complete buttons. */
-    :root[data-pos="on"] { font-size: 112.5%; }
-    :root[data-pos="on"] .btn { padding: 14px 22px; }
-    :root[data-pos="on"] .btn-sm { padding: 10px 16px; }
+    /* ---------- POS mode (the till page only) ----------
+       What a cashier needs and nothing else, on the whole screen: search,
+       product tiles, the cart, the total, how it's paid, "complete". The
+       menu, the top bar and the page title are gone ("Menyu" brings them
+       back); the discount and split-payment fields open on request. */
+    :root[data-pos="on"][data-page="till"] { font-size: 112.5%; }
+    :root[data-pos="on"][data-page="till"] .sidebar, :root[data-pos="on"][data-page="till"] .topbar, :root[data-pos="on"][data-page="till"] .page-head, :root[data-pos="on"][data-page="till"] #desktop-status,
+    :root[data-pos="on"][data-page="till"] .pos-shortcuts, :root[data-pos="on"][data-page="till"] .cart-title, :root[data-pos="on"][data-page="till"] .pos-product-meta .pos-stock { display: none; }
+    :root[data-pos="on"][data-page="till"] .shell { height: 100vh; overflow: hidden; }
+    :root[data-pos="on"][data-page="till"] .main { min-height: 0; }
+    :root[data-pos="on"][data-page="till"] .content { min-height: 0; padding: 12px; display: flex; flex-direction: column; overflow: hidden; }
+    :root[data-pos="on"][data-page="till"] .pos-layout { flex: 1; min-height: 0; align-items: stretch; gap: 12px; }
 
-    :root[data-pos="on"] .pos-cart { max-width: 470px; flex: 1.1; }
-    :root[data-pos="on"] .pos-search { padding: 16px 18px; font-size: 1.1rem; }
-    :root[data-pos="on"] .pos-product-list {
-        display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;
-        max-height: calc(100vh - 250px); align-content: start;
+    :root[data-pos="on"][data-page="till"] .pos-products { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+    :root[data-pos="on"][data-page="till"] .pos-search { padding: 16px 18px; font-size: 1.15rem; }
+    :root[data-pos="on"][data-page="till"] .scan-btn { min-width: 56px; }
+    :root[data-pos="on"][data-page="till"] .pos-exit { display: inline-flex; flex-shrink: 0; padding: 0 20px; }
+    :root[data-pos="on"][data-page="till"] .pos-product-list {
+        flex: 1; min-height: 0; max-height: none; padding-right: 4px;
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); grid-auto-rows: minmax(104px, auto);
+        gap: 10px; align-content: start;
     }
-    :root[data-pos="on"] .pos-product {
+    :root[data-pos="on"][data-page="till"] .pos-product {
         flex-direction: column; align-items: flex-start; justify-content: space-between;
-        min-height: 92px; padding: 14px;
+        min-height: 96px; padding: 14px;
     }
-    :root[data-pos="on"] .pos-product-name { overflow-wrap: anywhere; line-height: 1.25; }
-    :root[data-pos="on"] .pos-product-meta { margin-left: 0; font-size: .82rem; white-space: normal; }
-    :root[data-pos="on"] .pos-product-group,
-    :root[data-pos="on"] .pos-product-list > p { grid-column: 1 / -1; }
-    :root[data-pos="on"] .pos-product-group > .pos-product { min-height: 0; flex-direction: row; align-items: center; }
-    :root[data-pos="on"] .pos-variant-btn { padding-top: 14px; padding-bottom: 14px; }
+    :root[data-pos="on"][data-page="till"] .pos-product-name { line-height: 1.25; overflow-wrap: anywhere; }
+    :root[data-pos="on"][data-page="till"] .pos-product-meta { margin-left: 0; font-size: 1rem; font-weight: 700; color: var(--text); white-space: normal; }
+    :root[data-pos="on"][data-page="till"] .pos-product-group, :root[data-pos="on"][data-page="till"] .pos-product-list > p { grid-column: 1 / -1; }
+    :root[data-pos="on"][data-page="till"] .pos-product-group > .pos-product { min-height: 0; flex-direction: row; align-items: center; }
+    :root[data-pos="on"][data-page="till"] .pos-variant-btn { padding-top: 14px; padding-bottom: 14px; }
 
-    :root[data-pos="on"] .cart-row-name { font-size: .95rem; }
-    :root[data-pos="on"] .qty-stepper button { width: 44px; height: 44px; font-size: 1.3rem; border-radius: 10px; }
-    :root[data-pos="on"] .qty-stepper span { min-width: 32px; font-size: 1.05rem; }
-    :root[data-pos="on"] .qty-stepper-fractional .qty-direct-input { width: 76px; padding: 10px 4px; font-size: 1rem; }
-    :root[data-pos="on"] .cart-row-subtotal { font-size: .95rem; }
-    :root[data-pos="on"] .cart-remove { font-size: 1.3rem; padding: 10px; }
-    :root[data-pos="on"] .cart-total-row { font-size: 1.6rem; }
-    :root[data-pos="on"] .cart-change-row { font-size: 1.3rem; }
-    :root[data-pos="on"] .payment-btn { padding: 16px 10px; font-size: 1rem; }
-    :root[data-pos="on"] .discount-mode-btn { padding: 0 18px; font-size: .95rem; }
-    :root[data-pos="on"] #complete-sale-btn { padding: 20px; font-size: 1.25rem; }
-    :root[data-pos="on"] .last-sale-change { font-size: 1.4rem; }
+    :root[data-pos="on"][data-page="till"] .pos-cart {
+        position: static; flex: 0 0 40%; max-width: 500px; min-height: 0; padding: 14px;
+        display: flex; flex-direction: column;
+    }
+    :root[data-pos="on"][data-page="till"] .cart-list { flex: 1; min-height: 0; max-height: none; margin: 0 0 6px; }
+    :root[data-pos="on"][data-page="till"] #cart-empty-msg { margin-bottom: 8px; }
+    :root[data-pos="on"][data-page="till"] .cart-row-name { font-size: 1rem; }
+    :root[data-pos="on"][data-page="till"] .cart-row-price { font-size: .8rem; }
+    :root[data-pos="on"][data-page="till"] .qty-stepper button { width: 46px; height: 46px; font-size: 1.4rem; border-radius: 10px; }
+    :root[data-pos="on"][data-page="till"] .qty-stepper span { min-width: 34px; font-size: 1.1rem; }
+    :root[data-pos="on"][data-page="till"] .qty-stepper-fractional .qty-direct-input { width: 80px; padding: 11px 4px; font-size: 1.05rem; }
+    :root[data-pos="on"][data-page="till"] .cart-row-subtotal { font-size: 1rem; min-width: 90px; }
+    :root[data-pos="on"][data-page="till"] .cart-remove { font-size: 1.4rem; padding: 10px; }
+
+    :root[data-pos="on"][data-page="till"] .cart-totals { margin: 6px 0; }
+    :root[data-pos="on"][data-page="till"] .cart-total-row { font-size: 2rem; margin-top: 0; }
+    :root[data-pos="on"][data-page="till"] .cart-total-row strong { font-family: var(--font-display); }
+    :root[data-pos="on"][data-page="till"] .cart-change-row { font-size: 1.4rem; margin: 6px 0; }
+    :root[data-pos="on"][data-page="till"] .payment-types { margin: 8px 0; flex-wrap: nowrap; }
+    :root[data-pos="on"][data-page="till"] .payment-btn { padding: 18px 6px; font-size: 1.05rem; }
+    :root[data-pos="on"][data-page="till"] #complete-sale-btn { padding: 22px; font-size: 1.35rem; margin-top: 10px; }
+    :root[data-pos="on"][data-page="till"] #debt-fields { margin-bottom: 8px; }
+
+    :root[data-pos="on"][data-page="till"] .pos-extra-toggle {
+        display: block; width: 100%; padding: 6px; border: none; background: none; cursor: pointer;
+        color: var(--muted); font-size: .8rem; font-weight: 600; text-decoration: underline; text-align: right;
+    }
+    :root[data-pos="on"][data-page="till"] #sale-form:not(.show-extra) .cart-totals > .field,
+    :root[data-pos="on"][data-page="till"] #sale-form:not(.show-extra) .field-row-3 { display: none; }
+    :root[data-pos="on"][data-page="till"] #sale-form.show-extra .field-row-3 { margin-bottom: 8px; gap: 8px; }
+
+    :root[data-pos="on"][data-page="till"] .last-sale { margin-bottom: 10px; padding: 8px 14px; }
+    :root[data-pos="on"][data-page="till"] .last-sale-change, :root[data-pos="on"][data-page="till"] .last-sale-total { font-size: 1.3rem; }
+    :root[data-pos="on"][data-page="till"] .last-sale-total b, :root[data-pos="on"][data-page="till"] .last-sale-change b { font-size: 1.6rem; }
+    :root[data-pos="on"][data-page="till"] .flash-alert, :root[data-pos="on"][data-page="till"] .print-status { margin-bottom: 10px; }
 }
+
+/* ---------- Settings page ---------- */
+.settings-list { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.settings-item {
+    display: flex; align-items: center; gap: 14px; padding: 16px;
+    background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.settings-item:hover { box-shadow: 0 4px 16px -4px rgba(16, 24, 40, .18); }
+.settings-item .side-icon {
+    width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--primary-light); color: var(--primary-dark);
+}
+.settings-item .side-icon svg { width: 21px; height: 21px; }
+.settings-item-title { font-weight: 700; }
+.settings-item .muted { font-size: .84rem; }
+@media (min-width: 720px) { .settings-list { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 1200px) { .settings-list { grid-template-columns: 1fr 1fr 1fr; } }
 
 /* ---------- Receipt / chek ---------- */
 /* Always white paper + dark ink, independent of the app theme — this is printed on physical thermal paper. */

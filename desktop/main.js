@@ -363,6 +363,14 @@ async function boot() {
 }
 
 ipcMain.on('sync-now', () => syncRunner && syncRunner.run());
+// POS mode on the till page: the window fills the screen; any other page
+// (or leaving POS mode) gives the window back.
+ipcMain.on('set-fullscreen', (event, on) => {
+    if (mainWindow && !mainWindow.isDestroyed() && event.sender === mainWindow.webContents
+        && mainWindow.isFullScreen() !== Boolean(on)) {
+        mainWindow.setFullScreen(Boolean(on));
+    }
+});
 ipcMain.on('apply-update', () => { applyCodeUpdate(); });
 ipcMain.on('check-update', () => { checkForCodeUpdate(); });
 // Receipt printer (lib/receipt-printer.js) — only for the till window's own

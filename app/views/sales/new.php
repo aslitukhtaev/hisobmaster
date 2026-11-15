@@ -1,7 +1,7 @@
-<?php $pageTitle = t('new_sale'); ?>
+<?php $pageTitle = t('new_sale'); $pageKind = 'till'; ?>
 <section class="page-head page-head-row">
     <h1><?= e(t('new_sale')) ?></h1>
-    <button type="button" class="btn btn-ghost btn-sm pos-mode-toggle" id="pos-mode-toggle" aria-pressed="false"
+    <button type="button" class="btn btn-primary btn-sm pos-mode-toggle js-pos-toggle"
             title="<?= e(t('pos_mode_hint')) ?>"><?= e(t('pos_mode')) ?></button>
 </section>
 
@@ -47,12 +47,13 @@
             <button type="button" class="scan-btn barcode-scan-btn" data-target="#product-search" aria-label="<?= e(t('scan_barcode')) ?>" title="<?= e(t('scan_barcode')) ?>">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M20 8V5a1 1 0 0 0-1-1h-3M4 16v3a1 1 0 0 0 1 1h3M20 16v3a1 1 0 0 1-1 1h-3M6 8v8M10 8v8M14 8v8M18 8v8"/></svg>
             </button>
+            <button type="button" class="btn btn-ghost pos-exit js-pos-toggle" title="<?= e(t('pos_exit_hint')) ?>"><?= e(t('pos_exit')) ?></button>
         </div>
         <div id="product-list" class="pos-product-list"></div>
     </div>
 
     <div class="pos-cart card">
-        <h2><?= e(t('cart')) ?></h2>
+        <h2 class="cart-title"><?= e(t('cart')) ?></h2>
         <div id="cart-list" class="cart-list"></div>
         <p id="cart-empty-msg" class="muted"><?= e(t('cart_empty_hint')) ?></p>
 
@@ -79,6 +80,8 @@
                 </div>
             </div>
             <input type="hidden" name="discount" id="discount-field" value="0">
+
+            <button type="button" class="pos-extra-toggle" id="pos-extra-toggle"><?= e(t('pos_extra')) ?></button>
 
             <div class="payment-types">
                 <button type="button" class="payment-btn active" data-preset="naqd"><?= e(t('payment_naqd')) ?></button>

@@ -258,7 +258,7 @@
             if (!p.variants || p.variants.length === 0) {
                 return '<button type="button" class="pos-product" data-id="' + p.id + '">' +
                     '<span class="pos-product-name">' + escapeHtml(p.name) + '</span>' +
-                    '<span class="pos-product-meta">' + escapeHtml(formatMoney(p.price)) + ' · ' + escapeHtml(formatQty(p.stock)) + ' ' + escapeHtml(p.unit) + '</span>' +
+                    '<span class="pos-product-meta">' + escapeHtml(formatMoney(p.price)) + '<span class="pos-stock"> · ' + escapeHtml(formatQty(p.stock)) + ' ' + escapeHtml(p.unit) + '</span></span>' +
                     '</button>';
             }
 
@@ -269,7 +269,7 @@
                 var disabled = v.stock <= 0;
                 return '<button type="button" class="pos-variant-btn" data-id="' + p.id + '" data-variant="' + v.id + '"' + (disabled ? ' disabled' : '') + '>' +
                     '<span>' + escapeHtml(v.label) + '</span>' +
-                    '<span class="pos-product-meta">' + escapeHtml(formatMoney(v.price)) + ' · ' + escapeHtml(formatQty(v.stock)) + ' ' + escapeHtml(p.unit) + '</span>' +
+                    '<span class="pos-product-meta">' + escapeHtml(formatMoney(v.price)) + '<span class="pos-stock"> · ' + escapeHtml(formatQty(v.stock)) + ' ' + escapeHtml(p.unit) + '</span></span>' +
                     '</button>';
             }).join('');
 
@@ -775,8 +775,21 @@
         searchEl.focus();
     });
 
+    // POS mode keeps the discount and the split-payment amounts out of the
+    // way until asked for (or until they hold something, after a failed
+    // submission brought them back).
+    var extraToggleEl = document.getElementById('pos-extra-toggle');
+    if (extraToggleEl) {
+        extraToggleEl.addEventListener('click', function () {
+            saleFormEl.classList.toggle('show-extra');
+        });
+    }
+
     populateCustomerSelect();
     renderProducts();
     restoreOldState();
+    if (activePreset === null || (parseFloat(discountInputEl.value) || 0) > 0) {
+        saleFormEl.classList.add('show-extra');
+    }
     renderCart();
 })();

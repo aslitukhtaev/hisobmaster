@@ -8,6 +8,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('kassironDesktop', {
     syncNow: () => ipcRenderer.send('sync-now'),
+    // POS mode: the till on the whole screen (and back).
+    setFullScreen: (on) => ipcRenderer.send('set-fullscreen', Boolean(on)),
     onSyncStatus: (callback) => ipcRenderer.on('sync-status', (_event, status) => callback(status)),
     printerList: () => ipcRenderer.invoke('printer-list'),
     printerSettings: () => ipcRenderer.invoke('printer-settings'),

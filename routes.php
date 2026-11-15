@@ -13,6 +13,7 @@ use App\Controllers\DeviceController;
 use App\Controllers\EmployeeController;
 use App\Controllers\ExpenseController;
 use App\Controllers\HelpController;
+use App\Controllers\SettingsController;
 use App\Controllers\HomeController;
 use App\Controllers\JoinController;
 use App\Controllers\LocaleController;
@@ -38,6 +39,7 @@ $router->get('/', [HomeController::class, 'index']);
 $router->post('/onboarding/dismiss', [DashboardController::class, 'dismissOnboarding'], ['auth', 'csrf']);
 
 $router->get('/help', [HelpController::class, 'index'], ['auth']);
+$router->get('/settings', [SettingsController::class, 'index'], ['auth']);
 
 $router->get('/profile', [ProfileController::class, 'show'], ['auth']);
 $router->post('/profile', [ProfileController::class, 'update'], ['auth', 'web_only', 'csrf']);

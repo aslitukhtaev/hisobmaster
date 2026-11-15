@@ -67,25 +67,53 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // POS monitor mode: bigger buttons and text, remembered on this computer
-    // (the <head> script applies it before the page paints).
-    var posToggle = document.getElementById('pos-mode-toggle');
-    if (posToggle) {
-        var posOn = function () { return document.documentElement.getAttribute('data-pos') === 'on'; };
-        posToggle.setAttribute('aria-pressed', posOn() ? 'true' : 'false');
-        posToggle.addEventListener('click', function () {
-            var next = !posOn();
-            if (next) {
-                document.documentElement.setAttribute('data-pos', 'on');
-            } else {
-                document.documentElement.removeAttribute('data-pos');
+    // POS mode: the till alone on the whole screen — no menu, no top bar,
+    // big buttons. Chosen on the till page, remembered on this computer (the
+    // <head> script applies it before the page paints). In the desktop app
+    // the window itself goes full screen and stays so from sale to sale;
+    // in a browser, full screen can only follow the click.
+    (function () {
+        var root = document.documentElement;
+        var posOn = function () { return root.getAttribute('data-pos') === 'on'; };
+
+        function syncFullScreen(fromClick) {
+            var want = posOn() && root.getAttribute('data-page') === 'till';
+            var bridge = window.kassironDesktop;
+            if (bridge && typeof bridge.setFullScreen === 'function') {
+                bridge.setFullScreen(want);
+                return;
             }
-            posToggle.setAttribute('aria-pressed', next ? 'true' : 'false');
-            try {
-                localStorage.setItem('kassiron-pos', next ? 'on' : 'off');
-            } catch (e) {}
+            if (!fromClick) {
+                return;
+            }
+            if (want && !document.fullscreenElement && root.requestFullscreen) {
+                root.requestFullscreen().catch(function () {});
+            } else if (!want && document.fullscreenElement && document.exitFullscreen) {
+                document.exitFullscreen().catch(function () {});
+            }
+        }
+
+        document.querySelectorAll('.js-pos-toggle').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var next = !posOn();
+                if (next) {
+                    root.setAttribute('data-pos', 'on');
+                } else {
+                    root.removeAttribute('data-pos');
+                }
+                try {
+                    localStorage.setItem('kassiron-pos', next ? 'on' : 'off');
+                } catch (e) {}
+                syncFullScreen(true);
+                var search = document.getElementById('product-search');
+                if (search) {
+                    search.focus();
+                }
+            });
         });
-    }
+
+        syncFullScreen(false);
+    })();
 
     var moreToggle = document.getElementById('more-nav-toggle');
     var drawer = document.getElementById('mobile-drawer');
