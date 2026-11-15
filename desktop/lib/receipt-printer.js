@@ -20,6 +20,9 @@ const PAGES = /^\/(?:sales\/\d+\/print|desktop\/printer\/test)$/;
 const MICRONS_PER_PX = 25400 / 96;
 const MIN_HEIGHT_MICRONS = 20000;
 const LOAD_TIMEOUT_MS = 20000;
+// "Printers" that only make a file: printing to one opens Windows' "save
+// as" window in front of the till — never a receipt printer.
+const VIRTUAL_PRINTER = /pdf|xps|onenote|fax/i;
 
 function normalize(input) {
     const s = input && typeof input === 'object' ? input : {};
@@ -69,7 +72,7 @@ class ReceiptPrinter {
 
     async list(webContents) {
         const printers = await webContents.getPrintersAsync();
-        return printers.map((p) => ({ name: p.name, displayName: p.displayName || p.name, isDefault: !!p.isDefault }));
+        return printers.filter((p) => !VIRTUAL_PRINTER.test(p.name)).map((p) => ({ name: p.name, displayName: p.displayName || p.name, isDefault: !!p.isDefault }));
     }
 
     /**
@@ -93,7 +96,7 @@ class ReceiptPrinter {
         }
         const paper = Number(request.paper) === 58 ? 58 : 80;
         const settings = this.settings();
-        if (!settings.deviceName) {
+        if (!settings.deviceName || (!this.pdfDir && VIRTUAL_PRINTER.test(settings.deviceName))) {
             return { ok: false, error: 'no_printer' };
         }
 

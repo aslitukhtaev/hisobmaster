@@ -298,6 +298,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 })();
 
+// "Printers" that only make a file (Microsoft Print to PDF, XPS, OneNote,
+// Fax): printing a receipt to one opens Windows' "save as" window in front
+// of the till. Never offered or used as the receipt printer.
+var KASSIRON_VIRTUAL_PRINTER = /pdf|xps|onenote|fax/i;
+
 // Desktop app, silent receipt printing: "Chop etish" sends the receipt
 // straight to this computer's receipt printer (chosen on /desktop/printer,
 // kept by the shell) with no print dialog, and right after a sale the
@@ -354,7 +359,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function failed(reason) {
-        show(text('failed').replace(':reason', reason || '?'), true, ['dialog', 'settings']);
+        // On the till page the dialog would mean leaving the till.
+        show(text('failed').replace(':reason', reason || '?'), true, receiptUrl ? ['settings'] : ['dialog', 'settings']);
     }
 
     function print(auto) {
@@ -364,7 +370,14 @@ document.addEventListener('DOMContentLoaded', function () {
         busy = true;
         btn.disabled = true;
         show(text('printing'));
-        bridge.printPage({ path: btn.getAttribute('data-print-path'), paper: Number(btn.getAttribute('data-paper')) || 80 })
+        var settings = typeof bridge.printerSettings === 'function' ? bridge.printerSettings() : Promise.resolve(null);
+        settings
+            .then(function (saved) {
+                if (saved && saved.deviceName && KASSIRON_VIRTUAL_PRINTER.test(saved.deviceName)) {
+                    return { ok: false, error: 'no_printer' };
+                }
+                return bridge.printPage({ path: btn.getAttribute('data-print-path'), paper: Number(btn.getAttribute('data-paper')) || 80 });
+            })
             .then(function (result) {
                 if (result && result.ok) {
                     show(text('sent'));
@@ -373,7 +386,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         box.hidden = true;
                     } else {
                         show(text('no-printer'), false, ['settings']);
-                        printDialog();
+                        if (!receiptUrl) {
+                            window.print();
+                        }
                     }
                 } else {
                     failed(result && result.error);
@@ -438,6 +453,10 @@ document.addEventListener('DOMContentLoaded', function () {
         select.innerHTML = '';
         option('', text('none'));
         var names = [];
+        if (KASSIRON_VIRTUAL_PRINTER.test(saved.deviceName || '')) {
+            saved.deviceName = '';
+        }
+        printers = printers.filter(function (printer) { return !KASSIRON_VIRTUAL_PRINTER.test(printer.name); });
         printers.forEach(function (printer) {
             names.push(printer.name);
             option(printer.name, (printer.displayName || printer.name) + (printer.isDefault ? ' ' + text('default-mark') : ''));

@@ -136,6 +136,7 @@ return [
     'settings_printer_hint' => "Chek printerini tanlash va sinash",
     'settings_help_hint' => "Savol-javoblar va biz bilan aloqa",
     'pos_exit' => 'Menyu',
+    'clear_cart' => 'Tozalash',
     'pos_exit_hint' => "POS rejimidan chiqish — menyu va boshqa bo'limlar",
     'pos_extra' => "Chegirma / bo'lib to'lash",
     'pos_mode_hint' => "To'liq ekranli kassa: menyusiz, katta tugmalar. Shu kompyuterda saqlanadi.",

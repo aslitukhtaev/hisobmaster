@@ -175,6 +175,7 @@ class SaleController
             'lastChange' => $lastChange,
             'paperWidth' => (int) (Shop::find($shopId)['receipt_printer_width'] ?? 80),
             'isDesktop' => Desktop::enabled(),
+            'shopName' => (string) (Shop::find($shopId)['name'] ?? ''),
             'productsJson' => json_encode($productsJson, JSON_UNESCAPED_UNICODE),
             'customersJson' => json_encode($customersJson, JSON_UNESCAPED_UNICODE),
             'hasProducts' => count($activeProducts) > 0,

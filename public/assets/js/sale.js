@@ -73,6 +73,8 @@
     var changeAmountEl = document.getElementById('change-amount');
     var discountErrorEl = document.getElementById('discount-error');
     var formErrorEl = document.getElementById('sale-form-error');
+    var cartCountEl = document.getElementById('cart-count');
+    var cartClearEl = document.getElementById('cart-clear');
 
     // Set by renderCart() when the discount would leave nothing (or less
     // than nothing) to pay — Sale::create() rejects that, so the form does
@@ -381,6 +383,13 @@
     }
 
     function renderCart() {
+        if (cartCountEl) {
+            cartCountEl.textContent = cart.size;
+            cartCountEl.hidden = cart.size === 0;
+        }
+        if (cartClearEl) {
+            cartClearEl.hidden = cart.size === 0;
+        }
         if (cart.size === 0) {
             cartListEl.innerHTML = '';
             cartEmptyMsgEl.style.display = 'block';
@@ -774,6 +783,25 @@
         }
         searchEl.focus();
     });
+
+    if (cartClearEl) {
+        cartClearEl.addEventListener('click', function () {
+            cart.clear();
+            renderCart();
+            searchEl.focus();
+        });
+    }
+
+    // The clock in POS mode's top bar.
+    var clockEl = document.getElementById('pos-clock');
+    if (clockEl) {
+        var tick = function () {
+            var now = new Date();
+            clockEl.textContent = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
+        };
+        tick();
+        setInterval(tick, 15000);
+    }
 
     // POS mode keeps the discount and the split-payment amounts out of the
     // way until asked for (or until they hold something, after a failed
