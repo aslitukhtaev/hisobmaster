@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Products list -->
+    <string name="products_title">Mahsulotlar</string>
+    <string name="products_search">Nomi yoki shtrix-kodi</string>
+    <string name="products_scan">Skanerlash</string>
+    <string name="products_add">Mahsulot qo‘shish</string>
+    <string name="products_add_with_barcode">%1$s kodi bilan qo‘shish</string>
+    <string name="products_filter_all">Hammasi</string>
+    <string name="products_filter_low">Kam qolgan</string>
+    <string name="products_filter_out">Tugagan</string>
+    <string name="products_filter_inactive">Nofaol</string>
+    <string name="products_category">Kategoriya</string>
+    <string name="products_category_all">Barcha kategoriyalar</string>
+    <string name="products_category_new">Yangi kategoriya…</string>
+    <string name="products_category_none">Kategoriyasiz</string>
+    <string name="products_count">%1$d ta mahsulot</string>
+    <string name="products_count_of">%1$d / %2$d ta mahsulot</string>
+    <string name="products_stock_value">Ombordagi tannarx qiymati</string>
+    <string name="products_inactive">Nofaol</string>
+    <string name="products_variant_count">%1$d ta variant</string>
+    <string name="products_empty">Hali birorta ham mahsulot qo‘shilmagan. Ko‘p mahsulotni tez kiritish orqali bir yo‘la qo‘shing.</string>
+    <string name="products_not_found">Hech narsa topilmadi</string>
+
+    <!-- Product form -->
+    <string name="products_new_title">Yangi mahsulot</string>
+    <string name="products_edit_title">Mahsulotni tahrirlash</string>
+    <string name="products_no_permission">Mahsulotlarni o‘zgartirishga ruxsatingiz yo‘q.</string>
+    <string name="products_name">Mahsulot nomi</string>
+    <string name="products_barcode">Shtrix-kod</string>
+    <string name="products_barcode_owner">Bu kod band: %1$s</string>
+    <string name="products_unit">Birlik</string>
+    <string name="products_sell_price">Sotish narxi</string>
+    <string name="products_cost_price">Tannarx</string>
+    <string name="products_cost_short">tannarx %1$s</string>
+    <string name="products_below_cost">Diqqat: sotish narxi tannarxdan past — har bir sotuv zarar keltiradi.</string>
+    <string name="products_initial_stock">Boshlang‘ich qoldiq (%1$s)</string>
+    <string name="products_initial_stock_hint">Keyin qoldiq kirim (xarid) orqali ko‘payadi</string>
+    <string name="products_stock">Ombordagi qoldiq</string>
+    <string name="products_stock_short">Qoldiq</string>
+    <string name="products_stock_variants">Variantlardagi jami qoldiq</string>
+    <string name="products_stock_via_purchase">Qoldiq kirim orqali ko‘paytiriladi, sotuvda kamayadi.</string>
+    <string name="products_parent_leftover">Mahsulotning o‘zida %1$s qolgan — u variantlar orqali sotiladi.</string>
+    <string name="products_low_threshold">Kam qoldiq chegarasi</string>
+    <string name="products_low_threshold_hint">Qoldiq shu songa yetsa yoki undan kam bo‘lsa, “Kam qolgan” deb belgilanadi.</string>
+    <string name="products_low_threshold_hint_default">Bo‘sh qoldirilsa, do‘kon bo‘yicha chegara ishlatiladi: %1$s.</string>
+    <string name="products_pack_size">Karobka hajmi</string>
+    <string name="products_fiscal_section">MXIK, o‘ram kodi, QQS</string>
+    <string name="products_mxik">MXIK (IKPU) kodi</string>
+    <string name="products_mxik_hint">Soliq tizimidagi mahsulot kodi — fiskal chek uchun</string>
+    <string name="products_package_code">O‘ram kodi</string>
+    <string name="products_vat" formatted="false">QQS, %</string>
+    <string name="products_active">Faol</string>
+    <string name="products_active_hint">Kassada sotuvda ko‘rinadi</string>
+    <string name="products_inactive_hint">Nofaol — kassada ko‘rinmaydi</string>
+
+    <!-- Variants -->
+    <string name="products_variants">Variantlar</string>
+    <string name="products_variants_hint">Rang yoki o‘lcham bo‘yicha alohida qoldiq va shtrix-kodga ega variantlar.</string>
+    <string name="products_variants_after_save">Variantlarni mahsulot saqlangandan keyin qo‘shish mumkin.</string>
+    <string name="products_variants_empty">Hali birorta ham variant qo‘shilmagan.</string>
+    <string name="products_variant_add">Variant qo‘shish</string>
+    <string name="products_variant_edit">Variantni tahrirlash</string>
+    <string name="products_variant_label">Variant nomi</string>
+    <string name="products_variant_label_hint">Masalan: Qizil, L</string>
+    <string name="products_variant_price_hint">Bo‘sh — mahsulot narxi bilan bir xil</string>
+    <string name="products_variant_take_parent">Mahsulotdagi %1$s qoldiqni shu variantga o‘tkazish</string>
+    <string name="products_variant_created">Variant qo‘shildi</string>
+    <string name="products_variant_updated">Variant yangilandi</string>
+    <string name="products_same_as_product">Mahsulot narxida</string>
+
+    <!-- Quick entry -->
+    <string name="products_quick_title">Tez kiritish</string>
+    <string name="products_quick_hint">Har bir mahsulot — bitta qator. Enter — keyingi maydon. Shtrix-kod maydonida skaner ishlaydi; yuqoridagi tugma bilan ketma-ket skanerlash mumkin.</string>
+    <string name="products_quick_scan_many">Ketma-ket skanerlash</string>
+    <string name="products_quick_add_rows">+ 5 qator</string>
+    <string name="products_quick_save">Hammasini saqlash</string>
+    <string name="products_quick_filled">%1$d ta to‘ldirilgan qator</string>
+    <string name="products_quick_saved">%1$d ta saqlandi</string>
+    <string name="products_quick_errors">%1$d ta qatorda xato</string>
+    <string name="products_quick_nothing">Jadval bo‘sh</string>
+    <string name="products_quick_remove">Qatorni o‘chirish</string>
+
+    <!-- Errors -->
+    <string name="products_err_fill_required">Barcha majburiy maydonlarni to‘ldiring</string>
+    <string name="products_err_name_formula">Nom =, +, - yoki @ belgisi bilan boshlanmasligi kerak.</string>
+    <string name="products_err_name_too_long">Nom juda uzun (200 belgigacha)</string>
+    <string name="products_err_negative">Narx va miqdor manfiy bo‘lishi mumkin emas</string>
+    <string name="products_err_too_large">Summa yoki miqdor juda katta</string>
+    <string name="products_err_qty_whole">“%1$s” birligidagi miqdor butun son bo‘lishi kerak (masalan 2, 2,5 emas).</string>
+    <string name="products_err_barcode_too_long">Shtrix-kod juda uzun (64 belgigacha)</string>
+    <string name="products_err_barcode_taken">“%1$s” shtrix-kodi boshqa mahsulot yoki variantga berilgan.</string>
+    <string name="products_err_barcode_duplicate">Bu shtrix-kod jadvalda ikki marta</string>
+    <string name="products_err_pack_size">Karobka hajmi 1 yoki undan katta butun son bo‘lishi kerak</string>
+    <string name="products_err_mxik">MXIK va o‘ram kodi faqat raqamlardan iborat bo‘lishi kerak</string>
+    <string name="products_err_vat">QQS stavkasi 0 dan 100 gacha bo‘lishi kerak</string>
+    <string name="products_err_variant_label">Variant nomi noto‘g‘ri (100 belgigacha, =, +, -, @ bilan boshlanmasin)</string>
+    <string name="products_err_price_required">Sotish narxini kiriting</string>
+    <string name="products_err_unit_too_long">Birlik nomi juda uzun (20 belgigacha)</string>
+    <string name="products_err_not_found">Mahsulot topilmadi</string>
+    <string name="products_err_unexpected">Saqlab bo‘lmadi. Qayta urinib ko‘ring.</string>
+
+    <!-- Categories -->
+    <string name="categories_title">Kategoriyalar</string>
+    <string name="categories_add">Kategoriya qo‘shish</string>
+    <string name="categories_rename">Kategoriya nomini o‘zgartirish</string>
+    <string name="categories_name">Kategoriya nomi</string>
+    <string name="categories_empty">Hali kategoriya yo‘q. Mahsulotlarni guruhlash uchun qo‘shing.</string>
+    <string name="categories_saved">Kategoriya saqlandi</string>
+    <string name="categories_err_taken">Bunday nomli kategoriya bor</string>
+
+    <!-- Suppliers -->
+    <string name="suppliers_title">Ta’minotchilar</string>
+    <string name="suppliers_add">Ta’minotchi qo‘shish</string>
+    <string name="suppliers_edit">Ta’minotchini tahrirlash</string>
+    <string name="suppliers_name">Ta’minotchi nomi</string>
+    <string name="suppliers_phone">Telefon</string>
+    <string name="suppliers_address">Manzil</string>
+    <string name="suppliers_note">Izoh</string>
+    <string name="suppliers_empty">Hali birorta ham ta’minotchi qo‘shilmagan.</string>
+    <string name="suppliers_created">Ta’minotchi qo‘shildi</string>
+    <string name="suppliers_updated">Ta’minotchi yangilandi</string>
+    <string name="suppliers_err_phone">Telefon raqami noto‘g‘ri</string>
+
+    <!-- Purchases -->
+    <string name="purchases_title">Kirimlar</string>
+    <string name="purchases_new">Yangi kirim</string>
+    <string name="purchases_new_short">Kirim</string>
+    <string name="purchases_detail_title">Kirim tafsilotlari</string>
+    <string name="purchases_empty">Hali birorta ham kirim qayd etilmagan.</string>
+    <string name="purchases_day_total">%1$d ta · %2$s</string>
+    <string name="purchases_no_supplier">Ta’minotchisiz</string>
+    <string name="purchases_items_count">%1$d ta mahsulot</string>
+    <string name="purchases_search">Mahsulot qidiring yoki skanerlang</string>
+    <string name="purchases_code_unknown">%1$s kodli mahsulot topilmadi</string>
+    <string name="purchases_empty_lines">Mahsulotlarni qidirib yoki skanerlab qo‘shing.</string>
+    <string name="purchases_no_products">Kirim qilish uchun avval mahsulot qo‘shing.</string>
+    <string name="purchases_qty">Miqdor (%1$s)</string>
+    <string name="purchases_unit_cost">Birlik narxi</string>
+    <string name="purchases_add_pack">+1 karobka (%1$s %2$s)</string>
+    <string name="purchases_remove_line">Qatorni o‘chirish</string>
+    <string name="purchases_supplier">Ta’minotchi</string>
+    <string name="purchases_note">Izoh</string>
+    <string name="purchases_update_cost">Tannarxni shu kirim narxiga yangilash</string>
+    <string name="purchases_total">Jami</string>
+    <string name="purchases_save">Kirimni saqlash</string>
+    <string name="purchases_date">Sana</string>
+    <string name="purchases_created_by">Kiritgan</string>
+    <string name="purchases_not_found">Kirim topilmadi</string>
+    <string name="purchases_err_no_items">Kamida bitta mahsulot qo‘shing</string>
+    <string name="purchases_err_invalid_product">Mahsulot topilmadi yoki o‘zgargan</string>
+    <string name="purchases_err_invalid_qty">Miqdor 0 dan katta, narx manfiy bo‘lmasligi kerak</string>
+    <string name="purchases_err_line">“%1$s”: miqdor va narxni tekshiring</string>
+    <string name="purchases_err_variant_required">“%1$s” mahsulotining variantini tanlang</string>
+    <string name="purchases_err_qty_whole">“%1$s” miqdori butun son bo‘lishi kerak</string>
+</resources>

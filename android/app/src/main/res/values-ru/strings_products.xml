@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Products list -->
+    <string name="products_title">Товары</string>
+    <string name="products_search">Название или штрих-код</string>
+    <string name="products_scan">Сканировать</string>
+    <string name="products_add">Добавить товар</string>
+    <string name="products_add_with_barcode">Добавить с кодом %1$s</string>
+    <string name="products_filter_all">Все</string>
+    <string name="products_filter_low">Заканчиваются</string>
+    <string name="products_filter_out">Закончились</string>
+    <string name="products_filter_inactive">Неактивные</string>
+    <string name="products_category">Категория</string>
+    <string name="products_category_all">Все категории</string>
+    <string name="products_category_new">Новая категория…</string>
+    <string name="products_category_none">Без категории</string>
+    <string name="products_count">Товаров: %1$d</string>
+    <string name="products_count_of">Товаров: %1$d из %2$d</string>
+    <string name="products_stock_value">Стоимость склада (по себестоимости)</string>
+    <string name="products_inactive">Неактивен</string>
+    <string name="products_variant_count">вариантов: %1$d</string>
+    <string name="products_empty">Пока не добавлено ни одного товара. Добавьте много товаров сразу через быстрый ввод.</string>
+    <string name="products_not_found">Ничего не найдено</string>
+
+    <!-- Product form -->
+    <string name="products_new_title">Новый товар</string>
+    <string name="products_edit_title">Редактировать товар</string>
+    <string name="products_no_permission">У вас нет права изменять товары.</string>
+    <string name="products_name">Название товара</string>
+    <string name="products_barcode">Штрих-код</string>
+    <string name="products_barcode_owner">Код занят: %1$s</string>
+    <string name="products_unit">Единица</string>
+    <string name="products_sell_price">Цена продажи</string>
+    <string name="products_cost_price">Себестоимость</string>
+    <string name="products_cost_short">себест. %1$s</string>
+    <string name="products_below_cost">Внимание: цена продажи ниже себестоимости — каждая продажа будет убыточной.</string>
+    <string name="products_initial_stock">Начальный остаток (%1$s)</string>
+    <string name="products_initial_stock_hint">Дальше остаток пополняется через приход (закупку)</string>
+    <string name="products_stock">Остаток на складе</string>
+    <string name="products_stock_short">Остаток</string>
+    <string name="products_stock_variants">Общий остаток вариантов</string>
+    <string name="products_stock_via_purchase">Остаток пополняется приходом и уменьшается продажами.</string>
+    <string name="products_parent_leftover">У самого товара осталось %1$s — он продаётся через варианты.</string>
+    <string name="products_low_threshold">Порог низкого остатка</string>
+    <string name="products_low_threshold_hint">Когда остаток станет меньше или равен этому числу, товар отметится как «Заканчивается».</string>
+    <string name="products_low_threshold_hint_default">Если пусто — используется порог магазина: %1$s.</string>
+    <string name="products_pack_size">Размер упаковки</string>
+    <string name="products_fiscal_section">МХИК, код упаковки, НДС</string>
+    <string name="products_mxik">Код МХИК (ИКПУ)</string>
+    <string name="products_mxik_hint">Код товара в налоговой системе — для фискального чека</string>
+    <string name="products_package_code">Код упаковки</string>
+    <string name="products_vat" formatted="false">НДС, %</string>
+    <string name="products_active">Активен</string>
+    <string name="products_active_hint">Виден в кассе при продаже</string>
+    <string name="products_inactive_hint">Неактивен — не виден в кассе</string>
+
+    <!-- Variants -->
+    <string name="products_variants">Варианты</string>
+    <string name="products_variants_hint">Варианты по цвету или размеру — у каждого свой остаток и штрих-код.</string>
+    <string name="products_variants_after_save">Варианты можно добавить после сохранения товара.</string>
+    <string name="products_variants_empty">Пока не добавлено ни одного варианта.</string>
+    <string name="products_variant_add">Добавить вариант</string>
+    <string name="products_variant_edit">Редактировать вариант</string>
+    <string name="products_variant_label">Название варианта</string>
+    <string name="products_variant_label_hint">Например: Красный, L</string>
+    <string name="products_variant_price_hint">Пусто — как у товара</string>
+    <string name="products_variant_take_parent">Перенести остаток товара (%1$s) в этот вариант</string>
+    <string name="products_variant_created">Вариант добавлен</string>
+    <string name="products_variant_updated">Вариант обновлён</string>
+    <string name="products_same_as_product">Цена товара</string>
+
+    <!-- Quick entry -->
+    <string name="products_quick_title">Быстрый ввод</string>
+    <string name="products_quick_hint">Один товар — одна строка. Enter — следующее поле. В поле штрих-кода работает сканер; кнопкой сверху можно сканировать подряд.</string>
+    <string name="products_quick_scan_many">Сканировать подряд</string>
+    <string name="products_quick_add_rows">+ 5 строк</string>
+    <string name="products_quick_save">Сохранить всё</string>
+    <string name="products_quick_filled">Заполнено строк: %1$d</string>
+    <string name="products_quick_saved">Сохранено: %1$d</string>
+    <string name="products_quick_errors">ошибок в строках: %1$d</string>
+    <string name="products_quick_nothing">Таблица пуста</string>
+    <string name="products_quick_remove">Удалить строку</string>
+
+    <!-- Errors -->
+    <string name="products_err_fill_required">Заполните все обязательные поля</string>
+    <string name="products_err_name_formula">Название не должно начинаться с символов =, +, - или @.</string>
+    <string name="products_err_name_too_long">Название слишком длинное (до 200 символов)</string>
+    <string name="products_err_negative">Цена и количество не могут быть отрицательными</string>
+    <string name="products_err_too_large">Слишком большая сумма или количество</string>
+    <string name="products_err_qty_whole">Количество в единице «%1$s» должно быть целым (например 2, а не 2,5).</string>
+    <string name="products_err_barcode_too_long">Штрих-код слишком длинный (до 64 символов)</string>
+    <string name="products_err_barcode_taken">Штрих-код «%1$s» уже присвоен другому товару или варианту.</string>
+    <string name="products_err_barcode_duplicate">Этот штрих-код в таблице дважды</string>
+    <string name="products_err_pack_size">Размер упаковки должен быть целым числом от 1</string>
+    <string name="products_err_mxik">МХИК и код упаковки — только цифры</string>
+    <string name="products_err_vat">Ставка НДС должна быть от 0 до 100</string>
+    <string name="products_err_variant_label">Неверное название варианта (до 100 символов, не с =, +, -, @)</string>
+    <string name="products_err_price_required">Укажите цену продажи</string>
+    <string name="products_err_unit_too_long">Слишком длинная единица (до 20 символов)</string>
+    <string name="products_err_not_found">Товар не найден</string>
+    <string name="products_err_unexpected">Не удалось сохранить. Попробуйте снова.</string>
+
+    <!-- Categories -->
+    <string name="categories_title">Категории</string>
+    <string name="categories_add">Добавить категорию</string>
+    <string name="categories_rename">Переименовать категорию</string>
+    <string name="categories_name">Название категории</string>
+    <string name="categories_empty">Категорий пока нет. Добавьте, чтобы группировать товары.</string>
+    <string name="categories_saved">Категория сохранена</string>
+    <string name="categories_err_taken">Категория с таким названием уже есть</string>
+
+    <!-- Suppliers -->
+    <string name="suppliers_title">Поставщики</string>
+    <string name="suppliers_add">Добавить поставщика</string>
+    <string name="suppliers_edit">Редактировать поставщика</string>
+    <string name="suppliers_name">Название поставщика</string>
+    <string name="suppliers_phone">Телефон</string>
+    <string name="suppliers_address">Адрес</string>
+    <string name="suppliers_note">Примечание</string>
+    <string name="suppliers_empty">Пока не добавлено ни одного поставщика.</string>
+    <string name="suppliers_created">Поставщик добавлен</string>
+    <string name="suppliers_updated">Поставщик обновлён</string>
+    <string name="suppliers_err_phone">Неверный номер телефона</string>
+
+    <!-- Purchases -->
+    <string name="purchases_title">Приходы</string>
+    <string name="purchases_new">Новый приход</string>
+    <string name="purchases_new_short">Приход</string>
+    <string name="purchases_detail_title">Детали прихода</string>
+    <string name="purchases_empty">Пока не оформлено ни одного прихода.</string>
+    <string name="purchases_day_total">%1$d шт. · %2$s</string>
+    <string name="purchases_no_supplier">Без поставщика</string>
+    <string name="purchases_items_count">Товаров: %1$d</string>
+    <string name="purchases_search">Найдите или отсканируйте товар</string>
+    <string name="purchases_code_unknown">Товар с кодом %1$s не найден</string>
+    <string name="purchases_empty_lines">Добавьте товары поиском или сканером.</string>
+    <string name="purchases_no_products">Сначала добавьте товар, чтобы оформить приход.</string>
+    <string name="purchases_qty">Количество (%1$s)</string>
+    <string name="purchases_unit_cost">Цена за единицу</string>
+    <string name="purchases_add_pack">+1 упаковка (%1$s %2$s)</string>
+    <string name="purchases_remove_line">Удалить строку</string>
+    <string name="purchases_supplier">Поставщик</string>
+    <string name="purchases_note">Примечание</string>
+    <string name="purchases_update_cost">Обновить себестоимость по цене этого прихода</string>
+    <string name="purchases_total">Итого</string>
+    <string name="purchases_save">Сохранить приход</string>
+    <string name="purchases_date">Дата</string>
+    <string name="purchases_created_by">Оформил</string>
+    <string name="purchases_not_found">Приход не найден</string>
+    <string name="purchases_err_no_items">Добавьте хотя бы один товар</string>
+    <string name="purchases_err_invalid_product">Товар не найден или изменён</string>
+    <string name="purchases_err_invalid_qty">Количество должно быть больше 0, цена — не отрицательной</string>
+    <string name="purchases_err_line">«%1$s»: проверьте количество и цену</string>
+    <string name="purchases_err_variant_required">Выберите вариант товара «%1$s»</string>
+    <string name="purchases_err_qty_whole">Количество «%1$s» должно быть целым</string>
+</resources>
