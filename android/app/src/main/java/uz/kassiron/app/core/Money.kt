@@ -5,7 +5,11 @@ import kotlin.math.round
 
 /** Amounts as the website shows them: "15 000 so'm", "1 250,5 so'm". */
 object Money {
-    fun round2(v: Double): Double = round(v * 100) / 100
+    /** Like PHP's round($v, 2) (half away from zero on the decimal value: 1.005 -> 1.01), so totals match the server. */
+    fun round2(v: Double): Double {
+        if (!v.isFinite()) return v
+        return java.math.BigDecimal(v.toString()).setScale(2, java.math.RoundingMode.HALF_UP).toDouble()
+    }
 
     fun format(v: Double, withCurrency: Boolean = true): String {
         val r = round2(v)
