@@ -1427,3 +1427,4 @@ img.logo-for-dark-theme { display: none; }
 }
 .social-connect { margin-top: 12px; flex-wrap: wrap; }
 .subscription-actions .btn:not(.btn-primary) { border: 1px solid var(--border); }
+.android-download { display: block; margin-top: 16px; text-align: center; font-weight: 700; color: var(--primary-ink); }

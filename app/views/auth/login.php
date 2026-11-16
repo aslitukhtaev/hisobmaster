@@ -45,4 +45,16 @@
         </label>
         <button type="submit" class="btn btn-primary btn-block"><?= e(t('login_button')) ?></button>
     </form>
+    <a class="android-download" href="<?= e(ANDROID_DOWNLOAD_URL) ?>" download data-android-only hidden><?= e(t('lp_android_download')) ?> ↓</a>
 </div>
+<script nonce="<?= e(csp_nonce()) ?>">
+    // Only on an Android phone's browser, not inside the app itself.
+    var inApp = /[?&]source=android/.test(location.search) || document.referrer.indexOf('android-app://') === 0;
+    try {
+        if (inApp) { localStorage.setItem('kassiron-android-app', '1'); }
+        inApp = inApp || localStorage.getItem('kassiron-android-app') === '1';
+    } catch (e) {}
+    if (/Android/i.test(navigator.userAgent) && !inApp && !window.matchMedia('(display-mode: standalone)').matches) {
+        document.querySelector('[data-android-only]').hidden = false;
+    }
+</script>
