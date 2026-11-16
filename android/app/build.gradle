@@ -1,13 +1,15 @@
-// KassirON for Android: a Trusted Web Activity — the site (https://kassiron.uz)
-// full screen in Chrome's engine, with no browser bar once
-// /.well-known/assetlinks.json names this app's signing key. Chrome keeps
-// the site's cache and service worker, Google sign-in works (a WebView
-// would be refused), and the app itself is ~1 MB.
+// KassirON for Android — a native app (Kotlin + Jetpack Compose) that works
+// fully offline: the shop's data lives in a local SQLite database and is kept
+// in sync with the server by the same protocol the desktop app uses
+// (POST /api/device/activate, /api/sync/push, /api/sync/pull). See
+// android/ARCHITECTURE.md.
 //
 // Release signing: keystore.properties (storeFile, storePassword, keyAlias,
 // keyPassword) — kept out of git, see android/README.md.
 plugins {
     id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.plugin.compose'
 }
 
 def keystoreProps = new Properties()
@@ -16,26 +18,17 @@ if (keystorePropsFile.exists()) {
     keystorePropsFile.withInputStream { keystoreProps.load(it) }
 }
 
-def siteHost = 'kassiron.uz'
-
 android {
     namespace 'uz.kassiron.app'
     compileSdk 35
 
     defaultConfig {
         applicationId 'uz.kassiron.app'
-        minSdk 21
+        minSdk 24
         targetSdk 35
-        versionCode 1
-        versionName '1.0.0'
-
-        manifestPlaceholders = [
-            hostName: siteHost,
-            defaultUrl: "https://${siteHost}/login?source=android",
-            launcherName: 'KassirON',
-        ]
-        resValue 'string', 'asset_statements',
-            '[{\\"relation\\":[\\"delegate_permission/common.handle_all_urls\\"],\\"target\\":{\\"namespace\\":\\"web\\",\\"site\\":\\"https://' + siteHost + '\\"}}]'
+        versionCode 2
+        versionName '2.0.0'
+        buildConfigField 'String', 'SERVER_URL', '"https://kassiron.uz"'
     }
 
     signingConfigs {
@@ -53,19 +46,59 @@ android {
         release {
             minifyEnabled true
             shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             if (keystoreProps['storeFile']) {
                 signingConfig signingConfigs.release
             }
         }
+        debug {
+            applicationIdSuffix '.debug'
+            // The emulator reaches the PC's localhost as 10.0.2.2.
+            buildConfigField 'String', 'SERVER_URL', '"' + (System.getenv('KASSIRON_DEBUG_SERVER') ?: 'https://kassiron.uz') + '"'
+        }
+    }
+
+    buildFeatures {
+        compose true
+        buildConfig true
     }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
 }
 
 dependencies {
-    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+    def composeBom = platform('androidx.compose:compose-bom:2024.12.01')
+    implementation composeBom
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.compose.material:material-icons-extended'
+    implementation 'androidx.compose.ui:ui-tooling-preview'
+    debugImplementation 'androidx.compose.ui:ui-tooling'
+
+    implementation 'androidx.core:core-ktx:1.15.0'
+    implementation 'androidx.activity:activity-compose:1.9.3'
+    implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.8.7'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7'
+    implementation 'androidx.navigation:navigation-compose:2.8.5'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0'
+
+    // Background sync.
+    implementation 'androidx.work:work-runtime-ktx:2.10.0'
+    // HTTP.
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    // Local sign-in: users' password hashes (PHP password_hash, bcrypt) come
+    // down with the shop's data, so a cashier signs in offline.
+    implementation 'org.mindrot:jbcrypt:0.4'
+
+    // Barcode scanning with the camera.
+    implementation 'androidx.camera:camera-camera2:1.4.1'
+    implementation 'androidx.camera:camera-lifecycle:1.4.1'
+    implementation 'androidx.camera:camera-view:1.4.1'
+    implementation 'com.google.mlkit:barcode-scanning:17.3.0'
 }

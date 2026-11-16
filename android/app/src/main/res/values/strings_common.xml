@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nav_till">Kassa</string>
+    <string name="nav_sales">Sotuvlar</string>
+    <string name="nav_products">Mahsulotlar</string>
+    <string name="nav_customers">Qarzdorlar</string>
+    <string name="nav_more">Ko‘proq</string>
+    <string name="common_save">Saqlash</string>
+    <string name="common_cancel">Bekor qilish</string>
+    <string name="common_delete">O‘chirish</string>
+    <string name="common_back">Orqaga</string>
+    <string name="common_search">Qidirish</string>
+    <string name="common_yes">Ha</string>
+    <string name="common_no">Yo‘q</string>
+    <string name="common_required">Majburiy maydonlarni to‘ldiring</string>
+</resources>

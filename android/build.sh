@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Builds the signed release APK + AAB of the Android app.
+# Builds the signed release APK + AAB of the Android app
+# (`bash build.sh debug`: a debug APK only — faster, for checking a change).
 #
 # The Android Gradle plugin refuses project paths with non-ASCII characters
 # (this repo lives under "Рабочий стол"), so the project is copied to an
@@ -19,7 +20,7 @@ fi
 sdk="${ANDROID_HOME:-${LOCALAPPDATA:-}/Android/Sdk}"
 
 mkdir -p "$work/src"
-rm -rf "$work/src/app/src"
+rm -rf "$work/src/app/src" "$work/src/app/build.gradle"
 cp -r "$here/app" "$here/build.gradle" "$here/settings.gradle" "$here/gradle.properties" "$here/gradle" "$here/gradlew" "$here/gradlew.bat" "$work/src/"
 if command -v cygpath >/dev/null 2>&1; then
     echo "sdk.dir=$(cygpath -m "$sdk")" > "$work/src/local.properties"
@@ -30,9 +31,14 @@ else
 fi
 
 cd "$work/src"
-./gradlew --no-daemon -q assembleRelease bundleRelease
-
 mkdir -p "$here/dist"
+if [ "${1:-}" = "debug" ]; then
+    ./gradlew -q assembleDebug
+    cp app/build/outputs/apk/debug/app-debug.apk "$here/dist/KassirON-debug.apk"
+    echo "Built: $here/dist/KassirON-debug.apk"
+    exit 0
+fi
+./gradlew -q assembleRelease bundleRelease
 cp app/build/outputs/apk/release/app-release.apk "$here/dist/KassirON.apk"
 cp app/build/outputs/bundle/release/app-release.aab "$here/dist/KassirON.aab"
 echo "Built: $here/dist/KassirON.apk and KassirON.aab"

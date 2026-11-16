@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nav_till">Касса</string>
+    <string name="nav_sales">Продажи</string>
+    <string name="nav_products">Товары</string>
+    <string name="nav_customers">Должники</string>
+    <string name="nav_more">Ещё</string>
+    <string name="common_save">Сохранить</string>
+    <string name="common_cancel">Отмена</string>
+    <string name="common_delete">Удалить</string>
+    <string name="common_back">Назад</string>
+    <string name="common_search">Поиск</string>
+    <string name="common_yes">Да</string>
+    <string name="common_no">Нет</string>
+    <string name="common_required">Заполните обязательные поля</string>
+</resources>
