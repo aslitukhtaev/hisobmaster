@@ -1,4 +1,8 @@
-<?php $pageTitle = t('shift_report_title'); ?>
+<?php
+$pageTitle = t('shift_report_title');
+// QR payments only show up for a day that had some.
+$hasQr = abs((float) $totals['qr']) > 0.004 || abs((float) $totals['refunds_qr']) > 0.004;
+?>
 <section class="page-head page-head-row">
     <div>
         <h1><?= e(t('shift_report_title')) ?></h1>
@@ -16,10 +20,12 @@
         <div class="stat-value"><?= money((float) $totals['karta']) ?></div>
         <div class="stat-label"><?= e(t('card_sales_label')) ?></div>
     </div>
+    <?php if ($hasQr): ?>
     <div class="stat-tile">
         <div class="stat-value"><?= money((float) $totals['qr']) ?></div>
         <div class="stat-label"><?= e(t('qr_sales_label')) ?></div>
     </div>
+    <?php endif; ?>
     <div class="stat-tile">
         <div class="stat-value"><?= money((float) $totals['qarz']) ?></div>
         <div class="stat-label"><?= e(t('debt_issued_label')) ?></div>
@@ -53,7 +59,7 @@
                         <th><?= e(t('cashier')) ?></th>
                         <th><?= e(t('payment_naqd')) ?></th>
                         <th><?= e(t('payment_karta')) ?></th>
-                        <th><?= e(t('payment_qr')) ?></th>
+                        <?php if ($hasQr): ?><th><?= e(t('payment_qr')) ?></th><?php endif; ?>
                         <th><?= e(t('payment_qarz')) ?></th>
                         <th><?= e(t('refunds_total_label')) ?></th>
                         <th><?= e(t('cash_refunds_label')) ?></th>
@@ -66,7 +72,7 @@
                         <td><?= e($row['cashier_name']) ?></td>
                         <td data-label="<?= e(t('payment_naqd')) ?>"><?= money((float) $row['naqd']) ?></td>
                         <td data-label="<?= e(t('payment_karta')) ?>"><?= money((float) $row['karta']) ?></td>
-                        <td data-label="<?= e(t('payment_qr')) ?>"><?= money((float) $row['qr']) ?></td>
+                        <?php if ($hasQr): ?><td data-label="<?= e(t('payment_qr')) ?>"><?= money((float) $row['qr']) ?></td><?php endif; ?>
                         <td data-label="<?= e(t('payment_qarz')) ?>"><?= money((float) $row['qarz']) ?></td>
                         <td data-label="<?= e(t('refunds_total_label')) ?>"><?= money((float) $row['refunds']) ?></td>
                         <td data-label="<?= e(t('cash_refunds_label')) ?>"><?= money((float) $row['refunds_naqd']) ?></td>

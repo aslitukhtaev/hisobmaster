@@ -387,7 +387,7 @@ return [
     'net_cash_short_label' => 'Наличные в кассе',
     'cash_refunds_label' => 'Возврат наличными',
     'revenue_net_of_refunds' => 'за вычетом возвратов: :amount',
-    'refunds_split_line' => 'наличные :naqd · карта :karta · QR :qr · долг :qarz',
+    'refunds_split_line' => 'наличные :naqd · карта :karta · долг :qarz',
     'per_cashier_breakdown_title' => 'Разбивка по кассирам',
 
     // Low-stock alerts

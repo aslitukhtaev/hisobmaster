@@ -8,6 +8,11 @@
 
 return [
     [
+        'date' => '2026-11-16',
+        'uz' => "Kassadan QR to'lov tugmasi olib tashlandi: Naqd, Karta, Qarzga.",
+        'ru' => 'Из кассы убрана кнопка оплаты QR: наличные, карта, в долг.',
+    ],
+    [
         'date' => '2026-11-15',
         'uz' => "POS rejimi qayta qurildi: kassa butun ekranda, menyusiz — faqat qidiruv, mahsulotlar, savat va to'lov. Chiqish uchun \"Menyu\" tugmasi.",
         'ru' => 'Режим POS переделан: касса на весь экран, без меню — только поиск, товары, корзина и оплата. Выход — кнопка «Меню».',

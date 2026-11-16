@@ -55,7 +55,7 @@ $expenseTotal = array_sum(array_column($expenseBreakdown, 'total')) ?: 1;
     <div class="card">
         <h2><?= e(t('payment_breakdown_title')) ?></h2>
         <div class="hbar-list">
-            <?php foreach (['naqd', 'karta', 'qr', 'qarz'] as $type):
+            <?php foreach (array_filter(['naqd', 'karta', 'qr', 'qarz'], static fn ($t) => $t !== 'qr' || abs((float) $paymentBreakdown['qr']) > 0.004) as $type):
                 $val = $paymentBreakdown[$type];
                 $pct = $paymentTotal > 0 ? round($val / $paymentTotal * 100) : 0;
             ?>

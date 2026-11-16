@@ -387,7 +387,7 @@ return [
     'net_cash_short_label' => 'Kassadagi naqd',
     'cash_refunds_label' => 'Naqd qaytarish',
     'revenue_net_of_refunds' => ':amount qaytarishlar ayirilgan',
-    'refunds_split_line' => 'naqd :naqd · karta :karta · QR :qr · qarz :qarz',
+    'refunds_split_line' => 'naqd :naqd · karta :karta · qarz :qarz',
     'per_cashier_breakdown_title' => "Kassirlar bo'yicha taqsimot",
 
     // Low-stock alerts

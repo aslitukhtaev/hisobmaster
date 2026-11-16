@@ -123,11 +123,10 @@ $posIcon = static function (string $name): string {
             <div class="payment-types">
                 <button type="button" class="payment-btn active" data-preset="naqd"><?= $posIcon('cash') ?><span><?= e(t('payment_naqd')) ?></span></button>
                 <button type="button" class="payment-btn" data-preset="karta"><?= $posIcon('card') ?><span><?= e(t('payment_karta')) ?></span></button>
-                <button type="button" class="payment-btn" data-preset="qr"><?= $posIcon('qr') ?><span><?= e(t('payment_qr')) ?></span></button>
                 <button type="button" class="payment-btn" data-preset="qarz"><?= $posIcon('debt') ?><span><?= e(t('payment_qarz')) ?></span></button>
             </div>
 
-            <div class="field-row field-row-3">
+            <div class="field-row pay-amounts">
                 <label class="field">
                     <span><?= e(t('payment_naqd')) ?></span>
                     <input type="number" id="naqd-amount-input" min="0" max="<?= MONEY_MAX ?>" step="0.01" value="0" inputmode="decimal">
@@ -135,10 +134,6 @@ $posIcon = static function (string $name): string {
                 <label class="field">
                     <span><?= e(t('payment_karta')) ?></span>
                     <input type="number" id="karta-amount-input" min="0" max="<?= MONEY_MAX ?>" step="0.01" value="0" inputmode="decimal">
-                </label>
-                <label class="field">
-                    <span><?= e(t('payment_qr')) ?></span>
-                    <input type="number" id="qr-amount-input" min="0" max="<?= MONEY_MAX ?>" step="0.01" value="0" inputmode="decimal">
                 </label>
             </div>
             <div class="cart-change-row" id="change-row" hidden>
@@ -148,6 +143,7 @@ $posIcon = static function (string $name): string {
             <input type="hidden" name="naqd_amount" id="naqd-amount-field" value="0">
             <input type="hidden" name="karta_amount" id="karta-amount-field" value="0">
             <input type="hidden" name="qr_amount" id="qr-amount-field" value="0">
+            <input type="hidden" id="qr-amount-input" value="0">
 
             <div id="debt-fields" class="stack" style="display:none;">
                 <label class="field">
