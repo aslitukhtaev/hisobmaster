@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The maskable icon's 80% safe zone fills the adaptive icon's visible 72 of 108dp. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_launcher_maskable"
+    android:inset="8.3%" />

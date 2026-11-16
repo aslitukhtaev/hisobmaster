@@ -14,6 +14,7 @@ use App\Controllers\EmployeeController;
 use App\Controllers\ExpenseController;
 use App\Controllers\HelpController;
 use App\Controllers\SettingsController;
+use App\Controllers\SignupController;
 use App\Controllers\QuickEntryController;
 use App\Controllers\HomeController;
 use App\Controllers\JoinController;
@@ -34,6 +35,17 @@ $router->post('/login', [AuthController::class, 'login'], ['guest', 'csrf']);
 $router->post('/login/telegram', [AuthController::class, 'telegram'], ['guest', 'csrf']);
 $router->post('/logout', [AuthController::class, 'logout'], ['auth', 'csrf']);
 
+// Sign in / sign up with Google or Telegram (SignupController). No guest
+// middleware: signed in, the same flow links the account in the profile.
+$router->get('/auth/google', [SignupController::class, 'googleStart']);
+$router->get('/auth/google/callback', [SignupController::class, 'googleCallback']);
+$router->get('/auth/telegram', [SignupController::class, 'telegramStart']);
+$router->get('/auth/telegram/callback', [SignupController::class, 'telegramCallback']);
+$router->post('/auth/telegram', [SignupController::class, 'telegramVerify'], ['csrf']);
+$router->get('/signup', [SignupController::class, 'form'], ['guest']);
+$router->post('/signup', [SignupController::class, 'store'], ['guest', 'csrf']);
+$router->get('/subscription', [SignupController::class, 'subscription'], ['auth']);
+
 $router->post('/lang/{lang}', [LocaleController::class, 'switch']);
 
 $router->get('/', [HomeController::class, 'index']);
@@ -47,6 +59,7 @@ $router->post('/profile', [ProfileController::class, 'update'], ['auth', 'web_on
 $router->post('/profile/shop', [ProfileController::class, 'updateShop'], ['auth', 'role:owner', 'web_only', 'csrf']);
 $router->post('/profile/devices/sign-out-others', [ProfileController::class, 'signOutOthers'], ['auth', 'web_only', 'csrf']);
 $router->post('/profile/devices/{id}/remove', [ProfileController::class, 'removeDevice'], ['auth', 'web_only', 'csrf']);
+$router->post('/profile/identities/{id}/remove', [ProfileController::class, 'removeIdentity'], ['auth', 'web_only', 'csrf']);
 $router->post('/profile/telegram/{id}/remove', [ProfileController::class, 'removeTelegram'], ['auth', 'web_only', 'csrf']);
 
 $router->get('/superadmin/shops', [SuperAdminController::class, 'shops'], ['auth', 'role:super_admin']);
@@ -60,6 +73,7 @@ $router->get('/superadmin/shops/create', [SuperAdminController::class, 'createFo
 $router->post('/superadmin/shops', [SuperAdminController::class, 'store'], ['auth', 'role:super_admin', 'csrf']);
 $router->get('/superadmin/shops/{id}/created', [SuperAdminController::class, 'created'], ['auth', 'role:super_admin']);
 $router->post('/superadmin/shops/{id}/toggle-status', [SuperAdminController::class, 'toggleStatus'], ['auth', 'role:super_admin', 'csrf']);
+$router->post('/superadmin/shops/{id}/access', [SuperAdminController::class, 'updateAccess'], ['auth', 'role:super_admin', 'csrf']);
 $router->post('/superadmin/shops/{id}/reset-password', [SuperAdminController::class, 'resetPassword'], ['auth', 'role:super_admin', 'csrf']);
 $router->get('/superadmin/shops/{id}/devices', [SuperAdminController::class, 'devices'], ['auth', 'role:super_admin']);
 $router->post('/superadmin/shops/{id}/devices/{deviceId}/revoke', [SuperAdminController::class, 'revokeDevice'], ['auth', 'role:super_admin', 'csrf']);

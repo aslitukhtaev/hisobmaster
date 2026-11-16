@@ -8,6 +8,7 @@ use App\Core\Auth;
 use App\Core\Request;
 use App\Core\View;
 use App\Desktop\Desktop;
+use App\Middleware\AuthMiddleware;
 
 class HomeController
 {
@@ -19,6 +20,12 @@ class HomeController
     public function index(Request $request): void
     {
         if (Auth::check()) {
+            // Not behind the auth middleware (visitors see the landing page),
+            // so the expired-trial check is asked for here.
+            $gate = AuthMiddleware::handle($request);
+            if ($gate !== null) {
+                redirect($gate);
+            }
             // The desktop app starting up (no page led here) opens the till;
             // the "Bosh sahifa" link inside the app still shows the dashboard.
             if (Desktop::enabled() && empty($_SERVER['HTTP_REFERER']) && start_path() !== '/') {

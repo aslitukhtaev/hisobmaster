@@ -1,0 +1,71 @@
+// KassirON for Android: a Trusted Web Activity — the site (https://kassiron.uz)
+// full screen in Chrome's engine, with no browser bar once
+// /.well-known/assetlinks.json names this app's signing key. Chrome keeps
+// the site's cache and service worker, Google sign-in works (a WebView
+// would be refused), and the app itself is ~1 MB.
+//
+// Release signing: keystore.properties (storeFile, storePassword, keyAlias,
+// keyPassword) — kept out of git, see android/README.md.
+plugins {
+    id 'com.android.application'
+}
+
+def keystoreProps = new Properties()
+def keystorePropsFile = file(System.getenv('KASSIRON_KEYSTORE_PROPERTIES') ?: "${rootDir}/keystore.properties")
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.withInputStream { keystoreProps.load(it) }
+}
+
+def siteHost = 'kassiron.uz'
+
+android {
+    namespace 'uz.kassiron.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'uz.kassiron.app'
+        minSdk 21
+        targetSdk 35
+        versionCode 1
+        versionName '1.0.0'
+
+        manifestPlaceholders = [
+            hostName: siteHost,
+            defaultUrl: "https://${siteHost}/login?source=android",
+            launcherName: 'KassirON',
+        ]
+        resValue 'string', 'asset_statements',
+            '[{\\"relation\\":[\\"delegate_permission/common.handle_all_urls\\"],\\"target\\":{\\"namespace\\":\\"web\\",\\"site\\":\\"https://' + siteHost + '\\"}}]'
+    }
+
+    signingConfigs {
+        release {
+            if (keystoreProps['storeFile']) {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            if (keystoreProps['storeFile']) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}

@@ -148,7 +148,7 @@ class SuperAdminController
             'address' => $address !== '' ? $address : null,
         ]);
 
-        $login = $this->generateLogin($ownerName !== '' ? $ownerName : $name);
+        $login = self::generateLogin($ownerName !== '' ? $ownerName : $name);
         $password = $this->generatePassword();
 
         User::create([
@@ -226,6 +226,18 @@ class SuperAdminController
         redirect("/superadmin/shops/{$id}/devices");
     }
 
+    /** "+30 kun" (a paid month, from the later of now and the current end) or "Cheksiz". */
+    public function updateAccess(Request $request, string $id): void
+    {
+        if (Shop::find((int) $id)) {
+            $extend = (string) $request->input('extend', '');
+            Shop::extendAccess((int) $id, $extend === 'unlimited' ? null : 30);
+            flash('success', t('shop_access_updated'));
+        }
+
+        redirect('/superadmin/shops');
+    }
+
     public function resetPassword(Request $request, string $id): void
     {
         $owner = User::ownerByShop((int) $id);
@@ -268,9 +280,9 @@ class SuperAdminController
      * do'konlarning loginini oldindan taxmin qilib bo'lmaydi. Band bo'lsa, raqam qismini
      * qayta generatsiya qilib, bir necha marta urinib ko'ramiz.
      */
-    private function generateLogin(string $source): string
+    public static function generateLogin(string $source): string
     {
-        $base = $this->slugify($source);
+        $base = self::slugify($source);
 
         if ($base === '') {
             $base = 'dokon';
@@ -293,7 +305,7 @@ class SuperAdminController
     /**
      * Kirill/o'zbekcha maxsus harflarni lotin/ASCII'ga o'giradi va faqat [a-z0-9] qoldiradi.
      */
-    private function slugify(string $text): string
+    private static function slugify(string $text): string
     {
         $map = [
             'а' => 'a', 'б' => 'b', 'в' => 'v', 'г' => 'g', 'д' => 'd', 'е' => 'e', 'ё' => 'e',

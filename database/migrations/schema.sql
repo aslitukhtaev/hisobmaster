@@ -467,3 +467,20 @@ CREATE TABLE IF NOT EXISTS telegram_links (
     last_used_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_telegram_links_user ON telegram_links(user_id);
+
+-- Sign-in with Google or Telegram (App\Core\SocialAuth): the account at the
+-- provider (`subject`: Google's "sub", the Telegram user id) and the user it
+-- signs in. Unlike telegram_links it is not removed on sign-out — for a shop
+-- that signed up this way it is the only way in. Local to each database.
+CREATE TABLE IF NOT EXISTS auth_identities (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    provider TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    email TEXT,
+    display_name TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_used_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (provider, subject)
+);
+CREATE INDEX IF NOT EXISTS idx_auth_identities_user ON auth_identities(user_id);

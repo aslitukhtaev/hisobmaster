@@ -121,7 +121,8 @@ final class DeviceService
         $shop = Database::connect()->prepare('SELECT * FROM shops WHERE id = ?');
         $shop->execute([$device['shop_id']]);
         $shop = $shop->fetch();
-        if (!$shop || $shop['status'] !== 'active') {
+        // A trial (or paid period) that ran out stops the computers too.
+        if (!$shop || $shop['status'] !== 'active' || \App\Models\Shop::accessExpired($shop)) {
             throw new RuntimeException('shop_blocked');
         }
 

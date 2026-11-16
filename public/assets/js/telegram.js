@@ -73,6 +73,13 @@
                     if (result && result.ok) {
                         window.location.replace(result.redirect || '/');
                     } else if (result !== null) {
+                        // A Telegram account seen for the first time: its
+                        // "Telegram bilan kirish" opens a new shop right here.
+                        if (result.signup) {
+                            Array.prototype.forEach.call(document.querySelectorAll('.js-telegram-login'), function (link) {
+                                link.href = result.signup;
+                            });
+                        }
                         showForm();
                     }
                 })

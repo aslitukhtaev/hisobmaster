@@ -96,7 +96,7 @@ $roleLabel = match ($user['role'] ?? '') {
 
 $shopName = '';
 if (!Auth::isSuperAdmin() && Auth::shopId()) {
-    $shop = Shop::find((int) Auth::shopId());
+    $shop = current_shop();
     $shopName = $shop['name'] ?? '';
 }
 ?>
@@ -127,7 +127,7 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
     <script type="speculationrules" nonce="<?= e(csp_nonce()) ?>">
     {"prefetch": [{"where": {"and": [
         {"href_matches": "/*"},
-        {"not": {"href_matches": ["/logout", "/*export*", "/*/print", "/superadmin/backups/*", "/desktop/*"]}},
+        {"not": {"href_matches": ["/logout", "/*export*", "/*/print", "/superadmin/backups/*", "/desktop/*", "/auth/*"]}},
         {"not": {"selector_matches": "[data-no-prefetch]"}}
     ]}, "eagerness": "moderate"}]}
     </script>
@@ -184,6 +184,16 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
             <main class="content">
                 <?php if (App\Desktop\Desktop::enabled()) { require BASE_PATH . '/app/views/desktop/_update-banner.php'; require BASE_PATH . '/app/views/desktop/_status-bar.php'; } ?>
                 <?php require BASE_PATH . '/app/views/partials/flash.php'; ?>
+                <?php
+                $trialShop = Auth::isOwner() && !App\Desktop\Desktop::enabled() && ($pageKind ?? '') !== 'till' ? current_shop() : null;
+                $trialDaysLeft = $trialShop !== null ? Shop::daysLeft($trialShop) : null;
+                if ($trialDaysLeft !== null && $trialDaysLeft <= 7 && !Shop::accessExpired($trialShop) && ($_SERVER['REQUEST_URI'] ?? '') !== '/subscription'):
+                ?>
+                    <a class="trial-banner<?= $trialDaysLeft <= 2 ? ' is-urgent' : '' ?>" href="/subscription">
+                        <span><?= e(t(($trialShop['plan'] ?? '') === 'trial' ? 'trial_banner' : 'subscription_left', ['days' => $trialDaysLeft])) ?></span>
+                        <strong><?= e(t('trial_banner_pay')) ?> →</strong>
+                    </a>
+                <?php endif; ?>
                 <?= $content ?>
             </main>
 

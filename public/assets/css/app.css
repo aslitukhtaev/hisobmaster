@@ -1371,3 +1371,59 @@ img.logo-for-dark-theme { display: none; }
     .kpi-card { padding: 14px; }
     .kpi-value { font-size: 1.15rem; }
 }
+
+/* ---------- Sign in with Google / Telegram, sign-up, trial ---------- */
+.social-login { display: grid; gap: 10px; margin-bottom: 4px; }
+.social-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    min-height: 50px; font-weight: 700; font-size: 15px;
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    text-decoration: none; transition: border-color .15s, transform .1s;
+}
+.social-btn:hover { border-color: var(--primary-strong); }
+.social-btn:active { transform: scale(.98); }
+.social-btn svg { width: 22px; height: 22px; flex: none; }
+.social-trial { margin: 2px 0 0; text-align: center; font-size: 13px; color: var(--primary-ink); font-weight: 600; }
+.auth-divider {
+    display: flex; align-items: center; gap: 12px; margin: 18px 0 14px;
+    color: var(--muted); font-size: 13px;
+}
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+.signup-head { text-align: center; margin-bottom: 16px; }
+.signup-head h1 { font-family: var(--font-display); font-size: 24px; margin: 10px 0 4px; }
+.signup-head p { margin: 0; word-break: break-word; }
+.signup-badge {
+    display: inline-block; padding: 5px 12px; border-radius: 999px;
+    background: var(--primary); color: var(--on-primary); font-weight: 800; font-size: 13px;
+}
+.signup-note { font-size: 13px; text-align: center; margin: 0; }
+.signup-back { text-align: center; margin: 14px 0 0; }
+
+.trial-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin: 0 0 16px; padding: 12px 16px; border-radius: var(--radius-sm);
+    background: var(--primary-light); color: var(--text); text-decoration: none;
+    border: 1px solid var(--primary-strong); font-weight: 600;
+}
+.trial-banner strong { color: var(--primary-ink); white-space: nowrap; }
+.trial-banner.is-urgent { background: var(--warning-bg); border-color: var(--warning); }
+.trial-banner.is-urgent strong { color: var(--warning); }
+
+.subscription-card { max-width: 520px; margin: 24px auto; text-align: center; padding: 32px 24px; }
+.subscription-card h1 { font-family: var(--font-display); font-size: 24px; margin: 14px 0 8px; }
+.subscription-icon {
+    width: 64px; height: 64px; margin: 0 auto; border-radius: 20px;
+    display: grid; place-items: center; background: var(--primary-light); color: var(--primary-ink);
+}
+.subscription-icon.is-expired { background: var(--warning-bg); color: var(--warning); }
+.subscription-icon svg { width: 34px; height: 34px; }
+.subscription-actions { display: grid; gap: 10px; margin: 22px 0 14px; }
+.subscription-actions .btn { min-height: 50px; font-size: 16px; }
+.subscription-safe { font-size: 13px; }
+.subscription-logout button {
+    background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; padding: 8px;
+}
+.social-connect { margin-top: 12px; flex-wrap: wrap; }
+.subscription-actions .btn:not(.btn-primary) { border: 1px solid var(--border); }

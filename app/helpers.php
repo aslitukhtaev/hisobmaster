@@ -224,6 +224,9 @@ const MONEY_MAX = 1000000000000;
 /** The Windows installer of the desktop app (latest GitHub release). */
 const DESKTOP_DOWNLOAD_URL = 'https://github.com/aslitukhtaev/hisobmaster/releases/latest/download/KassirON-Setup.exe';
 
+/** The Android app (a Trusted Web Activity of this site, see android/). */
+const ANDROID_DOWNLOAD_URL = '/downloads/KassirON.apk';
+
 /** KassirON support contacts, shown in the help section. */
 const SUPPORT_PHONE = '+998997026720';
 const SUPPORT_PHONE_DISPLAY = '+998 99 702 67 20';
@@ -528,4 +531,16 @@ function log_exception(\Throwable $e): void
         $e->getLine(),
         "\n" . $e->getTraceAsString()
     ));
+}
+
+/** The signed-in user's shop row (once per request), or null. */
+function current_shop(): ?array
+{
+    static $cache = [];
+    $shopId = Auth::shopId();
+    if ($shopId === null) {
+        return null;
+    }
+
+    return $cache[$shopId] ??= App\Models\Shop::find($shopId);
 }

@@ -21,12 +21,15 @@
         </label>
 
         <hr class="divider">
-        <p class="muted"><?= e(t('change_password_optional')) ?></p>
+        <?php $hasPassword = (int) ($user['password_set'] ?? 1) === 1; ?>
+        <p class="muted"><?= e(t($hasPassword ? 'change_password_optional' : 'password_set_first')) ?></p>
 
+        <?php if ($hasPassword): ?>
         <label class="field">
             <span><?= e(t('current_password')) ?></span>
             <input type="password" name="current_password" autocomplete="current-password">
         </label>
+        <?php endif; ?>
         <label class="field">
             <span><?= e(t('new_password')) ?></span>
             <input type="password" name="new_password" autocomplete="new-password">
@@ -39,6 +42,41 @@
         <button type="submit" class="btn btn-primary btn-block"><?= e(t('save')) ?></button>
     </form>
 </div>
+
+<?php if ($identities !== null && ($googleEnabled || $telegramEnabled || $identities !== [])): ?>
+<section class="page-head" style="margin-top:24px;" id="social">
+    <h1><?= e(t('social_accounts')) ?></h1>
+    <p class="muted"><?= e(t('social_accounts_hint')) ?></p>
+</section>
+
+<div class="card form-card">
+    <?php $connected = array_column($identities, 'provider'); ?>
+    <?php if ($identities !== []): ?>
+        <ul class="device-list">
+            <?php foreach ($identities as $identity): ?>
+                <li class="device-row">
+                    <div class="device-info">
+                        <strong><?= $identity['provider'] === 'google' ? 'Google' : 'Telegram' ?><?= $identity['email'] || $identity['display_name'] ? ': ' . e($identity['email'] ?: $identity['display_name']) : '' ?></strong>
+                        <div class="muted"><?= e(t('device_last_used', ['date' => local_datetime($identity['last_used_at'])])) ?></div>
+                    </div>
+                    <form method="post" action="/profile/identities/<?= (int) $identity['id'] ?>/remove" data-confirm="<?= e(t('device_remove_confirm')) ?>">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="btn btn-ghost btn-sm"><?= e(t('social_remove')) ?></button>
+                    </form>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
+    <div class="row-actions social-connect">
+        <?php if ($googleEnabled && !in_array('google', $connected, true)): ?>
+            <a class="btn btn-ghost" href="/auth/google" data-no-prefetch><?= e(t('social_connect_google')) ?></a>
+        <?php endif; ?>
+        <?php if ($telegramEnabled && !in_array('telegram', $connected, true)): ?>
+            <a class="btn btn-ghost" href="/auth/telegram" data-no-prefetch><?= e(t('social_connect_telegram')) ?></a>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
 
 <?php if ($devices !== null): ?>
 <section class="page-head" style="margin-top:24px;" id="devices">

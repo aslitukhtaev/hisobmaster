@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\RememberMe;
 use App\Core\Request;
+use App\Core\SocialAuth;
 use App\Core\TelegramAuth;
 use App\Core\View;
 use App\Desktop\Desktop;
@@ -31,6 +32,9 @@ class ProfileController
             'telegramLinks' => Desktop::enabled() ? null : TelegramAuth::forUser($userId),
             'currentSelector' => $_SESSION['remember_selector'] ?? null,
             'currentTelegramId' => $_SESSION['telegram_user_id'] ?? null,
+            'identities' => Desktop::enabled() ? null : SocialAuth::forUser($userId),
+            'googleEnabled' => SocialAuth::googleEnabled(),
+            'telegramEnabled' => SocialAuth::telegramEnabled(),
         ]);
     }
 
@@ -47,6 +51,19 @@ class ProfileController
         RememberMe::remove((int) $id, (int) Auth::id());
         flash('success', t('device_removed'));
         redirect('/profile#devices');
+    }
+
+    public function removeIdentity(Request $request, string $id): void
+    {
+        $user = Auth::user();
+        // The last way in of an owner who never set a password stays.
+        if ((int) ($user['password_set'] ?? 1) === 0 && count(SocialAuth::forUser((int) $user['id'])) <= 1) {
+            flash('error', t('password_set_first'));
+            redirect('/profile#social');
+        }
+        SocialAuth::remove((int) $id, (int) Auth::id());
+        flash('success', t('social_removed'));
+        redirect('/profile#social');
     }
 
     public function removeTelegram(Request $request, string $id): void
@@ -93,7 +110,9 @@ class ProfileController
             $currentPassword = (string) $request->input('current_password', '');
             $confirmPassword = (string) $request->input('confirm_password', '');
 
-            if (!password_verify($currentPassword, $user['password_hash'])) {
+            // Signed up with Google / Telegram: there's no password they know yet.
+            $hasPassword = (int) ($user['password_set'] ?? 1) === 1;
+            if ($hasPassword && !password_verify($currentPassword, $user['password_hash'])) {
                 flash('error', t('current_password_wrong'));
                 keep_old($old);
                 redirect('/profile');

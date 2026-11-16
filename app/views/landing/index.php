@@ -90,7 +90,7 @@ $arrowBtn = static function (string $label, string $href, string $class = '') us
         </h1>
         <p class="lp-lead" data-reveal style="--d:.12s"><?= e(t('lp_hero_lead')) ?></p>
         <div class="lp-cta" data-reveal style="--d:.18s">
-            <?= $arrowBtn(t('lp_login'), '/login', 'lp-pillbtn-lime lp-pillbtn-lg') ?>
+            <?= $arrowBtn(t('lp_try_free'), '/login', 'lp-pillbtn-lime lp-pillbtn-lg') ?>
             <a href="#contact" class="lp-ghostbtn"><?= $icon('phone') ?><?= e(t('lp_cta_contact')) ?></a>
         </div>
         <ul class="lp-checks" data-reveal style="--d:.24s">
@@ -411,6 +411,7 @@ $arrowBtn = static function (string $label, string $href, string $class = '') us
             </ul>
             <div class="lp-desktop-cta">
                 <?= $arrowBtn(t('lp_desktop_download'), DESKTOP_DOWNLOAD_URL, 'lp-pillbtn-lime lp-pillbtn-lg') ?>
+                <a href="<?= e(ANDROID_DOWNLOAD_URL) ?>" class="lp-ghostbtn" download><?= $icon('phone') ?><?= e(t('lp_android_download')) ?></a>
                 <p><?= e(t('lp_desktop_note')) ?></p>
             </div>
         </div>

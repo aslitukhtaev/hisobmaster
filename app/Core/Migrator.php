@@ -22,7 +22,7 @@ use Throwable;
  */
 final class Migrator
 {
-    public const VERSION = 8;
+    public const VERSION = 9;
 
     public static function ensureUpToDate(PDO $pdo): void
     {
@@ -126,6 +126,21 @@ final class Migrator
             // "Sign out everywhere" / a password change: sessions signed in
             // before this moment end (App\Core\Auth::user()).
             'sessions_revoked_at' => 'TEXT',
+        ]);
+
+        self::addColumns($pdo, $log, 'shops', [
+            // Self sign-up (Google / Telegram): 'trial' for the first days,
+            // 'paid' once the shop pays. access_until (UTC) is when the shop
+            // stops working until it pays; NULL = no end (every shop made by
+            // the super admin, and the ones before sign-up existed).
+            'plan' => "TEXT NOT NULL DEFAULT 'paid'",
+            'access_until' => 'TEXT',
+        ]);
+        self::addColumns($pdo, $log, 'users', [
+            // 0 for an owner who signed up with Google / Telegram and never
+            // chose a password: the profile lets them set one without the
+            // "current password" (there is none they know).
+            'password_set' => 'INTEGER NOT NULL DEFAULT 1',
         ]);
 
         // Last, so rows inserted by the steps above get their uuid too.

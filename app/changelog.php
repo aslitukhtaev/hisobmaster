@@ -9,6 +9,11 @@
 return [
     [
         'date' => '2026-11-16',
+        'uz' => "Google yoki Telegram bilan kirish: yangi do'kon o'zi ro'yxatdan o'tadi va 7 kun bepul sinaydi. Android ilova.",
+        'ru' => 'Вход через Google или Telegram: новый магазин регистрируется сам и пробует 7 дней бесплатно. Приложение для Android.',
+    ],
+    [
+        'date' => '2026-11-16',
         'uz' => "Tez kiritish: mahsulotlarni va daftardagi eski qarzlarni jadvalga bir yo'la yozish (Excel'dan nusxa ham bo'ladi). Kassada noma'lum shtrix-kodni darhol mahsulot qilib qo'shish.",
         'ru' => 'Быстрый ввод: товары и старые долги из тетради — разом в таблицу (можно вставить из Excel). Неизвестный штрих-код в кассе — сразу добавить как товар.',
     ],

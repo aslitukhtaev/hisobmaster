@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\RememberMe;
 use App\Core\Request;
+use App\Core\SocialAuth;
 use App\Core\TelegramAuth;
 use App\Core\View;
 use App\Desktop\Desktop;
@@ -18,6 +19,8 @@ class AuthController
     {
         View::render('auth/login', [
             'telegramAuto' => TelegramAuth::enabled() && !Desktop::enabled(),
+            'googleLogin' => !Desktop::enabled() && SocialAuth::googleEnabled(),
+            'telegramLogin' => !Desktop::enabled() && SocialAuth::telegramEnabled(),
         ], 'layouts/auth');
     }
 
@@ -64,8 +67,19 @@ class AuthController
         header('Cache-Control: no-store');
 
         $telegramUser = Desktop::enabled() ? null : TelegramAuth::verify((string) $request->input('init_data', ''));
-        if ($telegramUser === null || !Auth::attemptTelegram($telegramUser)) {
+        if ($telegramUser === null) {
             echo json_encode(['ok' => false]);
+            return;
+        }
+        if (!Auth::attemptTelegram($telegramUser)) {
+            // Not linked to anyone: "Telegram bilan kirish" may open a new
+            // shop with this (verified) Telegram account.
+            $identity = SocialAuth::telegramIdentity($telegramUser);
+            $known = SocialAuth::userIdFor('telegram', $identity['subject']) !== null;
+            if (!$known) {
+                $_SESSION['pending_identity'] = $identity;
+            }
+            echo json_encode(['ok' => false, 'signup' => $known ? null : '/signup']);
             return;
         }
 

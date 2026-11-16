@@ -63,7 +63,7 @@ class User
     public static function updatePassword(int $id, string $password): void
     {
         Database::connect()
-            ->prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+            ->prepare('UPDATE users SET password_hash = ?, password_set = 1 WHERE id = ?')
             ->execute([password_hash($password, PASSWORD_DEFAULT), $id]);
     }
 

@@ -62,6 +62,22 @@ class Auth
     }
 
     /**
+     * Google / Telegram sign-in (App\Core\SocialAuth): signs in the user that
+     * provider account was linked to. False when that user can't sign in.
+     */
+    public static function attemptUserId(int $userId): bool
+    {
+        $user = self::activeUser($userId);
+        if ($user === null) {
+            return false;
+        }
+
+        self::signIn($user);
+
+        return true;
+    }
+
+    /**
      * Inside the Telegram WebApp: signs in the user this Telegram account is
      * linked to (App\Core\TelegramAuth). False when it isn't linked, or its
      * user can't sign in any more.
@@ -69,7 +85,13 @@ class Auth
     public static function attemptTelegram(array $telegramUser): bool
     {
         $userId = TelegramAuth::linkedUserId((int) $telegramUser['id']);
-        $user = $userId !== null ? self::activeUser($userId) : null;
+        if ($userId === null) {
+            // Signed up with this Telegram account: that identity is the way
+            // in and stays when signing out (no telegram_links row to drop).
+            $identityUserId = SocialAuth::userIdFor('telegram', (string) $telegramUser['id']);
+            return $identityUserId !== null && self::attemptUserId($identityUserId);
+        }
+        $user = self::activeUser($userId);
         if ($user === null) {
             return false;
         }
