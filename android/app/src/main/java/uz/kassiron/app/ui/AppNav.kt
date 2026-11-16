@@ -1,5 +1,6 @@
 package uz.kassiron.app.ui
 
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Inventory2
@@ -145,7 +146,7 @@ fun AppNav() {
             }
         },
     ) { padding ->
-        NavHost(nav, startDestination = start, modifier = Modifier.padding(padding)) {
+        NavHost(nav, startDestination = start, modifier = Modifier.padding(padding).consumeWindowInsets(padding)) {
             composable(Routes.ACTIVATION) { ActivationScreen(nav) }
             composable(Routes.LOGIN) { LoginScreen(nav) }
             composable(Routes.BLOCKED) { BlockedScreen(nav) }
