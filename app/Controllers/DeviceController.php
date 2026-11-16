@@ -22,10 +22,22 @@ class DeviceController
         $shopId = (int) Auth::shopId();
         $shop = Shop::find($shopId);
 
+        $pairCode = $_SESSION['pair_code'] ?? null;
+        unset($_SESSION['pair_code']);
+
         View::render('devices/index', [
             'devices' => DeviceService::allByShop($shopId),
             'offlineDays' => (int) ($shop['offline_days'] ?? 7),
+            'pairCode' => $pairCode,
+            'pairMinutes' => DeviceService::PAIR_CODE_MINUTES,
         ]);
+    }
+
+    /** "Telefonni ulash": a one-time code for the Android app, shown once. */
+    public function pair(Request $request): void
+    {
+        $_SESSION['pair_code'] = DeviceService::createPairCode((int) Auth::shopId(), (int) Auth::id());
+        redirect('/devices#pair');
     }
 
     public function revoke(Request $request, string $id): void

@@ -1040,4 +1040,8 @@ return [
     'password_set_first' => "Parol o'rnatish (kompyuter dasturi uchun kerak)",
     'lp_try_free' => "7 kun bepul sinab ko'rish",
     'lp_android_download' => "Android ilovani yuklab olish",
+    'pair_title' => "Telefonni ulash (Android ilova)",
+    'pair_hint' => "Android ilovada \"Kod bilan ulash\"ni tanlang va shu yerda chiqqan 6 xonali kodni kiriting. Parol kerak emas.",
+    'pair_button' => "Kod olish",
+    'pair_valid' => "Kod :minutes daqiqa ishlaydi va faqat bir marta.",
 ];

@@ -80,6 +80,7 @@ $router->post('/superadmin/shops/{id}/devices/{deviceId}/revoke', [SuperAdminCon
 $router->post('/superadmin/shops/{id}/offline-days', [SuperAdminController::class, 'updateOfflineDays'], ['auth', 'role:super_admin', 'csrf']);
 
 $router->get('/devices', [DeviceController::class, 'index'], ['auth', 'role:owner', 'web_only']);
+$router->post('/devices/pair', [DeviceController::class, 'pair'], ['auth', 'role:owner', 'web_only', 'csrf']);
 $router->post('/devices/{id}/revoke', [DeviceController::class, 'revoke'], ['auth', 'role:owner', 'web_only', 'csrf']);
 
 $router->get('/products', [ProductController::class, 'index'], ['auth', 'permission:products']);

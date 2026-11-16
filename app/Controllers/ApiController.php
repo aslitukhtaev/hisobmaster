@@ -33,20 +33,32 @@ class ApiController
         'unauthorized' => 401,
         'device_revoked' => 403,
         'shop_blocked' => 403,
+        'code_invalid' => 401,
     ];
 
     public function activate(Request $request): void
     {
         $this->handle(function () use ($request): array {
             $body = $this->body();
-            $result = DeviceService::activate(
-                (string) ($body['login'] ?? ''),
-                (string) ($body['password'] ?? ''),
-                strtolower((string) ($body['device_uuid'] ?? '')),
-                strtolower((string) ($body['fingerprint'] ?? '')),
-                (string) ($body['name'] ?? ''),
-                (string) ($body['app_version'] ?? '')
-            );
+            // The Android app may send a "Telefonni ulash" code instead of
+            // the owner's login and password.
+            $result = isset($body['pair_code'])
+                ? DeviceService::activateWithCode(
+                    (string) $body['pair_code'],
+                    strtolower((string) ($body['device_uuid'] ?? '')),
+                    strtolower((string) ($body['fingerprint'] ?? '')),
+                    (string) ($body['name'] ?? ''),
+                    (string) ($body['app_version'] ?? ''),
+                    (string) ($_SERVER['REMOTE_ADDR'] ?? '')
+                )
+                : DeviceService::activate(
+                    (string) ($body['login'] ?? ''),
+                    (string) ($body['password'] ?? ''),
+                    strtolower((string) ($body['device_uuid'] ?? '')),
+                    strtolower((string) ($body['fingerprint'] ?? '')),
+                    (string) ($body['name'] ?? ''),
+                    (string) ($body['app_version'] ?? '')
+                );
 
             $auth = DeviceService::authenticate('Device ' . $result['device']['uuid'] . ':' . $result['secret']);
 

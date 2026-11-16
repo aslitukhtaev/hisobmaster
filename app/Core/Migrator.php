@@ -22,7 +22,7 @@ use Throwable;
  */
 final class Migrator
 {
-    public const VERSION = 9;
+    public const VERSION = 10;
 
     public static function ensureUpToDate(PDO $pdo): void
     {

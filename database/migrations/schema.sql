@@ -484,3 +484,18 @@ CREATE TABLE IF NOT EXISTS auth_identities (
     UNIQUE (provider, subject)
 );
 CREATE INDEX IF NOT EXISTS idx_auth_identities_user ON auth_identities(user_id);
+
+-- "Telefonni ulash": a one-time 6-digit code the owner gets on the website
+-- and types into the Android app instead of a login and password
+-- (App\Sync\DeviceService::activateWithCode()). Only its hash is kept.
+CREATE TABLE IF NOT EXISTS device_pair_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shop_id INTEGER NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code_hash TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    used_at TEXT,
+    failed_attempts INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_device_pair_codes_shop ON device_pair_codes(shop_id);

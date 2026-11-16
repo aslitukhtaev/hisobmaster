@@ -1428,3 +1428,9 @@ img.logo-for-dark-theme { display: none; }
 .social-connect { margin-top: 12px; flex-wrap: wrap; }
 .subscription-actions .btn:not(.btn-primary) { border: 1px solid var(--border); }
 .android-download { display: block; margin-top: 16px; text-align: center; font-weight: 700; color: var(--primary-ink); }
+.pair-card h2 { margin: 0 0 4px; font-size: 18px; }
+.pair-card .row-actions { margin-top: 12px; flex-wrap: wrap; }
+.pair-code {
+    margin: 14px 0 6px; font-family: var(--font-mono); font-size: 44px; font-weight: 800;
+    letter-spacing: .12em; color: var(--primary-ink);
+}

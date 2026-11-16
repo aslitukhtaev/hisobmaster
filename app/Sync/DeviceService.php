@@ -50,6 +50,97 @@ final class DeviceService
             throw new RuntimeException('owner_only');
         }
 
+        return self::register($user, $deviceUuid, $fingerprint, $name, $appVersion);
+    }
+
+    /** How long a "Telefonni ulash" code works. */
+    public const PAIR_CODE_MINUTES = 10;
+
+    /**
+     * A new one-time 6-digit code for the owner's shop (earlier unused ones
+     * stop working). Shown once on the website, typed into the phone app.
+     */
+    public static function createPairCode(int $shopId, int $userId): string
+    {
+        $pdo = Database::connect();
+        $pdo->prepare("UPDATE device_pair_codes SET used_at = datetime('now') WHERE shop_id = ? AND used_at IS NULL")->execute([$shopId]);
+
+        // Unique among the codes that still work, so a code names one shop.
+        do {
+            $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $taken = $pdo->prepare("SELECT 1 FROM device_pair_codes WHERE code_hash = ? AND used_at IS NULL AND expires_at > datetime('now')");
+            $taken->execute([hash('sha256', $code)]);
+        } while ($taken->fetchColumn() !== false);
+
+        $pdo->prepare(
+            "INSERT INTO device_pair_codes (shop_id, user_id, code_hash, expires_at) VALUES (?, ?, ?, datetime('now', '+" . self::PAIR_CODE_MINUTES . " minutes'))"
+        )->execute([$shopId, $userId, hash('sha256', $code)]);
+
+        return $code;
+    }
+
+    /**
+     * Activation with a pairing code instead of a password (owners who sign
+     * in with Google / Telegram). At most 10 wrong codes per address per 10
+     * minutes: a code has a million values and lives ten minutes.
+     */
+    public static function activateWithCode(
+        string $code,
+        string $deviceUuid,
+        string $fingerprint,
+        string $name,
+        string $appVersion,
+        string $clientIp
+    ): array {
+        if (!self::isUuid($deviceUuid) || !preg_match('/^[a-f0-9]{64}$/', $fingerprint)) {
+            throw new RuntimeException('invalid_request');
+        }
+
+        $pdo = Database::connect();
+        $limitKey = 'pair_fail_' . substr(hash('sha256', $clientIp), 0, 32);
+        $stmt = $pdo->prepare('SELECT value FROM server_keys WHERE name = ?');
+        $stmt->execute([$limitKey]);
+        $fails = json_decode((string) $stmt->fetchColumn(), true);
+        $window = is_array($fails) && ($fails['since'] ?? 0) > time() - 600 ? $fails : ['since' => time(), 'count' => 0];
+        if ($window['count'] >= 10) {
+            throw new RuntimeException('login_locked');
+        }
+
+        $code = preg_replace('/\D/', '', $code) ?? '';
+        $row = null;
+        if (strlen($code) === 6) {
+            $find = $pdo->prepare(
+                "SELECT * FROM device_pair_codes WHERE code_hash = ? AND used_at IS NULL AND expires_at > datetime('now') LIMIT 1"
+            );
+            $find->execute([hash('sha256', $code)]);
+            $row = $find->fetch() ?: null;
+        }
+
+        $user = null;
+        if ($row !== null) {
+            $u = $pdo->prepare("SELECT * FROM users WHERE id = ? AND shop_id = ? AND role = 'owner' AND status = 'active'");
+            $u->execute([(int) $row['user_id'], (int) $row['shop_id']]);
+            $user = $u->fetch() ?: null;
+            $shop = \App\Models\Shop::find((int) $row['shop_id']);
+            if ($user !== null && (!$shop || $shop['status'] !== 'active' || \App\Models\Shop::accessExpired($shop))) {
+                throw new RuntimeException('shop_blocked');
+            }
+        }
+
+        if ($user === null) {
+            $window['count']++;
+            $pdo->prepare('INSERT INTO server_keys (name, value) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET value = excluded.value')
+                ->execute([$limitKey, json_encode($window)]);
+            throw new RuntimeException('code_invalid');
+        }
+
+        $pdo->prepare("UPDATE device_pair_codes SET used_at = datetime('now') WHERE id = ?")->execute([(int) $row['id']]);
+
+        return self::register($user, $deviceUuid, $fingerprint, $name, $appVersion);
+    }
+
+    private static function register(array $user, string $deviceUuid, string $fingerprint, string $name, string $appVersion): array
+    {
         $shopId = (int) $user['shop_id'];
         $secret = bin2hex(random_bytes(32));
 
