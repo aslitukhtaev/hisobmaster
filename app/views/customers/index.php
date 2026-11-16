@@ -4,7 +4,10 @@
         <h1><?= e(t('customers')) ?></h1>
         <p class="muted"><?= e(count_label(count($customers), 'customers_count_label')) ?></p>
     </div>
-    <a href="/customers/create" class="btn btn-primary"><?= e(t('add_customer')) ?></a>
+    <div class="row-actions">
+        <a href="/customers/quick-debts" class="btn btn-ghost"><?= e(t('quick_debts_title')) ?></a>
+        <a href="/customers/create" class="btn btn-primary"><?= e(t('add_customer')) ?></a>
+    </div>
 </section>
 
 <section class="stat-tile stock-value-tile">

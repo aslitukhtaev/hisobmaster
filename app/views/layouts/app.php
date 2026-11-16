@@ -123,20 +123,23 @@ if (!Auth::isSuperAdmin() && Auth::shopId()) {
     <link rel="preload" href="/assets/fonts/manrope-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/assets/fonts/onest-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
+    <?php /* The next page starts loading while the pointer rests on its link, so a click opens it at once. */ ?>
+    <script type="speculationrules" nonce="<?= e(csp_nonce()) ?>">
+    {"prefetch": [{"where": {"and": [
+        {"href_matches": "/*"},
+        {"not": {"href_matches": ["/logout", "/*export*", "/*/print", "/superadmin/backups/*", "/desktop/*"]}},
+        {"not": {"selector_matches": "[data-no-prefetch]"}}
+    ]}, "eagerness": "moderate"}]}
+    </script>
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="<?= asset('img/icon-32.png') ?>" type="image/png" sizes="32x32">
     <link rel="icon" href="<?= asset('img/icon-192.png') ?>" type="image/png" sizes="192x192">
     <link rel="apple-touch-icon" href="<?= asset('img/icon-180.png') ?>">
     <meta name="theme-color" content="#a9fa06" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#11150e" media="(prefers-color-scheme: dark)">
-    <?php if (!App\Desktop\Desktop::enabled()): /* Telegram WebApp SDK: website only — the desktop app works offline */ ?>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <?php endif; ?>
+    <?php require BASE_PATH . '/app/views/partials/telegram-loader.php'; ?>
 </head>
 <body>
-    <?php if (!App\Desktop\Desktop::enabled()): ?>
-    <script src="<?= asset('js/telegram.js') ?>"></script>
-    <?php endif; ?>
     <div class="shell">
         <aside class="sidebar">
             <div class="brand">

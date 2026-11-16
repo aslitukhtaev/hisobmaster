@@ -9,7 +9,8 @@
     </div>
     <div class="row-actions">
         <a href="/products/import" class="btn btn-ghost"><?= e(t('import_products')) ?></a>
-        <a href="/products/create" class="btn btn-primary"><?= e(t('add_product')) ?></a>
+        <a href="/products/create" class="btn btn-ghost"><?= e(t('add_product')) ?></a>
+        <a href="/products/quick" class="btn btn-primary"><?= e(t('quick_products_title')) ?></a>
     </div>
 </section>
 

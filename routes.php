@@ -14,6 +14,7 @@ use App\Controllers\EmployeeController;
 use App\Controllers\ExpenseController;
 use App\Controllers\HelpController;
 use App\Controllers\SettingsController;
+use App\Controllers\QuickEntryController;
 use App\Controllers\HomeController;
 use App\Controllers\JoinController;
 use App\Controllers\LocaleController;
@@ -73,6 +74,8 @@ $router->post('/products', [ProductController::class, 'store'], ['auth', 'permis
 // Registered before /products/{id}/edit below for readability, though there's
 // no actual pattern collision (different segment counts).
 $router->get('/products/import', [ProductController::class, 'importForm'], ['auth', 'permission:products']);
+$router->get('/products/quick', [QuickEntryController::class, 'productsForm'], ['auth', 'permission:products']);
+$router->post('/products/quick', [QuickEntryController::class, 'productsStore'], ['auth', 'permission:products', 'csrf']);
 $router->post('/products/import/preview', [ProductController::class, 'importPreview'], ['auth', 'permission:products', 'csrf']);
 $router->post('/products/import/commit', [ProductController::class, 'importCommit'], ['auth', 'permission:products', 'csrf']);
 $router->get('/products/{id}/edit', [ProductController::class, 'editForm'], ['auth', 'permission:products']);
@@ -108,6 +111,8 @@ $router->get('/sales/{id}', [SaleController::class, 'receipt'], ['auth', 'permis
 
 $router->get('/customers', [CustomerController::class, 'index'], ['auth', 'permission:customers']);
 $router->get('/customers/create', [CustomerController::class, 'createForm'], ['auth', 'permission:customers']);
+$router->get('/customers/quick-debts', [QuickEntryController::class, 'debtsForm'], ['auth', 'permission:customers']);
+$router->post('/customers/quick-debts', [QuickEntryController::class, 'debtsStore'], ['auth', 'permission:customers', 'csrf']);
 $router->post('/customers', [CustomerController::class, 'store'], ['auth', 'permission:customers', 'csrf']);
 $router->get('/customers/{id}/edit', [CustomerController::class, 'editForm'], ['auth', 'permission:customers']);
 $router->post('/customers/{id}', [CustomerController::class, 'update'], ['auth', 'permission:customers', 'csrf']);

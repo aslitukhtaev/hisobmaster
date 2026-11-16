@@ -23,9 +23,7 @@
     <link rel="apple-touch-icon" href="<?= asset('img/icon-180.png') ?>">
     <meta name="theme-color" content="#a9fa06" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#11150e" media="(prefers-color-scheme: dark)">
-    <?php if (!App\Desktop\Desktop::enabled()): /* Telegram WebApp SDK: website only — the desktop app works offline */ ?>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <?php endif; ?>
+    <?php require BASE_PATH . '/app/views/partials/telegram-loader.php'; ?>
 </head>
 <body class="auth-body">
     <div class="auth-topbar">
@@ -35,9 +33,6 @@
     <main class="auth-wrap">
         <?= $content ?>
     </main>
-    <?php if (!App\Desktop\Desktop::enabled()): ?>
-    <script src="<?= asset('js/telegram.js') ?>"></script>
-    <?php endif; ?>
     <script src="<?= asset('js/app.js') ?>" defer></script>
 </body>
 </html>

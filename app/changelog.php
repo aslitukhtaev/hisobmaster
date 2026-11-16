@@ -9,6 +9,16 @@
 return [
     [
         'date' => '2026-11-16',
+        'uz' => "Tez kiritish: mahsulotlarni va daftardagi eski qarzlarni jadvalga bir yo'la yozish (Excel'dan nusxa ham bo'ladi). Kassada noma'lum shtrix-kodni darhol mahsulot qilib qo'shish.",
+        'ru' => 'Быстрый ввод: товары и старые долги из тетради — разом в таблицу (можно вставить из Excel). Неизвестный штрих-код в кассе — сразу добавить как товар.',
+    ],
+    [
+        'date' => '2026-11-16',
+        'uz' => "Qarzga sotuvda mijoz bitta maydonda — ism yoki telefon bo'yicha qidiriladi. Yangi bosh sahifa. Sahifalar tezroq ochiladi.",
+        'ru' => 'Клиент при продаже в долг — одно поле с поиском по имени или телефону. Новая главная страница. Страницы открываются быстрее.',
+    ],
+    [
+        'date' => '2026-11-16',
         'uz' => "Kassadan QR to'lov tugmasi olib tashlandi: Naqd, Karta, Qarzga.",
         'ru' => 'Из кассы убрана кнопка оплаты QR: наличные, карта, в долг.',
     ],

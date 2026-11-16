@@ -228,8 +228,12 @@
                     target = { productId: only.id, variantId: vs[0].id };
                 }
             } else if (matches.length === 0 && String(query || '').trim() !== '') {
+                var code = String(query).trim();
                 productListEl.innerHTML = '<p class="muted">' +
-                    escapeHtml((i18n.scanNotFound || '').replace(':code', String(query).trim())) + '</p>';
+                    escapeHtml((i18n.scanNotFound || '').replace(':code', code)) +
+                    (window.HM_CAN_PRODUCTS && /^[0-9A-Za-z-]{4,64}$/.test(code)
+                        ? ' <a class="scan-add-link" href="/products/quick?barcode=' + encodeURIComponent(code) + '">' + escapeHtml(i18n.scanAddProduct || '+') + '</a>'
+                        : '') + '</p>';
                 searchEl.select();
                 return;
             }
@@ -547,27 +551,172 @@
         renderCart();
     }
 
+    // ---- The debt customer: one field that searches by name or phone and
+    // offers "new customer" for what it doesn't find. The chosen id lives in
+    // the hidden #customer-select the rest of this file reads.
+    var customerSearchEl = document.getElementById('customer-search');
+    var customerResultsEl = document.getElementById('customer-results');
+    var customerClearEl = document.getElementById('customer-clear');
+    var newCustomerMode = false;
+    var customerActive = -1;
+
+    function digits(value) {
+        return String(value || '').replace(/\D/g, '');
+    }
+
+    function customerLabel(c) {
+        return c.name + (c.phone ? ' · ' + c.phone : '');
+    }
+
     function populateCustomerSelect() {
-        customers.forEach(function (c) {
-            var opt = document.createElement('option');
-            opt.value = c.id;
-            opt.textContent = c.name + (c.phone ? ' — ' + c.phone : '');
-            customerSelectEl.appendChild(opt);
-        });
+        // (no list to fill: the search field finds customers as you type)
     }
 
     function updateCustomerFields() {
         var selected = customerSelectEl.value;
         if (selected) {
+            newCustomerMode = false;
             newCustomerFieldsEl.style.display = 'none';
             document.getElementById('customer-id-field').value = selected;
             document.getElementById('customer-name-field').value = '';
             document.getElementById('customer-phone-field').value = '';
         } else {
-            newCustomerFieldsEl.style.display = 'grid';
+            newCustomerFieldsEl.style.display = newCustomerMode ? 'grid' : 'none';
             document.getElementById('customer-id-field').value = '';
         }
+        customerClearEl.hidden = !(selected || newCustomerMode || customerSearchEl.value);
     }
+
+    function setCustomer(id) {
+        customerSelectEl.value = id ? String(id) : '';
+        customerSelectEl.dispatchEvent(new Event('change'));
+    }
+
+    function customerMatches(query) {
+        var q = query.trim().toLowerCase();
+        if (!q) {
+            return customers.slice().sort(function (a, b) { return (b.balance || 0) - (a.balance || 0); }).slice(0, 8);
+        }
+        var qDigits = digits(q);
+        return customers.filter(function (c) {
+            return String(c.name).toLowerCase().indexOf(q) !== -1
+                || (qDigits.length >= 3 && digits(c.phone).indexOf(qDigits) !== -1);
+        }).slice(0, 8);
+    }
+
+    function closeCustomerResults() {
+        customerResultsEl.hidden = true;
+        customerSearchEl.setAttribute('aria-expanded', 'false');
+        customerActive = -1;
+    }
+
+    function renderCustomerResults() {
+        var query = customerSearchEl.value;
+        var list = customerMatches(query);
+        var html = list.map(function (c, i) {
+            var debt = c.balance > 0 ? '<span class="customer-debt">' + escapeHtml((i18n.customerDebt || ':amount').replace(':amount', formatMoney(c.balance))) + '</span>' : '';
+            return '<li role="option" data-index="' + i + '" data-id="' + c.id + '">' +
+                '<span class="customer-name">' + escapeHtml(c.name) + '</span>' +
+                (c.phone ? '<span class="customer-phone">' + escapeHtml(c.phone) + '</span>' : '') + debt + '</li>';
+        });
+        if (query.trim() !== '') {
+            html.push('<li role="option" class="customer-new" data-index="' + list.length + '" data-new="1">' +
+                escapeHtml((i18n.customerNew || '+ :name').replace(':name', query.trim())) + '</li>');
+        } else if (list.length === 0) {
+            html.push('<li class="customer-empty">' + escapeHtml(i18n.customerNone || '') + '</li>');
+        }
+        customerResultsEl.innerHTML = html.join('');
+        customerResultsEl.hidden = false;
+        customerSearchEl.setAttribute('aria-expanded', 'true');
+        customerActive = -1;
+    }
+
+    function chooseNewCustomer(text) {
+        var value = String(text || '').trim();
+        newCustomerMode = true;
+        setCustomer(null);
+        if (digits(value).length >= 7 && digits(value).length >= value.replace(/[\s+()-]/g, '').length) {
+            newCustomerPhoneEl.value = value;
+            newCustomerNameEl.value = '';
+        } else {
+            newCustomerNameEl.value = value;
+        }
+        document.getElementById('customer-name-field').value = newCustomerNameEl.value;
+        document.getElementById('customer-phone-field').value = newCustomerPhoneEl.value;
+        closeCustomerResults();
+        updateCustomerFields();
+        (newCustomerNameEl.value ? newCustomerPhoneEl : newCustomerNameEl).focus();
+    }
+
+    function pickCustomerItem(li) {
+        if (!li) {
+            return;
+        }
+        if (li.getAttribute('data-new')) {
+            chooseNewCustomer(customerSearchEl.value);
+            return;
+        }
+        var id = parseInt(li.getAttribute('data-id'), 10);
+        var c = customers.find(function (x) { return x.id === id; });
+        if (!c) {
+            return;
+        }
+        newCustomerMode = false;
+        customerSearchEl.value = customerLabel(c);
+        setCustomer(c.id);
+        closeCustomerResults();
+    }
+
+    customerSearchEl.addEventListener('focus', renderCustomerResults);
+    customerSearchEl.addEventListener('input', function () {
+        if (customerSelectEl.value || newCustomerMode) {
+            newCustomerMode = false;
+            setCustomer(null);
+        }
+        renderCustomerResults();
+        updateCustomerFields();
+    });
+    customerSearchEl.addEventListener('keydown', function (e) {
+        var items = customerResultsEl.querySelectorAll('li[role="option"]');
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (customerResultsEl.hidden) {
+                renderCustomerResults();
+                items = customerResultsEl.querySelectorAll('li[role="option"]');
+            }
+            if (!items.length) {
+                return;
+            }
+            customerActive = (customerActive + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+            items.forEach(function (li, i) { li.classList.toggle('active', i === customerActive); });
+            items[customerActive].scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (!customerResultsEl.hidden && items.length) {
+                pickCustomerItem(items[customerActive >= 0 ? customerActive : 0]);
+            }
+        } else if (e.key === 'Escape') {
+            closeCustomerResults();
+        }
+    });
+    customerResultsEl.addEventListener('mousedown', function (e) {
+        // mousedown, not click: the field's blur would close the list first.
+        e.preventDefault();
+        pickCustomerItem(e.target.closest('li[role="option"]'));
+    });
+    customerSearchEl.addEventListener('blur', function () {
+        setTimeout(closeCustomerResults, 120);
+    });
+    customerClearEl.addEventListener('click', function () {
+        customerSearchEl.value = '';
+        newCustomerNameEl.value = '';
+        newCustomerPhoneEl.value = '';
+        document.getElementById('customer-name-field').value = '';
+        document.getElementById('customer-phone-field').value = '';
+        newCustomerMode = false;
+        setCustomer(null);
+        customerSearchEl.focus();
+    });
 
     productListEl.addEventListener('click', function (e) {
         var variantBtn = e.target.closest('.pos-variant-btn');
@@ -695,6 +844,17 @@
             discountInputEl.focus();
             return;
         }
+        // Typed into the customer field without picking: an exact phone
+        // match is that customer, anything else a new one.
+        if (!customerSelectEl.value && !newCustomerMode && customerSearchEl.value.trim() !== '') {
+            var typed = digits(customerSearchEl.value);
+            var exact = typed.length >= 7 ? customers.find(function (c) { return digits(c.phone).slice(-9) === typed.slice(-9); }) : null;
+            if (exact) {
+                setCustomer(exact.id);
+            } else {
+                chooseNewCustomer(customerSearchEl.value);
+            }
+        }
         if (creditLimitExceeded && !confirm(i18n.confirmExceedCreditLimit || 'This sale exceeds the customer\'s credit limit. Continue?')) {
             e.preventDefault();
             return;
@@ -816,6 +976,15 @@
     populateCustomerSelect();
     renderProducts();
     restoreOldState();
+    // Bring the customer field in line with what restoreOldState() put back.
+    if (customerSelectEl.value) {
+        var restored = customers.find(function (c) { return String(c.id) === customerSelectEl.value; });
+        customerSearchEl.value = restored ? customerLabel(restored) : '';
+    } else if (oldSale.customerName || oldSale.customerPhone) {
+        newCustomerMode = true;
+        customerSearchEl.value = oldSale.customerName || oldSale.customerPhone;
+    }
+    updateCustomerFields();
     if (activePreset === null || (parseFloat(discountInputEl.value) || 0) > 0) {
         saleFormEl.classList.add('show-extra');
     }

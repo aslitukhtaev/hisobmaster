@@ -146,13 +146,18 @@ $posIcon = static function (string $name): string {
             <input type="hidden" id="qr-amount-input" value="0">
 
             <div id="debt-fields" class="stack" style="display:none;">
-                <label class="field">
+                <div class="field">
                     <span><?= e(t('customer')) ?></span>
-                    <select id="customer-select">
-                        <option value=""><?= e(t('new_customer_option')) ?></option>
-                    </select>
-                </label>
-                <div id="new-customer-fields" class="field-row">
+                    <div class="customer-combo">
+                        <input type="text" id="customer-search" autocomplete="off" spellcheck="false"
+                               placeholder="<?= e(t('customer_search_placeholder')) ?>"
+                               role="combobox" aria-expanded="false" aria-controls="customer-results" aria-autocomplete="list">
+                        <button type="button" class="customer-clear" id="customer-clear" aria-label="<?= e(t('close')) ?>" hidden>✕</button>
+                        <ul class="customer-results" id="customer-results" role="listbox" hidden></ul>
+                    </div>
+                    <input type="hidden" id="customer-select" value="">
+                </div>
+                <div id="new-customer-fields" class="field-row" style="display:none;">
                     <label class="field">
                         <span><?= e(t('full_name_label')) ?></span>
                         <input type="text" id="new-customer-name">
@@ -202,11 +207,16 @@ if (!is_array($oldCart)) {
         discountEqualsLabel: <?= json_encode(t('discount_equals_label'), JSON_UNESCAPED_UNICODE) ?>,
         pickVariantHint: <?= json_encode(t('pick_variant_hint'), JSON_UNESCAPED_UNICODE) ?>,
         scanNotFound: <?= json_encode(t('scan_not_found'), JSON_UNESCAPED_UNICODE) ?>,
+        scanAddProduct: <?= json_encode(t('scan_add_product'), JSON_UNESCAPED_UNICODE) ?>,
+        customerNew: <?= json_encode(t('customer_new_option'), JSON_UNESCAPED_UNICODE) ?>,
+        customerDebt: <?= json_encode(t('customer_debt_short'), JSON_UNESCAPED_UNICODE) ?>,
+        customerNone: <?= json_encode(t('customer_no_match'), JSON_UNESCAPED_UNICODE) ?>,
         emptyCart: <?= json_encode(t('cart_empty_submit'), JSON_UNESCAPED_UNICODE) ?>,
         discountTooLarge: <?= json_encode(t('discount_too_large'), JSON_UNESCAPED_UNICODE) ?>,
         currency: <?= json_encode(t('currency_symbol'), JSON_UNESCAPED_UNICODE) ?>
     };
     window.HM_CAN_DISCOUNT = <?= $canDiscount ? 'true' : 'false' ?>;
+    window.HM_CAN_PRODUCTS = <?= can('products') ? 'true' : 'false' ?>;
     window.HM_OLD_CART = <?= json_encode($oldCart, JSON_UNESCAPED_UNICODE) ?>;
     window.HM_OLD_SALE = {
         discount: <?= json_encode(old('discount', '0'), JSON_UNESCAPED_UNICODE) ?>,
