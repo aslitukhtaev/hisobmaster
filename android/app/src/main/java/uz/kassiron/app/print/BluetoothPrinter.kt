@@ -176,7 +176,7 @@ object BluetoothPrinter {
                 .line("${PrinterSettings.widthMm} mm / $cols")
                 .align(false)
                 .line("1234567890".repeat(cols / 10 + 1).take(cols))
-                .line(Receipts.twoCols(clean(context.getString(R.string.till_total)), "15 000 so'm", cols))
+                .line(Receipts.twoCols(clean(context.getString(R.string.till_receipt_total)), "15 000 so‘m", cols))
                 .line(clean("O‘zbekcha: g‘alla, o‘rik"))
                 .line(clean("Русский: Привет"))
                 .feed(3).cut()

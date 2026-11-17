@@ -1,112 +1,128 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Till -->
-    <string name="till_title">Kassa</string>
+    <!-- Kassa -->
     <string name="till_search_hint">Nomi yoki shtrix-kod</string>
-    <string name="till_scan">Skanerlash</string>
-    <string name="till_stock">Qoldiq: %1$s</string>
+    <string name="till_best_sellers">Ko‘p sotiladigan</string>
+    <string name="till_stock_left">%1$s qoldi</string>
+    <string name="till_stock_out">Tugagan</string>
+    <string name="till_in_stock">Omborda: %1$s</string>
     <string name="till_variants_count">%1$d ta variant</string>
     <string name="till_no_products">Hali mahsulot yo‘q</string>
+    <string name="till_no_products_hint">Mahsulot qo‘shing — keyin shu yerda sotasiz</string>
     <string name="till_not_found">Hech narsa topilmadi</string>
+    <string name="till_not_found_hint">Boshqa nom yoki shtrix-kodni yozing</string>
     <string name="till_add_product">Mahsulot qo‘shish</string>
-    <string name="till_unknown_barcode">Bu shtrix-kodli mahsulot yo‘q: %1$s</string>
-    <string name="till_no_stock">Omborda yetarli emas: %1$s (qoldiq %2$s)</string>
-    <string name="till_cart">Savat</string>
-    <string name="till_cart_empty">Savat bo‘sh.\nMahsulotni qidiring yoki skanerlang.</string>
-    <string name="till_cart_count">%1$d xil · %2$s dona</string>
+    <string name="till_unknown_barcode">Bu shtrix-kod topilmadi: %1$s</string>
+    <string name="till_no_stock_out">%1$s omborda qolmagan</string>
+    <string name="till_no_stock">%1$s: omborda faqat %2$s bor</string>
+    <string name="till_offline">Internet yo‘q · %1$d ta sotuv yuborilmagan</string>
+    <string name="till_cart_count">%1$d ta mahsulot</string>
     <string name="till_clear">Tozalash</string>
     <string name="till_clear_title">Savat tozalansinmi?</string>
-    <string name="till_total">Jami</string>
     <string name="till_pay">To‘lash</string>
-    <string name="till_qty">Miqdori</string>
+    <string name="till_qty">Miqdor, %1$s</string>
     <string name="till_qty_whole">Bu mahsulot faqat butun sonda sotiladi</string>
     <string name="till_qty_over_stock">Omborda faqat %1$s bor</string>
-    <string name="till_pick_variant">%1$s — variantni tanlang</string>
+    <string name="till_pick_variant">Variantni tanlang</string>
+
+    <!-- To‘lov -->
     <string name="till_to_pay">To‘lanadi</string>
-    <string name="till_subtotal_discount">Savat: %1$s · chegirma: −%2$s</string>
+    <string name="till_subtotal_discount">Savat %1$s · chegirma −%2$s</string>
     <string name="till_pay_naqd">Naqd</string>
     <string name="till_pay_karta">Karta</string>
-    <string name="till_pay_split">Aralash</string>
-    <string name="till_pay_qarz">Qarzga</string>
+    <string name="till_pay_qarz">Qarz</string>
     <string name="till_pay_mixed">Aralash</string>
-    <string name="till_cash_given_hint">Berilgan naqd (%1$s)</string>
+    <string name="till_cash_given">Berilgan naqd</string>
     <string name="till_exact">Aniq</string>
-    <string name="till_card_exact">Kartadan %1$s olinadi</string>
-    <string name="till_paid_now_optional">Hozir naqd to‘langan (ixtiyoriy)</string>
-    <string name="till_discount">Chegirma</string>
-    <string name="till_discount_sum">Chegirma (so‘m)</string>
+    <string name="till_card_amount">Kartadan</string>
+    <string name="till_debt_amount">Qarzga yoziladi</string>
+    <string name="till_rest_cash">Naqd olinadi</string>
     <string name="till_change">Qaytim</string>
-    <string name="till_debt">Qarz</string>
-    <string name="till_debt_after">Mijozning jami qarzi: %1$s</string>
-    <string name="till_cash_received">Naqd berildi</string>
+    <string name="till_change_colon">Qaytim:</string>
+    <string name="till_no_change">Qaytim yo‘q</string>
+    <string name="till_debt_colon">Qarz:</string>
+    <string name="till_short_debt">Qarzga qoladi</string>
     <string name="till_customer">Mijoz</string>
-    <string name="till_choose_customer">Mijozni tanlash</string>
+    <string name="till_customer_required_label">Mijoz (majburiy)</string>
+    <string name="till_choose_customer_ph">Mijozni tanlang</string>
     <string name="till_customer_required">Qarzga sotish uchun mijoz kerak</string>
-    <string name="till_current_debt">qarzi %1$s</string>
-    <string name="till_customer_search">Ism yoki telefon raqami</string>
+    <string name="till_discount">Chegirma</string>
+    <string name="till_discount_sum">Chegirma, so‘m</string>
+    <string name="till_sell_total">Sotish · %1$s</string>
+    <string name="till_sell_debt">Qarzga sotish</string>
+    <string name="till_selling">Sotilmoqda…</string>
+
+    <!-- Mijoz tanlash -->
+    <string name="till_choose_customer">Mijozni tanlash</string>
+    <string name="till_customer_search">Ism yoki telefon</string>
+    <string name="till_current_debt">qarz %1$s</string>
+    <string name="till_no_debt">qarz yo‘q</string>
     <string name="till_new_customer">Yangi mijoz</string>
+    <string name="till_new_customer_named">Yangi mijoz: «%1$s»</string>
+    <string name="till_new_customer_hint">Telefon raqamini keyin qo‘shsa bo‘ladi</string>
     <string name="till_customer_name">Ismi</string>
+    <string name="till_customer_name_ph">Masalan: Vali aka</string>
     <string name="till_customer_phone">Telefon</string>
     <string name="till_customer_name_required">Mijozning ismini kiriting</string>
-    <string name="till_phone_invalid">Telefon raqami noto‘g‘ri</string>
-    <string name="till_no_customers">Mijoz topilmadi</string>
-    <string name="till_sell">Sotish</string>
-    <string name="till_sold">Sotildi №%1$s · %2$s</string>
+    <string name="till_phone_invalid">Telefon raqamini to‘g‘ri kiriting</string>
+
+    <!-- Sotuvdan keyin va chek -->
+    <string name="till_sold">Sotildi № %1$s · %2$s</string>
     <string name="till_receipt">Chek</string>
     <string name="till_receipt_missing">Chek topilmadi</string>
+    <string name="till_receipt_total">JAMI</string>
     <string name="till_share">Ulashish</string>
     <string name="till_new_sale">Yangi sotuv</string>
-    <string name="till_err_empty_cart">Savat bo‘sh</string>
-    <string name="till_err_invalid_product">Mahsulot topilmadi yoki faol emas</string>
-    <string name="till_err_invalid_qty">Miqdor noto‘g‘ri</string>
-    <string name="till_err_qty_whole">\"%1$s\" faqat butun sonda sotiladi</string>
-    <string name="till_err_variant_required">\"%1$s\" mahsulotining variantini (rang/o‘lcham) tanlang</string>
-    <string name="till_err_invalid_discount">Chegirma noto‘g‘ri</string>
-    <string name="till_err_discount_too_large">Chegirma savat summasidan kichik bo‘lishi kerak (100% chegirma berib bo‘lmaydi).</string>
-    <string name="till_err_customer_required">Qarzga sotish uchun mijozni tanlang yoki qo‘shing</string>
-    <string name="till_err_insufficient_stock">Ombordagi qoldiq yetarli emas: %1$s</string>
-    <string name="till_err_unknown">Sotib bo‘lmadi. Qaytadan urinib ko‘ring.</string>
 
-    <!-- Scanner -->
-    <string name="scan_permission">Shtrix-kodni skanerlash uchun kameraga ruxsat bering</string>
+    <!-- Xatolar -->
+    <string name="till_err_empty_cart">Savat bo‘sh — mahsulot qo‘shing</string>
+    <string name="till_err_invalid_product">Mahsulot topilmadi yoki nofaol — savatdan olib tashlang</string>
+    <string name="till_err_invalid_qty">Miqdorni to‘g‘ri kiriting</string>
+    <string name="till_err_qty_whole">«%1$s» faqat butun sonda sotiladi</string>
+    <string name="till_err_variant_required">«%1$s» uchun variantni tanlang</string>
+    <string name="till_err_invalid_discount">Chegirmani to‘g‘ri kiriting</string>
+    <string name="till_err_discount_too_large">Chegirma savat summasidan kam bo‘lsin</string>
+    <string name="till_err_customer_required">Mijozni tanlang</string>
+    <string name="till_err_insufficient_stock">Omborda yetarli emas: %1$s</string>
+    <string name="till_err_unknown">Sotib bo‘lmadi — qaytadan urinib ko‘ring</string>
+
+    <!-- Skaner -->
+    <string name="scan_permission">Shtrix-kodni o‘qish uchun kameraga ruxsat bering</string>
     <string name="scan_allow">Ruxsat berish</string>
     <string name="scan_close">Yopish</string>
-    <string name="scan_hint">Shtrix-kodni ramkaga to‘g‘rilang</string>
-    <string name="scan_last">Skanerlandi: %1$s</string>
+    <string name="scan_hint">Shtrix-kodni ramka ichiga qo‘ying</string>
+    <string name="scan_last">O‘qildi: %1$s</string>
     <string name="scan_torch">Chiroq</string>
 
-    <!-- Printing -->
-    <string name="print_title">Chek printeri</string>
+    <!-- Printer -->
+    <string name="print_title">Printer</string>
     <string name="print_settings">Printer</string>
+    <string name="print_paired">Juftlangan printerlar</string>
     <string name="print_print">Chop etish</string>
     <string name="print_printing">Chop etilmoqda…</string>
     <string name="print_done">Chek chop etildi</string>
-    <string name="print_choose">Bluetooth printerni tanlang</string>
-    <string name="print_none_paired">Juftlangan qurilma yo‘q. Printerni telefonning Bluetooth sozlamalarida juftlang.</string>
+    <string name="print_none_paired">Juftlangan printer yo‘q</string>
+    <string name="print_none_paired_hint">Printerni telefonning Bluetooth sozlamalarida juftlang</string>
     <string name="print_open_bt_settings">Bluetooth sozlamalari</string>
-    <string name="print_allow">Ruxsat berish</string>
     <string name="print_width">Qog‘oz kengligi</string>
     <string name="print_width_58">58 mm</string>
     <string name="print_width_80">80 mm</string>
     <string name="print_charset">Yozuv</string>
     <string name="print_charset_latin">Lotin</string>
     <string name="print_charset_cp866">Kirill (CP866)</string>
-    <string name="print_charset_hint">Lotin har qanday printerda ishlaydi (kirill harflari lotinga o‘giriladi). Printer kirillni qo‘llasa, CP866 ni tanlang.</string>
-    <string name="print_test">Sinov cheki</string>
+    <string name="print_charset_hint">Lotin har qanday printerda chiqadi. Printer kirill harflarini qo‘llasa, «Kirill» ni tanlang.</string>
+    <string name="print_test">Sinov chop etish</string>
     <string name="print_test_title">Sinov cheki</string>
     <string name="print_cashier">Kassir</string>
-    <string name="print_payment_type">To‘lov turi</string>
-    <string name="print_paid_now">Hozir to‘langan summa</string>
-    <string name="print_debt_amount">Qarz summasi</string>
     <string name="print_refunded">Qaytarilgan</string>
-    <string name="print_not_fiscal">Fiskal chek emas. Soliq cheki alohida beriladi.</string>
-    <string name="print_thanks">Xaridingiz uchun rahmat!</string>
-    <string name="print_err_no_bluetooth">Bu qurilmada Bluetooth yo‘q</string>
-    <string name="print_err_bt_off">Bluetooth o‘chiq. Uni yoqing.</string>
-    <string name="print_err_permission">Printerga ulanish uchun Bluetooth ruxsatini bering</string>
-    <string name="print_err_not_selected">Printer tanlanmagan</string>
-    <string name="print_err_connect">Printerga ulanib bo‘lmadi. Printer yoqilganini va yaqinligini tekshiring.</string>
-    <string name="print_err_write">Printerga yuborishda xato. Qaytadan urinib ko‘ring.</string>
-    <string name="print_err_not_found">Printer topilmadi. Qaytadan tanlang.</string>
+    <string name="print_not_fiscal">Fiskal chek emas</string>
+    <string name="print_thanks">Xaridingiz uchun rahmat</string>
+    <string name="print_err_no_bluetooth">Bu telefonda Bluetooth yo‘q</string>
+    <string name="print_err_bt_off">Bluetooth o‘chiq — uni yoqing</string>
+    <string name="print_err_permission">Printer uchun Bluetooth’ga ruxsat bering</string>
+    <string name="print_err_not_selected">Printerni tanlang</string>
+    <string name="print_err_connect">Printerga ulanib bo‘lmadi — yoqilganini va yaqinligini tekshiring</string>
+    <string name="print_err_write">Printerga yuborib bo‘lmadi — qaytadan urinib ko‘ring</string>
+    <string name="print_err_not_found">Printer topilmadi — qaytadan tanlang</string>
     <string name="print_err_unknown">Chop etib bo‘lmadi</string>
 </resources>
