@@ -10,6 +10,7 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'org.jetbrains.kotlin.plugin.compose'
+    id 'io.github.takahirom.roborazzi'
 }
 
 def keystoreProps = new Properties()
@@ -63,6 +64,13 @@ android {
         }
     }
 
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+            all { it.systemProperty 'robolectric.graphicsMode', 'NATIVE'; it.maxHeapSize = '2g' }
+        }
+    }
+
     buildFeatures {
         compose true
         buildConfig true
@@ -109,4 +117,14 @@ dependencies {
 
     // JVM unit tests (pure business rules, e.g. SaleMath).
     testImplementation 'junit:junit:4.13.2'
+
+    // Screenshot tests (JVM, no emulator): `./gradlew recordRoborazziDebug`
+    // writes PNGs of every screen to app/build/outputs/roborazzi/ — see android/ARCHITECTURE.md.
+    testImplementation 'org.robolectric:robolectric:4.13'
+    testImplementation 'io.github.takahirom.roborazzi:roborazzi:1.32.2'
+    testImplementation 'io.github.takahirom.roborazzi:roborazzi-compose:1.32.2'
+    testImplementation 'io.github.takahirom.roborazzi:roborazzi-junit-rule:1.32.2'
+    testImplementation composeBom
+    testImplementation 'androidx.compose.ui:ui-test-junit4'
+    debugImplementation 'androidx.compose.ui:ui-test-manifest'
 }

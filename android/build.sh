@@ -32,6 +32,15 @@ fi
 
 cd "$work/src"
 mkdir -p "$here/dist"
+if [ "${1:-}" = "shots" ]; then
+    # Screenshots of the real screens (JVM, no emulator): bash build.sh shots '*TillShots*'
+    rm -rf app/build/outputs/roborazzi
+    ./gradlew -q recordRoborazziDebug --tests "${2:-*Shots*}" || true
+    mkdir -p "$here/shots"
+    cp -f app/build/outputs/roborazzi/*.png "$here/shots/" 2>/dev/null || true
+    ls app/build/outputs/roborazzi 2>/dev/null
+    exit 0
+fi
 if [ "${1:-}" = "debug" ]; then
     ./gradlew -q assembleDebug
     cp app/build/outputs/apk/debug/app-debug.apk "$here/dist/KassirON-debug.apk"

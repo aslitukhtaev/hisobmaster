@@ -34,6 +34,7 @@ object App {
         db = Db(application)
         kv = Kv(db)
         session = Session(db, kv)
+        uz.kassiron.app.ui.theme.ThemeMode.set(kv.get("theme") ?: "system")
         session.restore()
         sync = SyncManager(application, db, kv)
         sync.start()

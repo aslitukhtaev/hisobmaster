@@ -1,36 +1,41 @@
 # KassirON — Android ilova
 
-Trusted Web Activity (TWA): `https://kassiron.uz` Chrome dvigatelida, butun
-ekranda, brauzer panelisiz ochiladi. Ilova ~350 KB. Sayt yangilansa ilova
-ham darhol yangi bo'ladi — qayta o'rnatish shart emas.
+Native ilova (Kotlin + Jetpack Compose). **Internetsiz ham ishlaydi**: do'konning
+ma'lumotlari telefondagi bazada, sotuvlar internet bo'lmasa ham qilinadi va
+internet qaytganda serverga o'zi yuboriladi. Kompyuter dasturi bilan bir xil
+sinxron protokoli (`/api/device/activate`, `/api/sync/push`, `/api/sync/pull`).
 
-- Paket: `uz.kassiron.app`
-- Ochiladigan sahifa: `/login?source=android` (kirgan bo'lsa — darhol kassa yoki bosh sahifa)
-- Brauzer paneli yashirin bo'lishi uchun sayt `public/.well-known/assetlinks.json`
-  da imzo kalitining SHA-256 barmoq izini e'lon qiladi.
+- Paket: `uz.kassiron.app`; minSdk 24 (Android 7+)
+- Ulash: egasining login-paroli yoki saytdagi "Telefonni ulash" 6 xonali kodi
+  (Google/Telegram bilan kirgan egalar uchun; Sozlamalar → Kompyuterlar)
+- Kassa: qidiruv, kamera bilan shtrix-kod, Bluetooth termoprinter, naqd/karta/qarz
+- Mahsulotlar, kirim, qarzdorlar, sotuvlar va qaytarish, xarajatlar, hisobotlar, davomat
+- Arxitektura va qoidalar: [ARCHITECTURE.md](ARCHITECTURE.md)
 
 ## Yig'ish
 
 ```bash
-bash android/build.sh
+bash android/build.sh          # imzolangan APK + AAB  → android/dist/
+bash android/build.sh debug    # tez tekshiruv uchun debug APK
 ```
 
-Natija: `android/dist/KassirON.apk` (to'g'ridan-to'g'ri o'rnatish uchun) va
-`android/dist/KassirON.aab` (Google Play uchun). Saytdagi yuklab olish havolasi
-`public/downloads/KassirON.apk` — yangi versiyani shu yerga nusxalang va
-`app/build.gradle` dagi `versionCode`ni oshiring.
+Kerak: JDK 17+ (Android Studio JBR `~/.jdks` da topiladi) va Android SDK.
+Loyiha yo'lida kirill harflari bo'lgani uchun skript uni ASCII yo'lga ko'chirib
+yig'adi.
 
-Kerak: JDK 17+ (Android Studio'ning JBR'i `~/.jdks` da topiladi) va Android SDK.
+Lokal server bilan sinash (emulyator kompyuterni `10.0.2.2` deb ko'radi):
+
+```bash
+KASSIRON_DEBUG_SERVER=http://10.0.2.2:8791 bash android/build.sh debug
+KASSIRON_MINIFY_DEBUG=1 ...   # release'dagi kod qisqartirishni ham tekshirish
+```
+
+Saytdagi yuklab olish havolasi `public/downloads/KassirON.apk`: yangi versiyani
+yig'gach shu yerga nusxalang va `app/build.gradle` dagi `versionCode`ni oshiring
+(oshirmasa telefon yangilamaydi).
 
 ## Imzo kaliti — YO'QOTMANG
 
 `~/.kassiron-android/kassiron-release.jks` va `keystore.properties` (parol).
 Git'ga kiritilmaydi. Kalit yo'qolsa, o'rnatilgan ilovalarni yangilab bo'lmaydi —
 nusxasini xavfsiz joyda saqlang.
-
-## Google Play
-
-Play Console'ga `.aab` yuklansa, Google o'z kaliti bilan qayta imzolaydi
-(Play App Signing). Shunda Play Console → App integrity'dagi SHA-256 barmoq
-izini ham `assetlinks.json`ga qo'shing, aks holda ilovada brauzer paneli
-ko'rinib qoladi.

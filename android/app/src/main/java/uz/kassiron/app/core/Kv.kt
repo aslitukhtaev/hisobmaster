@@ -8,7 +8,7 @@ class Kv(private val db: Db) {
     fun get(key: String, default: String): String = get(key) ?: default
     fun set(key: String, value: String?) {
         if (value == null) db.exec("DELETE FROM kv WHERE key = ?", key)
-        else db.exec("INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", key, value)
+        else db.exec("INSERT OR REPLACE INTO kv (key, value) VALUES (?, ?)", key, value) // works on SQLite 3.9 (Android 7); UPSERT needs 3.24
     }
     fun long(key: String, default: Long = 0): Long = get(key)?.toLongOrNull() ?: default
 

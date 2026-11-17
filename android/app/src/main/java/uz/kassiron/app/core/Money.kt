@@ -18,7 +18,7 @@ object Money {
         val cents = round((abs(r) - whole) * 100).toLong()
         val digits = whole.toString().reversed().chunked(3).joinToString(" ").reversed()
         val fraction = if (cents > 0) "," + cents.toString().padStart(2, '0').trimEnd('0') else ""
-        return (if (negative) "-" else "") + digits + fraction + (if (withCurrency) " so'm" else "")
+        return (if (negative) "-" else "") + digits + fraction + (if (withCurrency) " so‘m" else "")
     }
 
     /** "15 000", "1,5", "1.5" -> 15000.0 / 1.5; null when not a number. */

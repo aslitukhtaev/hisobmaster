@@ -1,16 +1,29 @@
 package uz.kassiron.app.ui
 
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.PointOfSale
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.PointOfSale
-import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -105,12 +118,44 @@ object Routes {
 private data class Tab(val route: String, val label: Int, val icon: ImageVector, val permission: String?)
 
 private val TABS = listOf(
-    Tab(Routes.TILL, R.string.nav_till, Icons.Filled.PointOfSale, "sales"),
-    Tab(Routes.SALES, R.string.nav_sales, Icons.Filled.ReceiptLong, "sales"),
-    Tab(Routes.PRODUCTS, R.string.nav_products, Icons.Filled.Inventory2, "products"),
-    Tab(Routes.CUSTOMERS, R.string.nav_customers, Icons.Filled.People, "customers"),
-    Tab(Routes.MORE, R.string.nav_more, Icons.Filled.MoreHoriz, null),
+    Tab(Routes.HOME, R.string.nav_home, Icons.Outlined.Home, null),
+    Tab(Routes.TILL, R.string.nav_till, Icons.Outlined.PointOfSale, "sales"),
+    Tab(Routes.SALES, R.string.nav_sales, Icons.AutoMirrored.Outlined.ReceiptLong, "sales"),
+    Tab(Routes.PRODUCTS, R.string.nav_products, Icons.Outlined.Inventory2, "products"),
+    Tab(Routes.CUSTOMERS, R.string.nav_customers, Icons.Outlined.People, "customers"),
 )
+
+/** The bottom navigation of the mockup: card colour, top hairline, lime-ink active tab with a soft glow. */
+@Composable
+private fun KBottomNav(tabs: List<Tab>, current: String?, onSelect: (String) -> Unit) {
+    val line = uz.kassiron.app.ui.theme.K.c.bd
+    androidx.compose.foundation.layout.Row(
+        Modifier.fillMaxWidth().background(uz.kassiron.app.ui.theme.K.c.s1)
+            .drawBehind { drawLine(line, androidx.compose.ui.geometry.Offset.Zero, androidx.compose.ui.geometry.Offset(size.width, 0f), 1.dp.toPx()) }
+            .navigationBarsPadding().height(62.dp),
+    ) {
+        tabs.forEach { tab ->
+            val on = current == tab.route
+            val color = if (on) uz.kassiron.app.ui.theme.K.c.ink else uz.kassiron.app.ui.theme.K.c.mu
+            androidx.compose.foundation.layout.Column(
+                Modifier.weight(1f).fillMaxHeight().clickable { onSelect(tab.route) },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Box(
+                    Modifier.size(width = 52.dp, height = 28.dp).clip(RoundedCornerShape(999.dp))
+                        .background(if (on) uz.kassiron.app.ui.theme.K.c.tint else androidx.compose.ui.graphics.Color.Transparent),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(tab.icon, contentDescription = null, tint = color, modifier = Modifier.size(22.dp)) }
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    stringResource(tab.label), color = color, maxLines = 1, softWrap = false,
+                    style = uz.kassiron.app.ui.theme.K.t.chip.copy(fontSize = 10.5.sp, letterSpacing = (-0.1).sp),
+                )
+            }
+        }
+    }
+}
 
 @Composable
 fun AppNav() {
@@ -129,7 +174,7 @@ fun AppNav() {
 
     val backStack by nav.currentBackStackEntryAsState()
     val current = backStack?.destination?.route
-    val showBar = current in TABS.map { it.route } || current == Routes.HOME
+    val showBar = current in TABS.map { it.route }
 
     // Sync blocked the phone (revoked, shop blocked, offline too long) or the
     // signed-in user was removed/blocked on the website: leave whatever screen is open.
@@ -141,18 +186,10 @@ fun AppNav() {
     }
 
     Scaffold(
+        containerColor = uz.kassiron.app.ui.theme.K.c.bg,
         bottomBar = {
             if (showBar && user != null) {
-                NavigationBar {
-                    TABS.filter { it.permission == null || user!!.can(it.permission) }.forEach { tab ->
-                        NavigationBarItem(
-                            selected = current == tab.route,
-                            onClick = { nav.switchTab(tab.route) },
-                            icon = { Icon(tab.icon, contentDescription = null) },
-                            label = { Text(stringResource(tab.label), maxLines = 1, softWrap = false, fontSize = 11.sp) },
-                        )
-                    }
-                }
+                KBottomNav(TABS.filter { it.permission == null || user!!.can(it.permission) }, current) { nav.switchTab(it) }
             }
         },
     ) { padding ->

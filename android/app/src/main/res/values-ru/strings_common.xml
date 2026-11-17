@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="nav_home">Главная</string>
     <string name="nav_till">Касса</string>
     <string name="nav_sales">Продажи</string>
     <string name="nav_products">Товары</string>

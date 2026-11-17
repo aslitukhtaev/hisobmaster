@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="nav_home">Bosh</string>
     <string name="nav_till">Kassa</string>
     <string name="nav_sales">Sotuvlar</string>
     <string name="nav_products">Mahsulotlar</string>

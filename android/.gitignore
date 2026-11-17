@@ -6,3 +6,4 @@
 *.keystore
 keystore.properties
 /dist/
+/shots/
