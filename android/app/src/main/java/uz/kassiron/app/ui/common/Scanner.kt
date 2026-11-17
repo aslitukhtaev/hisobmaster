@@ -18,6 +18,12 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -29,17 +35,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FlashlightOff
-import androidx.compose.material.icons.filled.FlashlightOn
-import androidx.compose.material.icons.filled.NoPhotography
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.FlashOff
+import androidx.compose.material.icons.outlined.FlashOn
+import androidx.compose.material.icons.outlined.NoPhotography
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -54,18 +55,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -76,7 +78,9 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import uz.kassiron.app.R
-import uz.kassiron.app.ui.theme.Brand
+import uz.kassiron.app.ui.kit.KButton
+import uz.kassiron.app.ui.kit.KIconButton
+import uz.kassiron.app.ui.theme.K
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
@@ -98,7 +102,7 @@ fun BarcodeScannerDialog(onResult: (String) -> Unit, onDismiss: () -> Unit, cont
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
-        Box(Modifier.fillMaxSize().background(Color.Black)) {
+        Box(Modifier.fillMaxSize().background(CameraDark)) {
             ScannerContent(onResult, onDismiss, continuous)
         }
     }
@@ -120,29 +124,29 @@ private fun ScannerContent(onResult: (String) -> Unit, onDismiss: () -> Unit, co
     if (granted) {
         CameraScanner(onResult, onDismiss, continuous)
     } else {
+        ScannerPermission(asked, onAllow = { launcher.launch(Manifest.permission.CAMERA) }, onClose = onDismiss)
+    }
+}
+
+/** No camera permission yet: a short explanation and the "Ruxsat berish" button. */
+@Composable
+internal fun ScannerPermission(asked: Boolean, onAllow: () -> Unit, onClose: () -> Unit) {
+    Box(Modifier.fillMaxSize().background(CameraDark)) {
         Column(
             Modifier.fillMaxSize().safeDrawingPadding().padding(32.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Icon(Icons.Filled.NoPhotography, null, tint = Color.White, modifier = Modifier.size(56.dp))
-            Text(stringResource(R.string.scan_permission), color = Color.White, textAlign = TextAlign.Center)
-            if (asked) {
-                Button(onClick = { launcher.launch(Manifest.permission.CAMERA) }) { Text(stringResource(R.string.scan_allow)) }
-            }
+            Icon(Icons.Outlined.NoPhotography, null, tint = HintWhite, modifier = Modifier.size(56.dp))
+            Text(
+                stringResource(R.string.scan_permission), color = HintWhite, textAlign = TextAlign.Center,
+                style = K.t.body.copy(fontSize = 15.sp),
+            )
+            if (asked) KButton(stringResource(R.string.scan_allow), onAllow, height = 48.dp, fontSize = 15.sp)
         }
-        CloseButton(onDismiss)
-    }
-}
-
-@Composable
-private fun CloseButton(onDismiss: () -> Unit) {
-    Box(Modifier.fillMaxSize().safeDrawingPadding().padding(12.dp)) {
-        FilledTonalIconButton(
-            onClick = onDismiss,
-            modifier = Modifier.size(52.dp).align(Alignment.TopStart),
-            colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = Color(0x66000000), contentColor = Color.White),
-        ) { Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.scan_close)) }
+        Row(Modifier.fillMaxWidth().safeDrawingPadding().padding(start = 14.dp, end = 14.dp, top = 12.dp)) {
+            KIconButton(Icons.Outlined.Close, onClose, contentDescription = stringResource(R.string.scan_close))
+        }
     }
 }
 
@@ -238,56 +242,82 @@ private fun CameraScanner(onResult: (String) -> Unit, onDismiss: () -> Unit, con
 
     Box(Modifier.fillMaxSize()) {
         AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
-        AimOverlay()
-        CloseButton(onDismiss)
-        Column(
-            Modifier.fillMaxSize().safeDrawingPadding().padding(16.dp),
-            verticalArrangement = Arrangement.Bottom,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                lastCode?.let { stringResource(R.string.scan_last, it) } ?: stringResource(R.string.scan_hint),
-                color = Color.White,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-                    .background(Color(0x88000000), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-            )
-            Row(Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                if (camera?.cameraInfo?.hasFlashUnit() == true) {
-                    FilledTonalIconButton(
-                        onClick = {
-                            torch = !torch
-                            camera?.cameraControl?.enableTorch(torch)
-                        },
-                        modifier = Modifier.size(64.dp),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = if (torch) Brand.Lime else Color(0x66000000),
-                            contentColor = if (torch) Brand.OnLime else Color.White,
-                        ),
-                    ) {
-                        Icon(
-                            if (torch) Icons.Filled.FlashlightOn else Icons.Filled.FlashlightOff,
-                            contentDescription = stringResource(R.string.scan_torch),
-                        )
-                    }
-                }
-            }
-        }
+        ScannerOverlay(
+            hint = lastCode?.let { stringResource(R.string.scan_last, it) } ?: stringResource(R.string.scan_hint),
+            torch = torch,
+            hasTorch = camera?.cameraInfo?.hasFlashUnit() == true,
+            onClose = onDismiss,
+            onTorch = {
+                torch = !torch
+                camera?.cameraControl?.enableTorch(torch)
+            },
+        )
     }
 }
 
-/** Dims everything but a centred aim box. */
+/** The camera is dark in both themes (mockup 31): fixed colours on purpose. */
+private val CameraDark = Color(0xFF0B0D09)
+private val Dim = Color(0x8C000000)
+private val HintWhite = Color(0xFFFFFFFF)
+
+/**
+ * Everything drawn over the camera picture (mockup 31): the dimmed area around a
+ * lime frame with a moving scan line, close and torch buttons at the top, the
+ * hint at the bottom.
+ */
 @Composable
-private fun AimOverlay() {
-    Canvas(Modifier.fillMaxSize().graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)) {
-        val w = size.width * 0.78f
-        val h = minOf(size.height * 0.28f, w * 0.62f)
-        val topLeft = Offset((size.width - w) / 2, (size.height - h) / 2.4f)
-        drawRect(Color(0x99000000))
-        drawRoundRect(Color.Transparent, topLeft, Size(w, h), CornerRadius(24f, 24f), blendMode = BlendMode.Clear)
-        drawRoundRect(Brand.Lime, topLeft, Size(w, h), CornerRadius(24f, 24f), style = Stroke(width = 6f))
+internal fun ScannerOverlay(hint: String, torch: Boolean, hasTorch: Boolean, onClose: () -> Unit, onTorch: () -> Unit) {
+    val lime = K.c.primary
+    val glow = K.c.glow
+    val phase by rememberInfiniteTransition(label = "scan").animateFloat(
+        0f, 1f, infiniteRepeatable(tween(2400, easing = LinearEasing), RepeatMode.Restart), label = "line",
+    )
+    Box(Modifier.fillMaxSize()) {
+        Canvas(Modifier.fillMaxSize()) {
+            val w = minOf(size.width * 0.72f, 300.dp.toPx())
+            val h = w * 0.65f
+            val topLeft = Offset((size.width - w) / 2, (size.height - h) / 2)
+            val r = CornerRadius(18.dp.toPx())
+            // Dim everything but the frame (an even-odd path: the screen minus the frame).
+            drawPath(
+                Path().apply {
+                    fillType = PathFillType.EvenOdd
+                    addRect(Rect(Offset.Zero, size))
+                    addRoundRect(RoundRect(Rect(topLeft, Size(w, h)), r))
+                },
+                Dim,
+            )
+            // Soft glow around the frame, then the frame itself.
+            for (i in 1..3) {
+                val g = (i * 4).dp.toPx()
+                drawRoundRect(
+                    glow.copy(alpha = glow.alpha * (0.5f / i)), Offset(topLeft.x - g / 2, topLeft.y - g / 2), Size(w + g, h + g),
+                    CornerRadius(r.x + g / 2), style = Stroke(width = g),
+                )
+            }
+            drawRoundRect(lime, topLeft, Size(w, h), r, style = Stroke(width = 2.dp.toPx()))
+            // The scan line: starts in the middle, sweeps up and down.
+            val y = topLeft.y + h / 2 + (h / 2 - 12.dp.toPx()) * kotlin.math.sin(phase * 2 * Math.PI).toFloat()
+            val inset = 10.dp.toPx()
+            drawLine(glow, Offset(topLeft.x + inset, y), Offset(topLeft.x + w - inset, y), strokeWidth = 8.dp.toPx())
+            drawLine(lime, Offset(topLeft.x + inset, y), Offset(topLeft.x + w - inset, y), strokeWidth = 2.dp.toPx())
+        }
+        Row(
+            Modifier.fillMaxWidth().safeDrawingPadding().padding(start = 14.dp, end = 14.dp, top = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            KIconButton(Icons.Outlined.Close, onClose, contentDescription = stringResource(R.string.scan_close))
+            if (hasTorch) {
+                KIconButton(
+                    if (torch) Icons.Outlined.FlashOn else Icons.Outlined.FlashOff, onTorch, primary = torch,
+                    contentDescription = stringResource(R.string.scan_torch),
+                )
+            }
+        }
+        Text(
+            hint, color = HintWhite, textAlign = TextAlign.Center, style = K.t.label.copy(fontSize = 14.sp),
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().safeDrawingPadding()
+                .padding(start = 24.dp, end = 24.dp, bottom = 30.dp),
+        )
     }
 }

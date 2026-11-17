@@ -63,7 +63,7 @@ object Receipts {
             saleUuid = saleUuid,
             shopName = shop.optString("name", ""),
             shopAddress = shop.optString("address", "").takeIf { it != "null" } ?: "",
-            shopPhone = shop.optString("phone", "").takeIf { it != "null" } ?: "",
+            shopPhone = phone(shop.optString("phone", "").takeIf { it != "null" } ?: ""),
             receiptNo = sale.strOrNull("receipt_no")?.takeIf(String::isNotBlank) ?: saleUuid.take(8),
             createdAt = Time.local(sale.str("created_at")),
             cashier = sale.str("cashier_name"),
@@ -81,6 +81,13 @@ object Receipts {
         )
     }
 
+    /** "+998901112233" -> "+998 90 111 22 33" (other numbers unchanged). */
+    fun phone(raw: String): String {
+        val d = raw.filter(Char::isDigit)
+        if (d.length != 12 || !d.startsWith("998")) return raw
+        return "+998 ${d.substring(3, 5)} ${d.substring(5, 8)} ${d.substring(8, 10)} ${d.substring(10)}"
+    }
+
     fun paymentLabel(context: Context, type: String): String = when (type) {
         "naqd" -> context.getString(R.string.till_pay_naqd)
         "karta" -> context.getString(R.string.till_pay_karta)
@@ -91,8 +98,20 @@ object Receipts {
     }
 
     /**
+     * The payment lines of a receipt: cash shows what was handed over (the change
+     * follows on its own line), card and debt their amounts.
+     */
+    fun paymentRows(r: ReceiptData): List<Pair<String, Double>> {
+        if (r.payments.isEmpty()) return listOf(r.paymentType to r.total)
+        return r.payments.map { (type, amount) ->
+            type to if (type == "naqd" && r.cashReceived > amount) r.cashReceived else amount
+        }
+    }
+
+    /**
      * The receipt as monospaced lines of [width] characters (32 for 58 mm, 48
-     * for 80 mm) — used for printing and for sharing as text.
+     * for 80 mm) — used for printing and for sharing as text. Same content as
+     * the receipt screen.
      */
     fun lines(context: Context, r: ReceiptData, width: Int, clean: (String) -> String = Text::normalizeQuotes): List<ReceiptLine> {
         val out = ArrayList<ReceiptLine>()
@@ -107,34 +126,22 @@ object Receipts {
         if (r.shopName.isNotBlank()) center(r.shopName, bold = true, big = true)
         if (r.shopAddress.isNotBlank()) center(r.shopAddress)
         if (r.shopPhone.isNotBlank()) center(r.shopPhone)
-        center("№${r.receiptNo}  ${r.createdAt}")
-        if (r.cashier.isNotBlank()) center(context.getString(R.string.print_cashier) + ": " + r.cashier)
+        divider()
+        pair("№ ${r.receiptNo}", r.createdAt)
+        if (r.cashier.isNotBlank()) out += ReceiptLine(clean(context.getString(R.string.print_cashier) + ": " + r.cashier))
         divider()
         for (item in r.items) {
             wrap(clean(item.name), width).forEach { out += ReceiptLine(it) }
             pair("  " + Money.qty(item.qty) + " x " + Money.format(item.unitPrice, false), Money.format(item.subtotal, false))
         }
         divider()
-        if (r.discount > 0) pair(context.getString(R.string.till_discount), "-" + Money.format(r.discount))
-        pair(context.getString(R.string.till_total), Money.format(r.total), bold = true)
-        if (r.payments.size > 1) {
-            r.payments.forEach { (type, amount) -> pair(paymentLabel(context, type), Money.format(amount)) }
-        } else {
-            pair(context.getString(R.string.print_payment_type), paymentLabel(context, r.paymentType))
-        }
-        if (r.cashReceived > 0) {
-            pair(context.getString(R.string.till_cash_received), Money.format(r.cashReceived))
-            pair(context.getString(R.string.till_change), Money.format(r.change), bold = true)
-        }
-        if (r.debt > 0) {
-            if (r.payments.size <= 1) {
-                pair(context.getString(R.string.print_paid_now), Money.format(r.paidAmount))
-                pair(context.getString(R.string.print_debt_amount), Money.format(r.debt))
-            }
-            r.customerName?.let { pair(context.getString(R.string.till_customer), it) }
-        }
-        if (r.refunded > 0) pair(context.getString(R.string.print_refunded), "-" + Money.format(r.refunded))
-        out += ReceiptLine("")
+        if (r.discount > 0) pair(context.getString(R.string.till_discount), "-" + Money.format(r.discount, false))
+        pair(context.getString(R.string.till_receipt_total), Money.format(r.total), bold = true)
+        paymentRows(r).forEach { (type, amount) -> pair(paymentLabel(context, type), Money.format(amount, false)) }
+        if (r.change > 0) pair(context.getString(R.string.till_change), Money.format(r.change, false))
+        if (r.debt > 0) r.customerName?.let { pair(context.getString(R.string.till_customer), it) }
+        if (r.refunded > 0) pair(context.getString(R.string.print_refunded), "-" + Money.format(r.refunded, false))
+        divider()
         center(context.getString(R.string.print_not_fiscal))
         center(context.getString(R.string.print_thanks))
         return out

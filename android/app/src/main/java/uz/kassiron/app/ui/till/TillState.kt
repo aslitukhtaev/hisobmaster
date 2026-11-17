@@ -49,7 +49,11 @@ data class CartItem(
 
 data class LastSale(val uuid: String, val receiptNo: String, val total: Double, val change: Double, val qarz: Double)
 
-enum class PayMode { NAQD, KARTA, ARALASH, QARZ }
+/**
+ * The three payment tiles. Karta and Qarz take an amount: when it is less than
+ * the total, the rest is paid in cash (naqd + karta / naqd + qarz = "aralash").
+ */
+enum class PayMode { NAQD, KARTA, QARZ }
 
 sealed interface BarcodeHit {
     data class Product(val product: TillProduct) : BarcodeHit
@@ -61,26 +65,30 @@ object TillData {
     private const val PRODUCT_COLS = """p.uuid, p.name, p.unit, p.sell_price, p.stock_qty, p.barcode, p.low_stock_threshold,
         (SELECT COUNT(*) FROM product_variants v WHERE v.product_id = p.uuid AND v.status = 'active') AS variant_count"""
 
-    private fun product(r: Row) = TillProduct(
+    /** The shop-wide low stock level (settings.low_stock_threshold_default), used when a product has none — as Product::lowStock does. */
+    private fun shopLowDefault(): Double? = App.kv.shopSetting("low_stock_threshold_default")?.let(Money::parse)
+
+    private fun product(r: Row, lowDefault: Double? = null) = TillProduct(
         uuid = r.str("uuid"),
         name = r.str("name"),
         unit = r.str("unit").ifBlank { "dona" },
         price = r.dbl("sell_price"),
         stock = r.dbl("stock_qty"),
         barcode = r.strOrNull("barcode"),
-        lowThreshold = r.dblOrNull("low_stock_threshold"),
+        lowThreshold = r.dblOrNull("low_stock_threshold") ?: lowDefault,
         variantCount = r.long("variant_count").toInt(),
     )
 
     /** Name (LIKE) or barcode (exact, product or variant) search; best sellers first when [query] is empty. */
     fun search(query: String): List<TillProduct> {
         val q = query.trim()
+        val low = shopLowDefault()
         if (q.isEmpty()) {
             return App.db.query(
                 """SELECT $PRODUCT_COLS FROM products p WHERE p.status = 'active'
                    ORDER BY (SELECT COUNT(*) FROM sale_items si WHERE si.product_id = p.uuid) DESC, p.name COLLATE NOCASE
                    LIMIT 80""",
-            ).map(::product)
+            ).map { product(it, low) }
         }
         val like = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
         return App.db.query(
@@ -93,7 +101,7 @@ object TillData {
                ORDER BY (p.barcode = ?) DESC, (p.name LIKE ? ESCAPE '\') DESC, p.name COLLATE NOCASE
                LIMIT 80""",
             like, q, q, like, q, q.replace("%", "\\%").replace("_", "\\_") + "%",
-        ).map(::product)
+        ).map { product(it, low) }
     }
 
     /** The exact product / variant with this barcode (active only). */
@@ -106,14 +114,14 @@ object TillData {
                WHERE v.barcode = ? AND v.status = 'active' AND p.status = 'active' LIMIT 1""",
             c,
         )?.let { r ->
-            val p = product(r)
+            val p = product(r, shopLowDefault())
             return BarcodeHit.Variant(
                 p,
                 TillVariant(r.str("v_uuid"), r.str("variant_label"), r.dblOrNull("v_price") ?: p.price, r.dbl("v_stock"), r.strOrNull("v_barcode")),
             )
         }
         return App.db.queryOne("SELECT $PRODUCT_COLS FROM products p WHERE p.barcode = ? AND p.status = 'active' LIMIT 1", c)
-            ?.let { BarcodeHit.Product(product(it)) }
+            ?.let { BarcodeHit.Product(product(it, shopLowDefault())) }
     }
 
     fun variants(product: TillProduct): List<TillVariant> = App.db.query(
@@ -160,10 +168,16 @@ class TillViewModel : ViewModel() {
     var mode by mutableStateOf(PayMode.NAQD)
     var cashText by mutableStateOf("")
     var kartaText by mutableStateOf("")
+    var debtText by mutableStateOf("")
     var discountText by mutableStateOf("")
     var customer by mutableStateOf<TillCustomer?>(null)
 
     val count: Double get() = cart.sumOf { it.qty }
+
+    /** "3 ta mahsulot": whole units counted one by one, a weighed line (kg, litr) counts once. */
+    val itemCount: Int get() = cart.sumOf { if (it.fractional) 1 else Math.round(it.qty).toInt() }
+
+    fun qtyOf(productUuid: String): Double = cart.filter { it.productUuid == productUuid }.sumOf { it.qty }
     val subtotal: Double get() = SaleMath.round2(cart.sumOf { it.subtotal })
 
     sealed interface AddResult {
@@ -212,6 +226,7 @@ class TillViewModel : ViewModel() {
         mode = PayMode.NAQD
         cashText = ""
         kartaText = ""
+        debtText = ""
         discountText = ""
         customer = null
     }
@@ -223,12 +238,14 @@ class TillViewModel : ViewModel() {
     /** Cash handed over and card amount as the selected mode means them. */
     fun tendered(total: Double): Pair<Double, Double> = when (mode) {
         PayMode.NAQD -> (Money.parse(cashText) ?: total) to 0.0
-        PayMode.KARTA -> 0.0 to total
-        PayMode.ARALASH -> {
-            val karta = Money.parse(kartaText) ?: 0.0
-            (Money.parse(cashText) ?: max(0.0, SaleMath.round2(total - karta))) to karta
+        PayMode.KARTA -> {
+            val karta = (Money.parse(kartaText) ?: total).coerceIn(0.0, total)
+            SaleMath.round2(total - karta) to karta
         }
-        PayMode.QARZ -> (Money.parse(cashText) ?: 0.0) to 0.0
+        PayMode.QARZ -> {
+            val debt = (Money.parse(debtText) ?: total).coerceIn(0.0, total)
+            SaleMath.round2(total - debt) to 0.0
+        }
     }
 
     fun split(canDiscount: Boolean): PaymentSplit {
@@ -240,14 +257,14 @@ class TillViewModel : ViewModel() {
     private fun round3(v: Double) = Math.round(v * 1000) / 1000.0
 }
 
-/** Quick cash chips: the exact total, then the total rounded up to common notes. */
+/** Quick cash chips: the exact total, then the total rounded up to common notes (19 000 → 20 000, 50 000, 100 000). */
 fun quickCash(total: Double): List<Double> {
     if (total <= 0) return emptyList()
-    val notes = listOf(1_000.0, 5_000.0, 10_000.0, 50_000.0, 100_000.0, 200_000.0)
+    val notes = listOf(1_000.0, 5_000.0, 10_000.0, 20_000.0, 50_000.0, 100_000.0, 200_000.0)
     val out = linkedSetOf(SaleMath.round2(total))
     for (n in notes) {
         val v = ceil(total / n - 1e-9) * n
         if (v > total + 0.005) out += v
     }
-    return out.toList().take(6)
+    return out.toList().take(4)
 }

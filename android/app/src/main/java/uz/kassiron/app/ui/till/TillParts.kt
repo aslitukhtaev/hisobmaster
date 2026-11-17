@@ -1,62 +1,39 @@
 package uz.kassiron.app.ui.till
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CallSplit
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.Payments
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.outlined.Payments
+import androidx.compose.material.icons.outlined.Percent
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SuggestionChip
-import androidx.compose.material3.Surface
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -66,428 +43,297 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import uz.kassiron.app.App
 import uz.kassiron.app.R
 import uz.kassiron.app.core.Money
 import uz.kassiron.app.core.Units
 import uz.kassiron.app.domain.Customers
-import uz.kassiron.app.ui.common.AmountField
-import uz.kassiron.app.ui.common.SearchField
+import uz.kassiron.app.print.Receipts
 import uz.kassiron.app.ui.common.dbState
 import uz.kassiron.app.ui.common.io
-import uz.kassiron.app.ui.theme.Brand
+import uz.kassiron.app.ui.kit.Edge
+import uz.kassiron.app.ui.kit.KAmountField
+import uz.kassiron.app.ui.kit.KAvatar
+import uz.kassiron.app.ui.kit.KButton
+import uz.kassiron.app.ui.kit.KChoiceTiles
+import uz.kassiron.app.ui.kit.KField
+import uz.kassiron.app.ui.kit.KMoney
+import uz.kassiron.app.ui.kit.KOption
+import uz.kassiron.app.ui.kit.KRow
+import uz.kassiron.app.ui.kit.KSearch
+import uz.kassiron.app.ui.kit.KSheet
+import uz.kassiron.app.ui.kit.KSheetTitle
+import uz.kassiron.app.ui.kit.KSub
+import uz.kassiron.app.ui.kit.KTag
+import uz.kassiron.app.ui.kit.KTagKind
+import uz.kassiron.app.ui.kit.KValueChip
+import uz.kassiron.app.ui.theme.K
 
 // ---------------------------------------------------------------------------------------------
-// Cart
+// Small private building blocks (made from K.c / K.t; the shared kit has no equivalent)
 
-@Composable
-internal fun CartPanel(
-    vm: TillViewModel,
-    onQty: (CartItem) -> Unit,
-    onNoStock: (CartItem) -> Unit,
-    onClear: () -> Unit,
-    onPay: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier) {
-        Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                stringResource(R.string.till_cart) + if (vm.cart.isNotEmpty()) " (${vm.cart.size})" else "",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.weight(1f),
-            )
-            if (vm.cart.isNotEmpty()) {
-                TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onClear) {
-                    Icon(Icons.Filled.DeleteSweep, null)
-                    Spacer(Modifier.size(4.dp))
-                    Text(stringResource(R.string.till_clear))
-                }
-            }
-        }
-        if (vm.cart.isEmpty()) {
-            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Filled.ShoppingCart, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.height(8.dp))
-                    Text(stringResource(R.string.till_cart_empty), color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-                }
-            }
-        } else {
-            LazyColumn(
-                Modifier.weight(1f).fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                items(vm.cart, key = { it.key }) { item ->
-                    CartRow(
-                        item,
-                        onPlus = { if (!vm.setQty(item.key, item.qty + 1)) onNoStock(item) },
-                        onMinus = { vm.setQty(item.key, if (item.qty > 1) item.qty - 1 else 0.0) },
-                        onQty = { onQty(item) },
-                        onRemove = { vm.remove(item.key) },
-                    )
-                }
-            }
-        }
-        HorizontalDivider()
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.till_total), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-            Text(Money.format(vm.subtotal), style = MaterialTheme.typography.headlineMedium)
-        }
-        Button(
-            onClick = onPay,
-            enabled = vm.cart.isNotEmpty(),
-            modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 12.dp).height(60.dp),
-            shape = RoundedCornerShape(16.dp),
-        ) { Text(stringResource(R.string.till_pay), style = MaterialTheme.typography.titleMedium) }
-    }
+/** Lets a full-bleed kit block (KSearch, which pads itself by [Edge]) sit flush inside a sheet that already pads by [Edge]. */
+internal fun Modifier.bleed(by: Dp = Edge): Modifier = layout { measurable, constraints ->
+    val extra = by.roundToPx() * 2
+    val placeable = measurable.measure(
+        constraints.copy(minWidth = constraints.minWidth + extra, maxWidth = constraints.maxWidth + extra),
+    )
+    layout(placeable.width - extra, placeable.height) { placeable.place(-extra / 2, 0) }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** A dashed horizontal line through the middle of the box. */
+internal fun Modifier.drawDashes(color: Color): Modifier = drawBehind {
+    drawLine(
+        color, Offset(0f, size.height / 2), Offset(size.width, size.height / 2),
+        strokeWidth = 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx())),
+    )
+}
+
+/** Change / debt line of the payment sheet (mockup .chg): tint box, label left, amount right. */
 @Composable
-private fun CartRow(item: CartItem, onPlus: () -> Unit, onMinus: () -> Unit, onQty: () -> Unit, onRemove: () -> Unit) {
-    val state = rememberSwipeToDismissBoxState(confirmValueChange = { v ->
-        if (v != SwipeToDismissBoxValue.Settled) onRemove()
-        v != SwipeToDismissBoxValue.Settled
-    })
-    SwipeToDismissBox(
-        state = state,
-        backgroundContent = {
-            Box(
-                Modifier.fillMaxSize().padding(horizontal = 20.dp),
-                contentAlignment = if (state.dismissDirection == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd,
-            ) { Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error) }
-        },
+private fun AmountBox(label: String, amount: Double, danger: Boolean = false) {
+    Row(
+        Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(14.dp)).background(if (danger) K.c.redBg else K.c.tint)
+            .padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Surface(
-            shape = RoundedCornerShape(14.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-            modifier = Modifier.fillMaxWidth(),
+        Text(label, style = K.t.body.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold), color = K.c.tx, modifier = Modifier.weight(1f))
+        KMoney(amount, size = 19.sp, color = if (danger) K.c.red else K.c.ink)
+    }
+}
+
+/** The small two-up buttons of the payment sheet (mockup .two): outline, lime when [on]. */
+@Composable
+private fun SmallToggle(icon: ImageVector, label: String, on: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, onClear: (() -> Unit)? = null) {
+    val shape = RoundedCornerShape(12.dp)
+    val fg = if (on) K.c.ink else K.c.mu
+    Row(
+        modifier.height(44.dp).clip(shape).background(if (on) K.c.tint else Color.Transparent)
+            .border(1.dp, if (on) K.c.primary else K.c.bd, shape).clickable(onClick = onClick)
+            .padding(start = 10.dp, end = if (onClear != null) 2.dp else 10.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, null, tint = fg, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(7.dp))
+        Text(label, style = K.t.label.copy(fontSize = 13.sp), color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+        if (onClear != null) {
+            Box(Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onClear), contentAlignment = Alignment.Center) {
+                Icon(Icons.Outlined.Close, stringResource(R.string.common_delete), tint = fg, modifier = Modifier.size(16.dp))
+            }
+        }
+    }
+}
+
+/** "Mijoz (majburiy)": a picker-looking field with a red border and message when missing. */
+@Composable
+private fun CustomerField(customer: TillCustomer?, error: String?, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    Column(Modifier.fillMaxWidth()) {
+        Text(stringResource(R.string.till_customer_required_label), style = K.t.label, color = K.c.mu, modifier = Modifier.padding(bottom = 6.dp))
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = 50.dp).clip(shape).background(K.c.s1)
+                .border(if (error != null) 1.5.dp else 1.dp, if (error != null) K.c.red else K.c.bd, shape)
+                .clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(Modifier.padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        item.name + (item.variantLabel?.let { " — $it" } ?: ""),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        Money.format(item.price) + " · " + Money.format(item.subtotal),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                FilledTonalIconButton(onClick = onMinus, modifier = Modifier.size(44.dp)) { Icon(Icons.Filled.Remove, null) }
-                Surface(
-                    onClick = onQty,
-                    shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier.padding(horizontal = 4.dp).widthIn(min = 52.dp).height(44.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 6.dp)) {
-                        Text(Money.qty(item.qty), style = MaterialTheme.typography.titleMedium, maxLines = 1)
-                    }
-                }
-                FilledTonalIconButton(onClick = onPlus, modifier = Modifier.size(44.dp)) { Icon(Icons.Filled.Add, null) }
-                IconButton(onClick = onRemove, modifier = Modifier.size(44.dp)) {
-                    Icon(Icons.Filled.Close, stringResource(R.string.common_delete), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(Icons.Outlined.Person, null, tint = K.c.mu, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                if (customer == null) {
+                    Text(stringResource(R.string.till_choose_customer_ph), style = K.t.body.copy(fontSize = 15.sp, fontWeight = FontWeight.Medium), color = K.c.mu, maxLines = 1)
+                } else {
+                    Text(customer.name, style = K.t.body.copy(fontSize = 15.sp), color = K.c.tx, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (customer.balance > 0.005) KSub(stringResource(R.string.till_current_debt, Money.format(customer.balance)), K.c.red)
                 }
             }
+            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = K.c.mu, modifier = Modifier.size(18.dp))
         }
+        if (error != null) Text(error, style = K.t.small, color = K.c.red, modifier = Modifier.padding(top = 5.dp))
     }
-}
-
-@Composable
-internal fun QtyDialog(item: CartItem, onSet: (Double) -> Boolean, onDismiss: () -> Unit) {
-    val start = Money.qty(item.qty)
-    var text by remember { mutableStateOf(TextFieldValue(start, TextRange(0, start.length))) }
-    var error by remember { mutableStateOf<String?>(null) }
-    val focus = remember { FocusRequester() }
-    val wholeMsg = stringResource(R.string.till_qty_whole)
-    val stockMsg = stringResource(R.string.till_qty_over_stock, Money.qty(item.stock) + " " + item.unit)
-    val invalidMsg = stringResource(R.string.till_err_invalid_qty)
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-
-    fun submit() {
-        val qty = Money.parse(text.text)
-        when {
-            qty == null || qty < 0 -> error = invalidMsg
-            !Units.fits(qty, item.unit) -> error = wholeMsg
-            !onSet(qty) -> error = stockMsg
-            else -> onDismiss()
-        }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(item.name + (item.variantLabel?.let { " — $it" } ?: ""), maxLines = 2, overflow = TextOverflow.Ellipsis) },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { v -> text = v.copy(text = v.text.filter { it.isDigit() || ((it == ',' || it == '.') && item.fractional) }); error = null },
-                    label = { Text(stringResource(R.string.till_qty) + " (" + item.unit + ")") },
-                    singleLine = true,
-                    isError = error != null,
-                    supportingText = error?.let { { Text(it) } },
-                    keyboardOptions = KeyboardOptions(keyboardType = if (item.fractional) KeyboardType.Decimal else KeyboardType.Number),
-                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { submit() }),
-                    textStyle = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.fillMaxWidth().focusRequester(focus),
-                )
-                Text(
-                    stringResource(R.string.till_stock, Money.qty(item.stock) + " " + item.unit),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        },
-        confirmButton = { Button(onClick = { submit() }) { Text(stringResource(R.string.common_save)) } },
-        dismissButton = { TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
-    )
-}
-
-@Composable
-internal fun VariantDialog(product: TillProduct, onPick: (TillVariant) -> Unit, onDismiss: () -> Unit) {
-    val variants by dbState<List<TillVariant>?>(null, product.uuid) { TillData.variants(product) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.till_pick_variant, product.name), maxLines = 2, overflow = TextOverflow.Ellipsis) },
-        text = {
-            LazyColumn(Modifier.heightIn(max = 420.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                items(variants.orEmpty(), key = { it.uuid }) { v ->
-                    Surface(
-                        onClick = { onPick(v) },
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Row(Modifier.padding(14.dp).heightIn(min = 28.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) {
-                                Text(v.label, style = MaterialTheme.typography.titleMedium)
-                                Text(
-                                    stringResource(R.string.till_stock, Money.qty(v.stock) + " " + product.unit),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = if (v.stock <= 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            Text(Money.format(v.price), fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
-    )
 }
 
 // ---------------------------------------------------------------------------------------------
-// Payment
+// Payment (mockups 8 and 9)
 
 @Composable
-internal fun PaymentContent(vm: TillViewModel, canDiscount: Boolean, selling: Boolean, error: String?, onSell: () -> Unit) {
-    var pickCustomer by remember { mutableStateOf(false) }
+internal fun PaymentSheet(
+    vm: TillViewModel,
+    canDiscount: Boolean,
+    selling: Boolean,
+    error: String?,
+    onSell: () -> Unit,
+    onPickCustomer: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    KSheet(onDismiss = { if (!selling) onDismiss() }) {
+        PaymentContent(vm, canDiscount, selling, error, onSell, onPickCustomer)
+    }
+}
+
+@Composable
+internal fun PaymentContent(
+    vm: TillViewModel,
+    canDiscount: Boolean,
+    selling: Boolean,
+    error: String?,
+    onSell: () -> Unit,
+    onPickCustomer: () -> Unit,
+) {
+    var showDiscount by remember { mutableStateOf(vm.discountText.isNotEmpty()) }
     val subtotal = vm.subtotal
     val discount = vm.discount(canDiscount)
     val discountBad = discount < 0 || (discount > 0 && discount >= subtotal - 0.005)
     val split = vm.split(canDiscount)
     val total = split.total
+    val totalText = Money.format(total, false)
 
-    Column(
-        Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).imePadding().navigationBarsPadding()
-            .padding(horizontal = 16.dp).padding(bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(stringResource(R.string.till_to_pay), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-            Text(Money.format(total), style = MaterialTheme.typography.headlineMedium.copy(fontSize = MaterialTheme.typography.headlineMedium.fontSize * 1.2f))
+    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+            Text(stringResource(R.string.till_to_pay), style = K.t.label.copy(fontSize = 13.sp), color = K.c.mu, modifier = Modifier.weight(1f).alignByBaseline())
+            KMoney(total, size = 32.sp, modifier = Modifier.alignByBaseline())
         }
         if (discount > 0 && !discountBad) {
             Text(
                 stringResource(R.string.till_subtotal_discount, Money.format(subtotal), Money.format(discount)),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = K.t.small, color = K.c.mu, modifier = Modifier.align(Alignment.End),
             )
         }
+        Spacer(Modifier.height(12.dp))
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ModeButton(Icons.Filled.Payments, stringResource(R.string.till_pay_naqd), vm.mode == PayMode.NAQD, Modifier.weight(1f)) {
-                vm.mode = PayMode.NAQD; vm.cashText = ""
-            }
-            ModeButton(Icons.Filled.CreditCard, stringResource(R.string.till_pay_karta), vm.mode == PayMode.KARTA, Modifier.weight(1f)) {
-                vm.mode = PayMode.KARTA
-            }
-            ModeButton(Icons.Filled.CallSplit, stringResource(R.string.till_pay_split), vm.mode == PayMode.ARALASH, Modifier.weight(1f)) {
-                vm.mode = PayMode.ARALASH; vm.cashText = ""; vm.kartaText = ""
-            }
-            ModeButton(Icons.Filled.MenuBook, stringResource(R.string.till_pay_qarz), vm.mode == PayMode.QARZ, Modifier.weight(1f)) {
-                vm.mode = PayMode.QARZ; vm.cashText = ""
-            }
-        }
+        val modes = listOf(PayMode.NAQD, PayMode.KARTA, PayMode.QARZ)
+        KChoiceTiles(
+            options = listOf(
+                KOption(stringResource(R.string.till_pay_naqd), Icons.Outlined.Payments),
+                KOption(stringResource(R.string.till_pay_karta), Icons.Outlined.CreditCard),
+                KOption(stringResource(R.string.till_pay_qarz), Icons.AutoMirrored.Outlined.MenuBook),
+            ),
+            selected = modes.indexOf(vm.mode),
+            onSelect = { i ->
+                vm.mode = modes[i]
+                vm.cashText = ""; vm.kartaText = ""; vm.debtText = ""
+            },
+        )
+        Spacer(Modifier.height(10.dp))
 
         when (vm.mode) {
             PayMode.NAQD -> {
-                AmountField(vm.cashText, { vm.cashText = it }, stringResource(R.string.till_cash_given_hint, Money.format(total, false)))
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                KAmountField(vm.cashText, { vm.cashText = it }, label = stringResource(R.string.till_cash_given), placeholder = totalText, big = true)
+                Spacer(Modifier.height(10.dp))
+                val given = Money.parse(vm.cashText)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     quickCash(total).forEachIndexed { i, v ->
-                        SuggestionChip(
+                        val selected = if (i == 0) given == null || kotlin.math.abs(given - v) < 0.005 else given != null && kotlin.math.abs(given - v) < 0.005
+                        KValueChip(
+                            label = if (i == 0) stringResource(R.string.till_exact) else Money.format(v, false),
+                            selected = selected,
                             onClick = { vm.cashText = if (i == 0) "" else Money.format(v, false) },
-                            label = {
-                                Text(
-                                    if (i == 0) stringResource(R.string.till_exact) else Money.format(v, false),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    modifier = Modifier.padding(vertical = 10.dp),
-                                )
-                            },
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
+                Spacer(Modifier.height(10.dp))
+                if (split.qarz > 0.005) AmountBox(stringResource(R.string.till_short_debt), split.qarz, danger = true)
+                else AmountBox(stringResource(R.string.till_change), split.change)
+                Spacer(Modifier.height(10.dp))
             }
-            PayMode.KARTA -> Text(
-                stringResource(R.string.till_card_exact, Money.format(total)),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            PayMode.KARTA -> {
+                KAmountField(vm.kartaText, { vm.kartaText = it }, label = stringResource(R.string.till_card_amount), placeholder = totalText, big = true)
+                Spacer(Modifier.height(10.dp))
+                if (split.naqd > 0.005) {
+                    AmountBox(stringResource(R.string.till_rest_cash), split.naqd)
+                    Spacer(Modifier.height(10.dp))
+                }
+            }
+            PayMode.QARZ -> {
+                KAmountField(vm.debtText, { vm.debtText = it }, label = stringResource(R.string.till_debt_amount), placeholder = totalText, big = true)
+                if (split.naqd > 0.005) {
+                    Spacer(Modifier.height(10.dp))
+                    AmountBox(stringResource(R.string.till_rest_cash), split.naqd)
+                }
+                Spacer(Modifier.height(12.dp))
+                CustomerField(
+                    vm.customer,
+                    error = if (vm.customer == null && split.qarz > 0.005) stringResource(R.string.till_customer_required) else null,
+                    onClick = onPickCustomer,
+                )
+                Spacer(Modifier.height(12.dp))
+            }
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val c = vm.customer
+            SmallToggle(
+                Icons.Outlined.Person, c?.name ?: stringResource(R.string.till_customer), on = c != null,
+                onClick = onPickCustomer, modifier = Modifier.weight(1f),
+                onClear = if (c != null) ({ vm.customer = null }) else null,
             )
-            PayMode.ARALASH -> {
-                AmountField(vm.kartaText, { vm.kartaText = it }, stringResource(R.string.till_pay_karta))
-                val karta = Money.parse(vm.kartaText) ?: 0.0
-                AmountField(
-                    vm.cashText, { vm.cashText = it },
-                    stringResource(R.string.till_pay_naqd) + " (" + Money.format(maxOf(0.0, Money.round2(total - karta)), false) + ")",
+            if (canDiscount) {
+                SmallToggle(
+                    Icons.Outlined.Percent, stringResource(R.string.till_discount), on = showDiscount || discount > 0,
+                    onClick = { showDiscount = !showDiscount; if (!showDiscount) vm.discountText = "" },
+                    modifier = Modifier.weight(1f),
                 )
             }
-            PayMode.QARZ -> AmountField(vm.cashText, { vm.cashText = it }, stringResource(R.string.till_paid_now_optional))
         }
-
-        if (canDiscount) {
-            AmountField(vm.discountText, { vm.discountText = it }, stringResource(R.string.till_discount_sum))
-            if (discountBad) {
-                Text(stringResource(R.string.till_err_discount_too_large), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
-            }
-        }
-
-        CustomerField(vm.customer, required = split.qarz > 0, onPick = { pickCustomer = true }, onClear = { vm.customer = null })
-
-        if (split.change > 0) {
-            SummaryLine(stringResource(R.string.till_change), Money.format(split.change), Brand.Success, big = true)
-        }
-        if (split.qarz > 0) {
-            SummaryLine(stringResource(R.string.till_debt), Money.format(split.qarz), MaterialTheme.colorScheme.error, big = split.change <= 0)
-            vm.customer?.let { c ->
-                Text(
-                    stringResource(R.string.till_debt_after, Money.format(Money.round2(c.balance + split.qarz))),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+        Spacer(Modifier.height(12.dp))
+        if (canDiscount && showDiscount) {
+            KAmountField(
+                vm.discountText, { vm.discountText = it }, label = stringResource(R.string.till_discount_sum),
+                error = if (discountBad) stringResource(R.string.till_err_discount_too_large) else null,
+            )
+            Spacer(Modifier.height(12.dp))
         }
         if (error != null) {
-            Surface(color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f), shape = RoundedCornerShape(12.dp)) {
-                Text(error, color = MaterialTheme.colorScheme.error, modifier = Modifier.fillMaxWidth().padding(12.dp))
-            }
+            Text(error, style = K.t.label.copy(fontSize = 13.sp), color = K.c.red, modifier = Modifier.padding(bottom = 10.dp))
         }
-
-        Button(
+        KButton(
+            text = when {
+                selling -> stringResource(R.string.till_selling)
+                vm.mode == PayMode.QARZ -> stringResource(R.string.till_sell_debt)
+                else -> stringResource(R.string.till_sell_total, Money.format(total))
+            },
             onClick = onSell,
-            enabled = !selling && !discountBad && !(split.qarz > 0 && vm.customer == null),
-            modifier = Modifier.fillMaxWidth().height(64.dp),
-            shape = RoundedCornerShape(18.dp),
-        ) {
-            if (selling) {
-                CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 3.dp, color = MaterialTheme.colorScheme.onPrimary)
-            } else {
-                Text(stringResource(R.string.till_sell) + " · " + Money.format(total), style = MaterialTheme.typography.titleLarge)
-            }
-        }
-    }
-
-    if (pickCustomer) {
-        CustomerPicker(onPick = { vm.customer = it; pickCustomer = false }, onDismiss = { pickCustomer = false })
+            modifier = Modifier.fillMaxWidth(),
+            height = 54.dp,
+            enabled = !selling && !discountBad,
+        )
     }
 }
 
-@Composable
-private fun ModeButton(icon: ImageVector, label: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    val colors = if (selected) ButtonDefaults.buttonColors() else ButtonDefaults.outlinedButtonColors()
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier.height(68.dp),
-        shape = RoundedCornerShape(14.dp),
-        colors = colors,
-        border = if (selected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        contentPadding = PaddingValues(4.dp),
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(icon, null, Modifier.size(22.dp))
-            Text(label, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-    }
-}
+// ---------------------------------------------------------------------------------------------
+// Customer picker (mockup 10)
 
 @Composable
-private fun SummaryLine(label: String, value: String, color: Color, big: Boolean) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, style = MaterialTheme.typography.titleMedium, color = color, modifier = Modifier.weight(1f))
-        Text(value, style = if (big) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.titleLarge, color = color)
-    }
+internal fun CustomerPickerSheet(initialQuery: String = "", onPick: (TillCustomer) -> Unit, onDismiss: () -> Unit) {
+    KSheet(onDismiss = onDismiss) { CustomerPickerContent(initialQuery, onPick, onDismiss) }
 }
 
-@Composable
-private fun CustomerField(customer: TillCustomer?, required: Boolean, onPick: () -> Unit, onClear: () -> Unit) {
-    val borderColor = if (required && customer == null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline
-    Surface(
-        onClick = onPick,
-        shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(if (required && customer == null) 2.dp else 1.dp, borderColor),
-        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
-    ) {
-        Row(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Filled.Person, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.size(10.dp))
-            if (customer == null) {
-                Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.till_choose_customer), style = MaterialTheme.typography.bodyLarge)
-                    if (required) Text(stringResource(R.string.till_customer_required), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
-                }
-            } else {
-                Column(Modifier.weight(1f)) {
-                    Text(customer.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-                    Text(
-                        listOfNotNull(customer.phone, if (customer.balance > 0) stringResource(R.string.till_current_debt, Money.format(customer.balance)) else null)
-                            .joinToString(" · "),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (customer.balance > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                IconButton(onClick = onClear) { Icon(Icons.Filled.Clear, null) }
-            }
-        }
-    }
-}
+private fun looksLikePhone(q: String) = q.count(Char::isDigit) >= 2 && q.none(Char::isLetter)
 
 @Composable
-private fun CustomerPicker(onPick: (TillCustomer) -> Unit, onDismiss: () -> Unit) {
+internal fun CustomerPickerContent(initialQuery: String, onPick: (TillCustomer) -> Unit, onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
-    var query by remember { mutableStateOf("") }
+    var query by remember { mutableStateOf(initialQuery) }
     var creating by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
@@ -496,14 +342,12 @@ private fun CustomerPicker(onPick: (TillCustomer) -> Unit, onDismiss: () -> Unit
     val nameRequired = stringResource(R.string.till_customer_name_required)
     val phoneInvalid = stringResource(R.string.till_phone_invalid)
 
-    fun save() {
-        val n = name.trim()
-        val p = phone.trim()
-        if (n.isEmpty()) { error = nameRequired; return }
-        if (p.isNotEmpty() && Customers.normalizePhone(p) == null) { error = phoneInvalid; return }
+    fun create(n: String, p: String) {
+        if (n.isBlank()) { error = nameRequired; return }
+        if (p.isNotBlank() && Customers.normalizePhone(p) == null) { error = phoneInvalid; return }
         scope.launch {
             val c = io {
-                val uuid = App.db.write { Customers.findOrCreate(this, n, p.ifEmpty { null }) }
+                val uuid = App.db.write { Customers.findOrCreate(this, n.trim(), p.trim().ifEmpty { null }) }
                 TillData.customer(uuid)
             }
             App.sync.requestSync()
@@ -511,83 +355,146 @@ private fun CustomerPicker(onPick: (TillCustomer) -> Unit, onDismiss: () -> Unit
         }
     }
 
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Surface(
-            shape = RoundedCornerShape(20.dp),
-            modifier = Modifier.fillMaxWidth(0.94f).widthIn(max = 560.dp).fillMaxSize(0.88f).imePadding(),
+    if (creating) {
+        KSheetTitle(stringResource(R.string.till_new_customer), onClose = { creating = false; error = null })
+        KField(name, { name = it; error = null }, label = stringResource(R.string.till_customer_name), placeholder = stringResource(R.string.till_customer_name_ph))
+        Spacer(Modifier.height(12.dp))
+        KField(
+            phone, { phone = it.filter { c -> c.isDigit() || c in "+ -()" }; error = null },
+            label = stringResource(R.string.till_customer_phone), placeholder = "+998 90 123 45 67", keyboard = KeyboardType.Phone,
+            error = error,
+        )
+        Spacer(Modifier.height(16.dp))
+        KButton(stringResource(R.string.common_save), { create(name, phone) }, Modifier.fillMaxWidth())
+        return
+    }
+
+    KSheetTitle(stringResource(R.string.till_choose_customer), onClose)
+    KSearch(query, { query = it }, stringResource(R.string.till_customer_search), highlight = true, modifier = Modifier.bleed())
+    Spacer(Modifier.height(10.dp))
+    LazyColumn(
+        Modifier.fillMaxWidth().heightIn(max = 460.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(bottom = 16.dp),
+    ) {
+        val q = query.trim()
+        if (q.isEmpty()) {
+            item(key = "new") {
+                NewCustomerRow(stringResource(R.string.till_new_customer), null) { name = ""; phone = ""; error = null; creating = true }
+            }
+        }
+        items(customers.orEmpty(), key = { it.uuid }) { c ->
+            KRow(
+                title = c.name,
+                subtitle = c.phone?.let { { KSub(Receipts.phone(it)) } },
+                leading = { KAvatar(c.name) },
+                trailing = {
+                    if (c.balance > 0.005) KTag(stringResource(R.string.till_current_debt, Money.format(c.balance, false)), KTagKind.Red)
+                    else KTag(stringResource(R.string.till_no_debt), KTagKind.Neutral)
+                },
+                onClick = { onPick(c) },
+            )
+        }
+        if (q.isNotEmpty()) {
+            item(key = "new") {
+                NewCustomerRow(
+                    stringResource(R.string.till_new_customer_named, q),
+                    if (looksLikePhone(q)) null else stringResource(R.string.till_new_customer_hint),
+                ) {
+                    if (looksLikePhone(q)) { name = ""; phone = q; error = null; creating = true } else create(q, "")
+                }
+            }
+        }
+    }
+}
+
+/** The dashed lime "Yangi mijoz: «…»" row. */
+@Composable
+private fun NewCustomerRow(title: String, hint: String?, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(16.dp)
+    val border = K.c.primary
+    Row(
+        Modifier.fillMaxWidth().defaultMinSize(minHeight = 58.dp).clip(shape).background(K.c.tint)
+            .drawBehind {
+                val w = 1.5.dp.toPx()
+                drawRoundRect(
+                    border, topLeft = Offset(w / 2, w / 2), size = androidx.compose.ui.geometry.Size(size.width - w, size.height - w),
+                    cornerRadius = CornerRadius(16.dp.toPx() - w / 2),
+                    style = Stroke(width = w, pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()))),
+                )
+            }
+            .clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(11.dp),
+    ) {
+        Box(Modifier.size(34.dp).clip(RoundedCornerShape(11.dp)).background(K.c.primary), contentAlignment = Alignment.Center) {
+            Icon(Icons.Outlined.Add, null, tint = K.c.onPrimary, modifier = Modifier.size(18.dp))
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, style = K.t.title, color = K.c.tx, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (hint != null) KSub(hint)
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Quantity and variants
+
+@Composable
+internal fun QtySheet(item: CartItem, onSet: (Double) -> Boolean, onDismiss: () -> Unit) {
+    var text by remember { mutableStateOf(Money.qty(item.qty)) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val focus = remember { FocusRequester() }
+    val wholeMsg = stringResource(R.string.till_qty_whole)
+    val stockMsg = stringResource(R.string.till_qty_over_stock, Money.qty(item.stock) + " " + item.unit)
+    val invalidMsg = stringResource(R.string.till_err_invalid_qty)
+    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+
+    fun submit() {
+        val qty = Money.parse(text)
+        when {
+            qty == null || qty < 0 -> error = invalidMsg
+            !Units.fits(qty, item.unit) -> error = wholeMsg
+            !onSet(qty) -> error = stockMsg
+            else -> onDismiss()
+        }
+    }
+
+    KSheet(onDismiss = onDismiss) {
+        KSheetTitle(item.name + (item.variantLabel?.let { " · $it" } ?: ""), onDismiss)
+        KAmountField(
+            text, { v -> text = v.filter { it.isDigit() || ((it == ',' || it == '.') && item.fractional) }; error = null },
+            modifier = Modifier.focusRequester(focus),
+            label = stringResource(R.string.till_qty, item.unit), big = true, error = error, onDone = { submit() },
+        )
+        if (error == null) {
+            Spacer(Modifier.height(6.dp))
+            KSub(stringResource(R.string.till_in_stock, Money.qty(item.stock) + " " + item.unit))
+        }
+        Spacer(Modifier.height(16.dp))
+        KButton(stringResource(R.string.common_save), { submit() }, Modifier.fillMaxWidth())
+    }
+}
+
+@Composable
+internal fun VariantSheet(product: TillProduct, onPick: (TillVariant) -> Unit, onDismiss: () -> Unit) {
+    val variants by dbState<List<TillVariant>?>(null, product.uuid) { TillData.variants(product) }
+    KSheet(onDismiss = onDismiss) {
+        KSheetTitle(product.name, onDismiss)
+        KSub(stringResource(R.string.till_pick_variant))
+        Spacer(Modifier.height(10.dp))
+        LazyColumn(
+            Modifier.fillMaxWidth().heightIn(max = 460.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(bottom = 16.dp),
         ) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        stringResource(if (creating) R.string.till_new_customer else R.string.till_choose_customer),
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.weight(1f),
-                    )
-                    IconButton(onClick = onDismiss) { Icon(Icons.Filled.Close, null) }
-                }
-                if (creating) {
-                    OutlinedTextField(
-                        value = name, onValueChange = { name = it; error = null },
-                        label = { Text(stringResource(R.string.till_customer_name)) },
-                        singleLine = true, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp),
-                    )
-                    OutlinedTextField(
-                        value = phone, onValueChange = { phone = it.filter { c -> c.isDigit() || c in "+ -()" }; error = null },
-                        label = { Text(stringResource(R.string.till_customer_phone)) },
-                        placeholder = { Text("+998 90 123 45 67") },
-                        singleLine = true, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                    )
-                    error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { creating = false }, modifier = Modifier.weight(1f).height(52.dp)) {
-                            Text(stringResource(R.string.common_cancel))
-                        }
-                        Button(onClick = { save() }, modifier = Modifier.weight(1f).height(52.dp)) { Text(stringResource(R.string.common_save)) }
-                    }
-                } else {
-                    SearchField(query, { query = it }, stringResource(R.string.till_customer_search))
-                    OutlinedButton(
-                        colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = {
-                            val digits = query.filter(Char::isDigit)
-                            if (digits.length >= 2 && query.none(Char::isLetter)) { phone = query.trim(); name = "" } else { name = query.trim(); phone = "" }
-                            error = null
-                            creating = true
-                        },
-                        modifier = Modifier.fillMaxWidth().height(52.dp),
-                        shape = RoundedCornerShape(14.dp),
-                    ) {
-                        Icon(Icons.Filled.PersonAdd, null)
-                        Spacer(Modifier.size(8.dp))
-                        Text(stringResource(R.string.till_new_customer))
-                    }
-                    val list = customers
-                    if (list != null && list.isEmpty()) {
-                        Text(
-                            stringResource(R.string.till_no_customers),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.fillMaxWidth().padding(24.dp),
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                    LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        items(list.orEmpty(), key = { it.uuid }) { c ->
-                            Row(
-                                Modifier.fillMaxWidth().clickable { onPick(c) }.heightIn(min = 56.dp).padding(horizontal = 8.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(Modifier.weight(1f)) {
-                                    Text(c.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-                                    c.phone?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                                }
-                                if (c.balance > 0) {
-                                    Text(Money.format(c.balance), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                            HorizontalDivider()
-                        }
-                    }
-                }
+            items(variants.orEmpty(), key = { it.uuid }) { v ->
+                KRow(
+                    title = v.label,
+                    subtitle = { StockLine(v.stock, product.unit, v.stock <= 0 || (product.lowThreshold != null && v.stock <= product.lowThreshold)) },
+                    trailing = { KMoney(v.price) },
+                    onClick = { onPick(v) },
+                )
             }
         }
     }
