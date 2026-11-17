@@ -60,7 +60,10 @@ object Shots {
     private var seeded = false
 
     fun seed(signIn: Boolean = true) {
-        if (seeded) { if (signIn) App.session.signIn(owner); return }
+        // Robolectric gives every test a fresh database but keeps this object: seed again when it's empty.
+        seeded = seeded && App.db.scalarLong("SELECT COUNT(*) FROM users") > 0
+        if (seeded) { if (signIn) App.session.signIn(owner) else App.session.signOut(); return }
+        products.clear(); customers.clear()
         seeded = true
         val db = App.db
         val kv = App.kv
