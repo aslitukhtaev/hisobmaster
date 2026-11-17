@@ -18,10 +18,10 @@ object CustomerActions {
     /** CustomerController::recordPayment: 0 < amount <= current balance. */
     fun recordPayment(customerUuid: String, amount: Double?, userUuid: String): Int? {
         val err = App.db.write<Int?> {
-            if (amount == null || amount <= 0) return@write R.string.customers_payment_invalid
-            if (amount > ExpenseService.MONEY_MAX) return@write R.string.customers_amount_too_large
+            if (amount == null || amount <= 0) return@write R.string.cust_err_amount
+            if (amount > ExpenseService.MONEY_MAX) return@write R.string.cust_err_too_large
             val balance = Debts.balance(this, customerUuid)
-            if (Money.round2(amount) > balance) return@write R.string.customers_payment_exceeds
+            if (Money.round2(amount) > balance) return@write R.string.cust_err_exceeds
             Debts.record(this, customerUuid, null, Debts.TOLOV, Money.round2(amount), userUuid)
             null
         }
@@ -31,8 +31,8 @@ object CustomerActions {
 
     /** An old debt for this customer (a 'qarz' entry without a sale, like quick-debts). */
     fun addDebt(customerUuid: String, amount: Double?, userUuid: String): Int? {
-        if (amount == null || amount <= 0) return R.string.customers_payment_invalid
-        if (amount > ExpenseService.MONEY_MAX) return R.string.customers_amount_too_large
+        if (amount == null || amount <= 0) return R.string.cust_err_amount
+        if (amount > ExpenseService.MONEY_MAX) return R.string.cust_err_too_large
         App.db.write { Debts.record(this, customerUuid, null, Debts.QARZ, Money.round2(amount), userUuid) }
         App.sync.requestSync()
         return null
@@ -57,15 +57,15 @@ object CustomerActions {
     /** CustomerController::store / update. [uuid] null = new customer. */
     fun save(uuid: String?, fullName: String, phoneRaw: String, note: String, creditLimitRaw: String, dueDate: String?): SaveResult {
         val name = fullName.trim()
-        if (name.isEmpty()) return SaveResult.Error(R.string.customers_name_required)
-        val phone = normalize(phoneRaw) ?: return SaveResult.Error(R.string.customers_phone_invalid)
+        if (name.isEmpty()) return SaveResult.Error(R.string.cust_err_name)
+        val phone = normalize(phoneRaw) ?: return SaveResult.Error(R.string.cust_err_phone)
         val creditLimit: Double? = if (creditLimitRaw.isBlank()) null else {
             val v = Money.parse(creditLimitRaw)
-            if (v == null || v < 0 || v > ExpenseService.MONEY_MAX) return SaveResult.Error(R.string.customers_credit_limit_invalid)
+            if (v == null || v < 0 || v > ExpenseService.MONEY_MAX) return SaveResult.Error(R.string.cust_err_limit)
             Money.round2(v)
         }
         val result = App.db.write<SaveResult> {
-            if (phone.isNotEmpty()) phoneOwner(this, phone, uuid)?.let { return@write SaveResult.Error(R.string.customers_phone_taken, it) }
+            if (phone.isNotEmpty()) phoneOwner(this, phone, uuid)?.let { return@write SaveResult.Error(R.string.cust_err_phone_taken, it) }
             val id = if (uuid == null) Customers.create(this, name, phone.ifEmpty { null }, note.trim().ifEmpty { null }) else uuid
             update(
                 "customers", id,
