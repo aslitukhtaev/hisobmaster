@@ -360,17 +360,17 @@ internal fun TillContent(
         val list = results
         val entries: List<TillEntry> = remember(list, vm.cart.toList(), q) {
             val found = list.orEmpty()
-            if (q.isBlank()) {
-                val inCart = vm.cart.map { it.productUuid }.toSet()
-                vm.cart.map { TillEntry.Line(it) } +
-                    found.filter { it.variantCount > 0 || it.uuid !in inCart }.map { TillEntry.Product(it) }
-            } else {
-                found.flatMap { p ->
-                    val lines = vm.cart.filter { it.productUuid == p.uuid }.map { TillEntry.Line(it) }
-                    if (p.variantCount > 0) listOf(TillEntry.Product(p)) + lines
-                    else lines.ifEmpty { listOf(TillEntry.Product(p)) }
-                }
+            // A product in the cart stays where it is (shown as its cart line): the
+            // list never moves under the cashier's finger, so tapping the same
+            // place twice adds the same product twice.
+            val shown = found.flatMap { p ->
+                val lines = vm.cart.filter { it.productUuid == p.uuid }.map { TillEntry.Line(it) }
+                if (p.variantCount > 0) listOf(TillEntry.Product(p)) + lines
+                else lines.ifEmpty { listOf(TillEntry.Product(p)) }
             }
+            // Cart lines whose product isn't in this list (e.g. found by an earlier search) go first.
+            val shownUuids = found.map { it.uuid }.toSet()
+            vm.cart.filter { it.productUuid !in shownUuids }.map { TillEntry.Line(it) } + shown
         }
 
         LazyColumn(
@@ -388,7 +388,7 @@ internal fun TillContent(
                     )
                 }
             }
-            if (list != null && list.isNotEmpty() && q.isBlank() && cartEmpty) {
+            if (list != null && list.isNotEmpty() && q.isBlank()) {
                 item(key = "best") {
                     Text(
                         stringResource(R.string.till_best_sellers), style = K.t.section, color = K.c.tx,
