@@ -1,78 +1,86 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Activation -->
-    <string name="auth_tagline">Do‘kon kassasi va hisobi — internetsiz ham ishlaydi</string>
-    <string name="auth_server">Server: %1$s</string>
     <string name="auth_tab_password">Login va parol</string>
-    <string name="auth_tab_code">Kod bilan ulash</string>
+    <string name="auth_tab_code">Kod bilan</string>
     <string name="auth_login">Login</string>
+    <string name="auth_login_placeholder">Masalan: ali</string>
     <string name="auth_password">Parol</string>
     <string name="auth_show_password">Parolni ko‘rsatish</string>
-    <string name="auth_device_name">Telefon nomi</string>
-    <string name="auth_code">6 xonali kod</string>
-    <string name="auth_owner_hint">Do‘kon egasining saytdagi login va paroli bilan bir marta ulanadi. Keyin telefon internetsiz ham ishlaydi.</string>
-    <string name="auth_code_hint">Google yoki Telegram orqali kirsangiz: saytda Sozlamalar → Kompyuterlar → “Telefonni ulash” bo‘limidan kod oling va shu yerga kiriting.</string>
     <string name="auth_connect">Ulash</string>
-    <string name="auth_connecting">Serverga ulanmoqda…</string>
-    <string name="auth_downloading">Do‘kon ma’lumotlari yuklanmoqda</string>
-    <string name="auth_downloaded_count">%1$d ta yozuv yuklandi</string>
-    <string name="auth_download_wait">Bu bir necha daqiqa olishi mumkin. Ilovani yopmang.</string>
-    <string name="auth_download_interrupted">Telefon ulandi, lekin ma’lumotlar to‘liq yuklanmadi.</string>
+    <string name="auth_once">Bir marta ulanasiz — keyin internetsiz ham ishlaydi</string>
+    <string name="auth_code_hint">Saytda %1$s bo‘limidan 6 xonali kod oling</string>
+    <string name="auth_code_place">Kompyuterlar → Telefonni ulash</string>
+    <string name="auth_download_interrupted">Telefon ulandi, lekin do‘kon to‘liq yuklanmadi. Internetga ulanib, davom ettiring.</string>
     <string name="auth_resume">Yuklashni davom ettirish</string>
-    <string name="auth_skip">Keyinroq — hozircha kirish</string>
-    <string name="auth_fill_fields">Barcha maydonlarni to‘ldiring</string>
-    <string name="auth_code_short">Kod 6 ta raqamdan iborat</string>
+    <string name="auth_skip">Keyinroq</string>
+    <string name="auth_err_fill_login">Loginni kiriting</string>
+    <string name="auth_err_fill_password">Parolni kiriting</string>
+    <string name="auth_code_short">6 xonali kodni kiriting</string>
 
-    <!-- Errors (server codes) -->
-    <string name="auth_err_login_failed">Login yoki parol noto‘g‘ri.</string>
-    <string name="auth_err_login_locked">Juda ko‘p urinish bo‘ldi. Bir necha daqiqadan keyin qayta urinib ko‘ring.</string>
-    <string name="auth_err_owner_only">Telefonni faqat do‘kon egasi ulay oladi. Egasining login va parolini kiriting.</string>
-    <string name="auth_err_code_invalid">Kod noto‘g‘ri yoki muddati o‘tgan. Saytdan yangi kod oling.</string>
-    <string name="auth_err_network">Serverga ulanib bo‘lmadi. Internetni tekshirib, qayta urining.</string>
-    <string name="auth_err_shop_blocked">Do‘kon bloklangan yoki obuna muddati tugagan. Saytga kiring yoki qo‘llab-quvvatlash xizmatiga yozing.</string>
-    <string name="auth_err_invalid_request">So‘rov noto‘g‘ri. Ilovani yangilab, qayta urining.</string>
-    <string name="auth_err_generic">Xatolik yuz berdi (%1$s). Qayta urinib ko‘ring.</string>
+    <!-- First download -->
+    <string name="auth_connecting">Serverga ulanmoqda</string>
+    <string name="auth_downloading">Do‘kon yuklanmoqda</string>
+    <string name="auth_records">%1$s ta yozuv</string>
+    <string name="auth_step_products">Mahsulotlar</string>
+    <string name="auth_step_customers">Mijozlar</string>
+    <string name="auth_step_sales">Sotuvlar</string>
+    <string name="auth_step_loading">yuklanmoqda</string>
+    <string name="auth_step_waiting">navbatda</string>
+
+    <!-- Activation errors (server codes) -->
+    <string name="auth_err_login_failed">Login yoki parol noto‘g‘ri</string>
+    <string name="auth_err_login_locked">Urinishlar juda ko‘p — bir necha daqiqadan keyin qayta urinib ko‘ring</string>
+    <string name="auth_err_owner_only">Telefonni faqat do‘kon egasi ulaydi — egasining login va parolini kiriting</string>
+    <string name="auth_err_code_invalid">Kod noto‘g‘ri yoki eskirgan — saytdan yangi kod oling</string>
+    <string name="auth_err_network">Internet yo‘q — ulanib, qayta urinib ko‘ring</string>
+    <string name="auth_err_shop_blocked">Do‘kon obunasi tugagan — saytda to‘lovni tekshiring</string>
+    <string name="auth_err_invalid_request">Ilovani yangilang va qayta urinib ko‘ring</string>
+    <string name="auth_err_generic">Xatolik (%1$s) — qayta urinib ko‘ring</string>
 
     <!-- Login -->
     <string name="auth_who">Kim ishlaydi?</string>
     <string name="auth_pick_user">Ismingizni tanlang</string>
     <string name="auth_role_owner">Ega</string>
-    <string name="auth_role_employee">Xodim</string>
-    <string name="auth_no_users">Foydalanuvchilar hali yuklanmagan. Internetga ulanib, sinxronlang.</string>
+    <string name="auth_role_employee">Kassir</string>
+    <string name="auth_no_users">Xodimlar hali yuklanmagan</string>
+    <string name="auth_no_users_text">Internetga ulanib, yangilang</string>
+    <string name="auth_sync">Yangilash</string>
     <string name="auth_sign_in">Kirish</string>
-    <string name="auth_wrong_password">Parol noto‘g‘ri.</string>
-    <string name="auth_too_many">Juda ko‘p xato urinish. %1$d soniya kuting.</string>
-    <string name="auth_no_password_owner">Siz Google yoki Telegram orqali kirasiz va parolingiz yo‘q. Hozir parolsiz kirasiz — xavfsizlik uchun saytda (Profil) parol o‘rnating.</string>
-    <string name="auth_no_password_employee">Bu foydalanuvchining paroli yo‘q. Do‘kon egasi saytda unga parol o‘rnatsin.</string>
+    <string name="auth_wrong_password">Parol noto‘g‘ri</string>
+    <string name="auth_too_many">5 marta xato — %1$d soniya kuting</string>
+    <string name="auth_no_password_owner">Siz Google yoki Telegram bilan kirasiz, parolingiz yo‘q. Hozir parolsiz kirasiz — keyin saytda (Profil) parol o‘rnating.</string>
+    <string name="auth_no_password_employee">Bu xodimning paroli yo‘q. Do‘kon egasi saytda unga parol o‘rnatsin.</string>
     <string name="auth_other_user">Boshqa foydalanuvchi</string>
-    <string name="auth_sync">Sinxronlash</string>
 
     <!-- Blocked -->
-    <string name="auth_blocked_device_revoked_title">Bu telefon uzib qo‘yilgan</string>
-    <string name="auth_blocked_device_revoked_text">Do‘kon egasi bu telefonni saytda o‘chirib qo‘ygan. Qayta ishlatish uchun telefonni uzing va egasining login-paroli yoki kod bilan qayta ulang.</string>
-    <string name="auth_blocked_shop_blocked_title">Do‘kon bloklangan</string>
-    <string name="auth_blocked_shop_blocked_text">Do‘kon to‘xtatilgan yoki obuna muddati tugagan. Saytga kirib to‘lovni tekshiring yoki qo‘llab-quvvatlash xizmatiga murojaat qiling. Hal bo‘lgach “Qayta urinish”ni bosing.</string>
+    <string name="auth_blocked_device_revoked_title">Telefon uzib qo‘yilgan</string>
+    <string name="auth_blocked_device_revoked_text">Do‘kon egasi bu telefonni saytda uzgan. Ishlash uchun telefonni qayta ulang.</string>
+    <string name="auth_blocked_reconnect">Qayta ulash</string>
+    <string name="auth_blocked_shop_title">Obuna muddati tugadi</string>
+    <string name="auth_blocked_shop_text">Davom etish uchun obunani to‘lang. Barcha mahsulot, sotuv va qarz ma’lumotlaringiz saqlanadi.</string>
+    <string name="auth_blocked_pay">Telegram orqali to‘lash</string>
+    <string name="auth_blocked_phone" translatable="false">+998 99 702 67 20</string>
     <string name="auth_blocked_offline_title">Internetga ulaning</string>
-    <string name="auth_blocked_offline_text">Telefon %1$d kundan ko‘proq server bilan sinxronlanmadi. Sotuvni davom ettirish uchun internetni yoqing va “Qayta urinish”ni bosing. Barcha sotuvlar telefonda saqlangan.</string>
-    <string name="auth_blocked_retry">Qayta urinish</string>
-    <string name="auth_blocked_pending">Serverga yuborilmagan sotuvlar: %1$d</string>
-    <string name="auth_blocked_disconnect">Telefonni uzish va qayta ulash</string>
+    <string name="auth_blocked_offline_text">Telefon %1$d kundan beri server bilan bog‘lanmadi. Sotishni davom ettirish uchun internetni yoqing — sotuvlar telefonda saqlangan.</string>
+    <string name="auth_blocked_retry">Qayta tekshirish</string>
+    <string name="auth_blocked_checking">Tekshirilmoqda…</string>
+    <string name="auth_blocked_pending">%1$d ta sotuv hali yuborilmagan</string>
 
     <!-- Sync status -->
-    <string name="sync_err_network">Internet yo‘q. Sotuvlar telefonda saqlanadi va internet paydo bo‘lganda o‘zi yuboriladi.</string>
-    <string name="sync_err_unauthorized">Server bu telefonni tanimadi. Telefonni uzib, qayta ulang.</string>
-    <string name="sync_err_device_revoked">Telefon saytda uzib qo‘yilgan.</string>
-    <string name="sync_err_shop_blocked">Do‘kon bloklangan yoki obuna muddati tugagan.</string>
-    <string name="sync_err_server_error">Serverda xatolik. Birozdan keyin o‘zi qayta urinadi.</string>
-    <string name="sync_err_client_error">Sinxronlashda xatolik. Birozdan keyin qayta urinadi.</string>
-    <string name="sync_err_offline_too_long">Telefon uzoq vaqt sinxronlanmadi. Internetga ulaning.</string>
-    <string name="sync_err_other">Sinxronlash xatosi: %1$s</string>
+    <string name="sync_err_network">Internet yo‘q — sotuvlar saqlanadi</string>
+    <string name="sync_err_unauthorized">Server telefonni tanimadi — telefonni qayta ulang</string>
+    <string name="sync_err_device_revoked">Telefon saytda uzib qo‘yilgan</string>
+    <string name="sync_err_shop_blocked">Obuna muddati tugagan</string>
+    <string name="sync_err_server_error">Serverda xatolik — keyinroq o‘zi qayta urinadi</string>
+    <string name="sync_err_client_error">Yuborishda xatolik — keyinroq o‘zi qayta urinadi</string>
+    <string name="sync_err_offline_too_long">Uzoq vaqt internet bo‘lmadi — internetga ulaning</string>
+    <string name="sync_err_other">Xatolik: %1$s</string>
 
     <!-- More -->
     <string name="settings_more_title">Ko‘proq</string>
-    <string name="settings_menu_home">Bosh sahifa</string>
-    <string name="settings_menu_reports">Hisobotlar</string>
     <string name="settings_menu_expenses">Xarajatlar</string>
+    <string name="settings_menu_reports">Hisobotlar</string>
     <string name="settings_menu_purchases">Kirim</string>
     <string name="settings_menu_suppliers">Ta’minotchilar</string>
     <string name="settings_menu_categories">Kategoriyalar</string>
@@ -84,26 +92,30 @@
 
     <!-- Settings -->
     <string name="settings_title">Sozlamalar</string>
-    <string name="settings_sync_title">Sinxronlash</string>
-    <string name="settings_sync_running">Sinxronlanmoqda…</string>
-    <string name="settings_sync_ok">Hammasi serverga yuborilgan</string>
-    <string name="settings_sync_last">Oxirgi sinxronlash: %1$s</string>
-    <string name="settings_sync_never">Hali sinxronlanmagan</string>
-    <string name="settings_sync_pending">Yuborilmagan sotuvlar: %1$d</string>
-    <string name="settings_sync_now">Hozir sinxronlash</string>
-    <string name="settings_sync_done">Sinxronlandi</string>
-    <string name="settings_shop_title">Do‘kon</string>
-    <string name="settings_device_code">Telefon kodi: %1$s</string>
-    <string name="settings_app_version">Ilova versiyasi: %1$s</string>
+    <string name="settings_sync_ok">Hammasi yuborilgan</string>
+    <string name="settings_sync_pending">%1$d ta sotuv yuborilmagan</string>
+    <string name="settings_sync_running">Yuborilmoqda…</string>
+    <string name="settings_sync_last">Oxirgi: %1$s</string>
+    <string name="settings_sync_never">Hali yuborilmagan</string>
+    <string name="settings_sync_now">Hozir yuborish</string>
+    <string name="settings_sync_done">Hammasi yuborildi</string>
     <string name="settings_language">Til</string>
-    <string name="settings_lang_uz">O‘zbekcha</string>
-    <string name="settings_lang_ru">Русский</string>
-    <string name="settings_user_title">Foydalanuvchi</string>
+    <string name="settings_lang_uz" translatable="false">UZ</string>
+    <string name="settings_lang_ru" translatable="false">RU</string>
+    <string name="settings_theme">Mavzu</string>
+    <string name="settings_theme_system">Tizim</string>
+    <string name="settings_theme_light">Kunduzgi</string>
+    <string name="settings_theme_dark">Tungi</string>
+    <string name="settings_printer">Printer</string>
+    <string name="settings_printer_none">Tanlanmagan</string>
+    <string name="settings_printer_chosen">Tanlangan</string>
     <string name="settings_switch_user">Foydalanuvchini almashtirish</string>
+    <string name="settings_shop">Do‘kon</string>
+    <string name="settings_device">Qurilma</string>
+    <string name="settings_version">Versiya</string>
     <string name="settings_disconnect">Telefonni uzish</string>
-    <string name="settings_disconnect_hint">Telefondagi do‘kon ma’lumotlari o‘chadi. Qayta ulash uchun egasining login-paroli yoki kod kerak bo‘ladi.</string>
     <string name="settings_disconnect_confirm_title">Telefonni uzasizmi?</string>
-    <string name="settings_disconnect_confirm_text">Do‘kon ma’lumotlari bu telefondan o‘chiriladi.</string>
-    <string name="settings_disconnect_pending">Diqqat: %1$d ta sotuv hali serverga yuborilmagan va yo‘qoladi! Avval internetga ulanib, sinxronlang.</string>
+    <string name="settings_disconnect_confirm_text">Do‘kon ma’lumotlari bu telefondan o‘chadi. Qayta ulash uchun egasining login va paroli yoki kod kerak bo‘ladi.</string>
+    <string name="settings_disconnect_pending">%1$d ta sotuv hali yuborilmagan va o‘chib ketadi. Avval internetga ulanib, ularni yuboring.</string>
     <string name="settings_disconnect_yes">Uzish</string>
 </resources>
