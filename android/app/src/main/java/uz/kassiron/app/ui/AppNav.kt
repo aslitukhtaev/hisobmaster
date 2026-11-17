@@ -130,6 +130,15 @@ fun AppNav() {
     val current = backStack?.destination?.route
     val showBar = current in TABS.map { it.route } || current == Routes.HOME
 
+    // Sync blocked the phone (revoked, shop blocked, offline too long) or the
+    // signed-in user was removed/blocked on the website: leave whatever screen is open.
+    androidx.compose.runtime.LaunchedEffect(sync.blockedReason, user, current) {
+        if (current == null || current == Routes.ACTIVATION) return@LaunchedEffect
+        if (!kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { App.isActivated }) return@LaunchedEffect
+        if (sync.blockedReason != null && current != Routes.BLOCKED) nav.resetTo(Routes.BLOCKED)
+        else if (sync.blockedReason == null && user == null && current != Routes.LOGIN && current != Routes.BLOCKED) nav.resetTo(Routes.LOGIN)
+    }
+
     Scaffold(
         bottomBar = {
             if (showBar && user != null) {
