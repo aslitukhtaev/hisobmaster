@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Activation -->
+    <string name="auth_tagline">Касса и учёт магазина — работает и без интернета</string>
+    <string name="auth_server">Сервер: %1$s</string>
+    <string name="auth_tab_password">Логин и пароль</string>
+    <string name="auth_tab_code">Подключить по коду</string>
+    <string name="auth_login">Логин</string>
+    <string name="auth_password">Пароль</string>
+    <string name="auth_show_password">Показать пароль</string>
+    <string name="auth_device_name">Название телефона</string>
+    <string name="auth_code">6-значный код</string>
+    <string name="auth_owner_hint">Телефон подключается один раз логином и паролем владельца магазина на сайте. Потом он работает и без интернета.</string>
+    <string name="auth_code_hint">Если вы входите через Google или Telegram: на сайте откройте Настройки → Компьютеры → «Подключить телефон», получите код и введите его здесь.</string>
+    <string name="auth_connect">Подключить</string>
+    <string name="auth_connecting">Подключение к серверу…</string>
+    <string name="auth_downloading">Загрузка данных магазина</string>
+    <string name="auth_downloaded_count">Загружено записей: %1$d</string>
+    <string name="auth_download_wait">Это может занять несколько минут. Не закрывайте приложение.</string>
+    <string name="auth_download_interrupted">Телефон подключён, но данные загрузились не полностью.</string>
+    <string name="auth_resume">Продолжить загрузку</string>
+    <string name="auth_skip">Позже — войти сейчас</string>
+    <string name="auth_fill_fields">Заполните все поля</string>
+    <string name="auth_code_short">Код состоит из 6 цифр</string>
+
+    <!-- Errors (server codes) -->
+    <string name="auth_err_login_failed">Неверный логин или пароль.</string>
+    <string name="auth_err_login_locked">Слишком много попыток. Попробуйте снова через несколько минут.</string>
+    <string name="auth_err_owner_only">Подключить телефон может только владелец магазина. Введите логин и пароль владельца.</string>
+    <string name="auth_err_code_invalid">Код неверный или устарел. Получите новый код на сайте.</string>
+    <string name="auth_err_network">Не удалось подключиться к серверу. Проверьте интернет и попробуйте снова.</string>
+    <string name="auth_err_shop_blocked">Магазин заблокирован или срок подписки истёк. Зайдите на сайт или напишите в поддержку.</string>
+    <string name="auth_err_invalid_request">Неверный запрос. Обновите приложение и попробуйте снова.</string>
+    <string name="auth_err_generic">Произошла ошибка (%1$s). Попробуйте снова.</string>
+
+    <!-- Login -->
+    <string name="auth_who">Кто работает?</string>
+    <string name="auth_pick_user">Выберите своё имя</string>
+    <string name="auth_role_owner">Владелец</string>
+    <string name="auth_role_employee">Сотрудник</string>
+    <string name="auth_no_users">Пользователи ещё не загружены. Подключитесь к интернету и синхронизируйте.</string>
+    <string name="auth_sign_in">Войти</string>
+    <string name="auth_wrong_password">Неверный пароль.</string>
+    <string name="auth_too_many">Слишком много неверных попыток. Подождите %1$d сек.</string>
+    <string name="auth_no_password_owner">Вы входите через Google или Telegram, и пароля у вас нет. Сейчас вы войдёте без пароля — для безопасности установите пароль на сайте (Профиль).</string>
+    <string name="auth_no_password_employee">У этого пользователя нет пароля. Пусть владелец установит ему пароль на сайте.</string>
+    <string name="auth_other_user">Другой пользователь</string>
+    <string name="auth_sync">Синхронизировать</string>
+
+    <!-- Blocked -->
+    <string name="auth_blocked_device_revoked_title">Этот телефон отключён</string>
+    <string name="auth_blocked_device_revoked_text">Владелец магазина отключил этот телефон на сайте. Чтобы снова пользоваться, отключите телефон и подключите заново логином и паролем владельца или по коду.</string>
+    <string name="auth_blocked_shop_blocked_title">Магазин заблокирован</string>
+    <string name="auth_blocked_shop_blocked_text">Магазин приостановлен или срок подписки истёк. Зайдите на сайт и проверьте оплату или обратитесь в поддержку. Когда вопрос решится, нажмите «Повторить».</string>
+    <string name="auth_blocked_offline_title">Подключитесь к интернету</string>
+    <string name="auth_blocked_offline_text">Телефон не синхронизировался с сервером больше %1$d дн. Чтобы продолжить продажи, включите интернет и нажмите «Повторить». Все продажи сохранены в телефоне.</string>
+    <string name="auth_blocked_retry">Повторить</string>
+    <string name="auth_blocked_pending">Продаж не отправлено на сервер: %1$d</string>
+    <string name="auth_blocked_disconnect">Отключить телефон и подключить заново</string>
+
+    <!-- Sync status -->
+    <string name="sync_err_network">Нет интернета. Продажи сохраняются в телефоне и отправятся сами, когда появится интернет.</string>
+    <string name="sync_err_unauthorized">Сервер не узнал этот телефон. Отключите телефон и подключите заново.</string>
+    <string name="sync_err_device_revoked">Телефон отключён на сайте.</string>
+    <string name="sync_err_shop_blocked">Магазин заблокирован или срок подписки истёк.</string>
+    <string name="sync_err_server_error">Ошибка на сервере. Через некоторое время попробуем снова.</string>
+    <string name="sync_err_client_error">Ошибка синхронизации. Через некоторое время попробуем снова.</string>
+    <string name="sync_err_offline_too_long">Телефон давно не синхронизировался. Подключитесь к интернету.</string>
+    <string name="sync_err_other">Ошибка синхронизации: %1$s</string>
+
+    <!-- More -->
+    <string name="settings_more_title">Ещё</string>
+    <string name="settings_menu_home">Главная</string>
+    <string name="settings_menu_reports">Отчёты</string>
+    <string name="settings_menu_expenses">Расходы</string>
+    <string name="settings_menu_purchases">Приход</string>
+    <string name="settings_menu_suppliers">Поставщики</string>
+    <string name="settings_menu_categories">Категории</string>
+    <string name="settings_menu_quick_products">Быстрый ввод</string>
+    <string name="settings_menu_quick_debts">Старые долги</string>
+    <string name="settings_menu_attendance">Посещаемость</string>
+    <string name="settings_menu_printer">Принтер</string>
+    <string name="settings_menu_settings">Настройки</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_sync_title">Синхронизация</string>
+    <string name="settings_sync_running">Синхронизация…</string>
+    <string name="settings_sync_ok">Всё отправлено на сервер</string>
+    <string name="settings_sync_last">Последняя синхронизация: %1$s</string>
+    <string name="settings_sync_never">Ещё не синхронизировано</string>
+    <string name="settings_sync_pending">Не отправлено продаж: %1$d</string>
+    <string name="settings_sync_now">Синхронизировать сейчас</string>
+    <string name="settings_sync_done">Синхронизировано</string>
+    <string name="settings_shop_title">Магазин</string>
+    <string name="settings_device_code">Код телефона: %1$s</string>
+    <string name="settings_app_version">Версия приложения: %1$s</string>
+    <string name="settings_language">Язык</string>
+    <string name="settings_lang_uz">O‘zbekcha</string>
+    <string name="settings_lang_ru">Русский</string>
+    <string name="settings_user_title">Пользователь</string>
+    <string name="settings_switch_user">Сменить пользователя</string>
+    <string name="settings_disconnect">Отключить телефон</string>
+    <string name="settings_disconnect_hint">Данные магазина на телефоне удалятся. Для повторного подключения понадобится логин и пароль владельца или код.</string>
+    <string name="settings_disconnect_confirm_title">Отключить телефон?</string>
+    <string name="settings_disconnect_confirm_text">Данные магазина будут удалены с этого телефона.</string>
+    <string name="settings_disconnect_pending">Внимание: %1$d продаж ещё не отправлены на сервер и пропадут! Сначала подключитесь к интернету и синхронизируйте.</string>
+    <string name="settings_disconnect_yes">Отключить</string>
+</resources>
