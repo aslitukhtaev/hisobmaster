@@ -367,7 +367,7 @@ private fun EmptyProducts(nav: NavHostController) {
         Spacer(Modifier.height(12.dp))
         Text(stringResource(R.string.products_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(16.dp))
-        OutlinedButton(onClick = { nav.navigate(Routes.QUICK_PRODUCTS) }, modifier = Modifier.height(48.dp)) {
+        OutlinedButton(colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { nav.navigate(Routes.QUICK_PRODUCTS) }, modifier = Modifier.height(48.dp)) {
             Icon(Icons.Filled.Bolt, null)
             Spacer(Modifier.width(8.dp))
             Text(stringResource(R.string.products_quick_title))
@@ -386,7 +386,7 @@ private fun NoResults(query: String, onAddWithBarcode: (String) -> Unit) {
         Text(stringResource(R.string.products_not_found), color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (code.length >= 4 && code.all { it.isDigit() }) {
             Spacer(Modifier.height(16.dp))
-            OutlinedButton(onClick = { onAddWithBarcode(code) }, modifier = Modifier.height(48.dp)) {
+            OutlinedButton(colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { onAddWithBarcode(code) }, modifier = Modifier.height(48.dp)) {
                 Icon(Icons.Filled.Add, null)
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.products_add_with_barcode, code))
@@ -536,7 +536,7 @@ fun QuickProductsScreen(nav: NavHostController) {
                 )
             }
             item {
-                TextButton(onClick = { repeat(5) { addRow() } }, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+                TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = { repeat(5) { addRow() } }, modifier = Modifier.fillMaxWidth().height(48.dp)) {
                     Icon(Icons.Filled.Add, null)
                     Spacer(Modifier.width(6.dp))
                     Text(stringResource(R.string.products_quick_add_rows))
@@ -714,8 +714,8 @@ fun NameDialog(title: String, label: String, value: String, onChange: (String) -
         text = {
             FormField(value, onChange, label, imeAction = ImeAction.Done, onIme = onSave)
         },
-        confirmButton = { TextButton(onClick = onSave, enabled = value.isNotBlank()) { Text(stringResource(R.string.common_save)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
+        confirmButton = { TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onSave, enabled = value.isNotBlank()) { Text(stringResource(R.string.common_save)) } },
+        dismissButton = { TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     )
 }
 
@@ -819,7 +819,7 @@ private fun SupplierDialog(draft: SupplierDraft, onChange: (SupplierDraft) -> Un
                 FormField(draft.note, { onChange(draft.copy(note = it)) }, stringResource(R.string.suppliers_note), singleLine = false, imeAction = ImeAction.Default)
             }
         },
-        confirmButton = { TextButton(onClick = onSave, enabled = draft.name.isNotBlank()) { Text(stringResource(R.string.common_save)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
+        confirmButton = { TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onSave, enabled = draft.name.isNotBlank()) { Text(stringResource(R.string.common_save)) } },
+        dismissButton = { TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     )
 }

@@ -236,7 +236,7 @@ fun ExpenseEditScreen(nav: NavHostController, uuid: String) {
                 description, { description = it }, label = { Text(stringResource(R.string.expenses_description)) },
                 modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp), minLines = 2,
             )
-            OutlinedButton(onClick = { pickDate = true }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
+            OutlinedButton(colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { pickDate = true }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
                 Icon(Icons.Filled.CalendarMonth, null); Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.expenses_date) + ": " + Time.showDate(date))
             }

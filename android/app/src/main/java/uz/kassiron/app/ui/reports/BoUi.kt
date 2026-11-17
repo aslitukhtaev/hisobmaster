@@ -204,7 +204,7 @@ private object NotFuture : SelectableDates {
 @Composable
 fun DateRangeButton(from: String, to: String, onChange: (String, String) -> Unit, modifier: Modifier = Modifier) {
     var open by remember { mutableStateOf(false) }
-    OutlinedButton(onClick = { open = true }, modifier = modifier.heightIn(min = 48.dp), shape = RoundedCornerShape(14.dp)) {
+    OutlinedButton(colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { open = true }, modifier = modifier.heightIn(min = 48.dp), shape = RoundedCornerShape(14.dp)) {
         Icon(Icons.Filled.CalendarMonth, contentDescription = null, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(8.dp))
         Text(rangeLabel(from, to), maxLines = 1)
@@ -224,7 +224,7 @@ fun DateRangeDialog(from: String, to: String, onDismiss: () -> Unit, onPick: (St
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(
-                enabled = state.selectedStartDateMillis != null,
+                colors = uz.kassiron.app.ui.theme.Btn.text(), enabled = state.selectedStartDateMillis != null,
                 onClick = {
                     val s = state.selectedStartDateMillis ?: return@TextButton
                     val e = state.selectedEndDateMillis ?: s
@@ -232,7 +232,7 @@ fun DateRangeDialog(from: String, to: String, onDismiss: () -> Unit, onPick: (St
                 },
             ) { Text(stringResource(R.string.dash_ok)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
+        dismissButton = { TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     ) {
         DateRangePicker(state = state, modifier = Modifier.weight(1f), showModeToggle = false)
     }
@@ -246,11 +246,11 @@ fun SingleDateDialog(date: String?, allowFuture: Boolean, onDismiss: () -> Unit,
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(enabled = state.selectedDateMillis != null, onClick = {
+            TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), enabled = state.selectedDateMillis != null, onClick = {
                 state.selectedDateMillis?.let { onPick(pickerMillisToDate(it)) }
             }) { Text(stringResource(R.string.dash_ok)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
+        dismissButton = { TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     ) { DatePicker(state = state) }
 }
 

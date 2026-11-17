@@ -141,7 +141,7 @@ fun ConfirmDialog(title: String, text: String?, confirm: String, dismiss: String
         onDismissRequest = onDismiss,
         title = { Text(title, fontWeight = FontWeight.Bold) },
         text = text?.let { { Text(it) } },
-        confirmButton = { TextButton(onClick = onConfirm) { Text(confirm) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(dismiss) } },
+        confirmButton = { TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onConfirm) { Text(confirm) } },
+        dismissButton = { TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onDismiss) { Text(dismiss) } },
     )
 }

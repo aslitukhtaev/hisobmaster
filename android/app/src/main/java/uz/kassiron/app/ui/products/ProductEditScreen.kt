@@ -458,7 +458,7 @@ private fun StockCard(product: DbRow, variants: List<DbRow>, onPurchase: () -> U
                         color = if (stock <= 0) StockColors.Out else MaterialTheme.colorScheme.onSurface,
                     )
                 }
-                OutlinedButton(onClick = onPurchase, modifier = Modifier.height(48.dp)) {
+                OutlinedButton(colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = onPurchase, modifier = Modifier.height(48.dp)) {
                     Icon(Icons.Filled.MoveToInbox, null)
                     Spacer(Modifier.width(6.dp))
                     Text(stringResource(R.string.purchases_new_short))
@@ -490,7 +490,7 @@ private fun VariantsSection(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.products_variants), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
             if (!isNew && canEdit) {
-                TextButton(onClick = onAdd, modifier = Modifier.heightIn(min = 48.dp)) {
+                TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onAdd, modifier = Modifier.heightIn(min = 48.dp)) {
                     Icon(Icons.Filled.Add, null)
                     Spacer(Modifier.width(4.dp))
                     Text(stringResource(R.string.products_variant_add))
@@ -607,7 +607,7 @@ private fun VariantDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onSave, enabled = form.label.isNotBlank()) { Text(stringResource(R.string.common_save)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
+        confirmButton = { TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onSave, enabled = form.label.isNotBlank()) { Text(stringResource(R.string.common_save)) } },
+        dismissButton = { TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     )
 }

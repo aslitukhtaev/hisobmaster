@@ -473,7 +473,7 @@ private fun ProductResults(
                 Modifier.weight(1f),
             )
             if (canProducts) {
-                OutlinedButton(onClick = onNewProduct, modifier = Modifier.padding(bottom = 24.dp).height(52.dp)) {
+                OutlinedButton(colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = onNewProduct, modifier = Modifier.padding(bottom = 24.dp).height(52.dp)) {
                     Icon(Icons.Filled.AddShoppingCart, null)
                     Spacer(Modifier.size(8.dp))
                     Text(stringResource(R.string.till_add_product))
@@ -615,12 +615,12 @@ fun ReceiptScreen(nav: NavHostController, uuid: String) {
                 Surface(tonalElevation = 3.dp) {
                     Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
-                            onClick = { printReceipt(context, scope, snackbar, nav, uuid) },
+                            colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { printReceipt(context, scope, snackbar, nav, uuid) },
                             modifier = Modifier.weight(1f).height(56.dp),
                             shape = RoundedCornerShape(16.dp),
                         ) { Icon(Icons.Filled.Print, null); Spacer(Modifier.size(6.dp)); Text(stringResource(R.string.print_print), maxLines = 1) }
                         OutlinedButton(
-                            onClick = { shareReceipt(context, data) },
+                            colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { shareReceipt(context, data) },
                             modifier = Modifier.weight(1f).height(56.dp),
                             shape = RoundedCornerShape(16.dp),
                         ) { Icon(Icons.Filled.Share, null); Spacer(Modifier.size(6.dp)); Text(stringResource(R.string.till_share), maxLines = 1) }

@@ -351,11 +351,11 @@ fun SaleDetailScreen(nav: NavHostController, uuid: String) {
             item("btns") {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (canRefund) {
-                        OutlinedButton(onClick = { nav.navigate(Routes.refund(uuid)) }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp)) {
+                        OutlinedButton(colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { nav.navigate(Routes.refund(uuid)) }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp)) {
                             Icon(Icons.AutoMirrored.Filled.Undo, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.sales_refund_action))
                         }
                     }
-                    OutlinedButton(onClick = { nav.navigate(Routes.receipt(uuid)) }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp)) {
+                    OutlinedButton(colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { nav.navigate(Routes.receipt(uuid)) }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp)) {
                         Icon(Icons.Filled.Receipt, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.sales_open_receipt))
                     }
                 }
@@ -506,7 +506,7 @@ fun RefundScreen(nav: NavHostController, uuid: String) {
                         FilledTonalIconButton(onClick = {
                             qty[l.saleItemUuid] = Money.qty(minOf(l.remainingQty, q + step))
                         }, modifier = Modifier.size(48.dp)) { Icon(Icons.Filled.Add, null) }
-                        TextButton(onClick = { qty[l.saleItemUuid] = Money.qty(l.remainingQty) }) { Text(stringResource(R.string.sales_refund_all)) }
+                        TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = { qty[l.saleItemUuid] = Money.qty(l.remainingQty) }) { Text(stringResource(R.string.sales_refund_all)) }
                     }
                     if (q > 0) Text(
                         "= " + Money.format(RefundService.lineAmount(l.unitPrice, minOf(q, l.remainingQty), ratio)),

@@ -72,3 +72,15 @@ private val AppTypography = Typography(
 fun KassirTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = if (dark) Dark else Light, typography = AppTypography, content = content)
 }
+
+/**
+ * Outlined / text buttons: the lime brand colour is unreadable as text on the
+ * light theme, so their content uses the darker "ink" green (secondary).
+ */
+object Btn {
+    @Composable
+    fun outlined() = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.secondary)
+
+    @Composable
+    fun text() = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.secondary)
+}

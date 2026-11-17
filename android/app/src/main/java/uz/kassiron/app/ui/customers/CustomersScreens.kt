@@ -328,11 +328,11 @@ fun CustomerDetailScreen(nav: NavHostController, uuid: String) {
                     if (phone.isNotBlank()) {
                         Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(
-                                onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))) } },
+                                colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))) } },
                                 modifier = Modifier.weight(1f).height(48.dp),
                             ) { Icon(Icons.Filled.Call, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.customers_call)) }
                             OutlinedButton(
-                                onClick = {
+                                colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = {
                                     runCatching {
                                         val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$phone"))
                                         if (detail.balance > 0) intent.putExtra("sms_body", reminder)
@@ -472,15 +472,15 @@ private fun AmountDialog(title: String, fill: Double?, warning: (Double?) -> Str
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 AmountField(text, { text = it }, stringResource(R.string.customers_amount))
                 if (fill != null && fill > 0) {
-                    TextButton(onClick = { text = Money.format(fill, withCurrency = false) }) {
+                    TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = { text = Money.format(fill, withCurrency = false) }) {
                         Text(stringResource(R.string.customers_pay_all) + ": " + Money.format(fill))
                     }
                 }
                 warning(amount)?.let { Text(it, color = Brand.Warning, style = MaterialTheme.typography.bodyMedium) }
             }
         },
-        confirmButton = { TextButton(enabled = amount != null && amount > 0, onClick = { onConfirm(amount) }) { Text(stringResource(R.string.common_save)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
+        confirmButton = { TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), enabled = amount != null && amount > 0, onClick = { onConfirm(amount) }) { Text(stringResource(R.string.common_save)) } },
+        dismissButton = { TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     )
 }
 
@@ -538,7 +538,7 @@ fun CustomerEditScreen(nav: NavHostController, uuid: String) {
             AmountField(limit, { limit = it }, stringResource(R.string.customers_credit_limit))
             Text(stringResource(R.string.customers_credit_limit_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(onClick = { pickDate = true }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp)) {
+                OutlinedButton(colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { pickDate = true }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp)) {
                     Icon(Icons.Filled.CalendarMonth, null); Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.customers_due_date) + ": " + (due?.let { Time.showDate(it) } ?: stringResource(R.string.customers_not_set)))
                 }
@@ -669,7 +669,7 @@ fun QuickDebtsScreen(nav: NavHostController) {
                 }
             }
             item("add") {
-                OutlinedButton(onClick = { rows.add(QuickRow(nextId++)) }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
+                OutlinedButton(colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { rows.add(QuickRow(nextId++)) }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
                     Icon(Icons.Filled.Add, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.customers_quick_add_row))
                 }
             }

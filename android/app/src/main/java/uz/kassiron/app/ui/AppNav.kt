@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -148,7 +149,7 @@ fun AppNav() {
                             selected = current == tab.route,
                             onClick = { nav.switchTab(tab.route) },
                             icon = { Icon(tab.icon, contentDescription = null) },
-                            label = { Text(stringResource(tab.label)) },
+                            label = { Text(stringResource(tab.label), maxLines = 1, softWrap = false, fontSize = 11.sp) },
                         )
                     }
                 }

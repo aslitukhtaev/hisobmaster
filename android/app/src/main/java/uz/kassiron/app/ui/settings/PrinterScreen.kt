@@ -135,7 +135,7 @@ fun PrinterScreen(nav: NavHostController) {
                 }
             } else if (printers.isEmpty()) {
                 Text(stringResource(R.string.print_none_paired), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                OutlinedButton(onClick = { runCatching { context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) } }) {
+                OutlinedButton(colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { runCatching { context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) } }) {
                     Text(stringResource(R.string.print_open_bt_settings))
                 }
             }

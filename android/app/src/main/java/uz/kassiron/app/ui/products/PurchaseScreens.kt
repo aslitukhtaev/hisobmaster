@@ -487,7 +487,7 @@ private fun LineCard(line: LineState, onRemove: () -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (t.packSize != null) {
                     TextButton(
-                        onClick = { line.qty = Money.qty((line.qtyValue ?: 0.0) + t.packSize) },
+                        colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = { line.qty = Money.qty((line.qtyValue ?: 0.0) + t.packSize) },
                         modifier = Modifier.heightIn(min = 48.dp),
                     ) { Text(stringResource(R.string.purchases_add_pack, Money.qty(t.packSize.toDouble()), t.unit)) }
                 }

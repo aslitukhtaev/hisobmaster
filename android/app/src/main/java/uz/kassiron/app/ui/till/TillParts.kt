@@ -112,7 +112,7 @@ internal fun CartPanel(
                 modifier = Modifier.weight(1f),
             )
             if (vm.cart.isNotEmpty()) {
-                TextButton(onClick = onClear) {
+                TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onClear) {
                     Icon(Icons.Filled.DeleteSweep, null)
                     Spacer(Modifier.size(4.dp))
                     Text(stringResource(R.string.till_clear))
@@ -261,7 +261,7 @@ internal fun QtyDialog(item: CartItem, onSet: (Double) -> Boolean, onDismiss: ()
             }
         },
         confirmButton = { Button(onClick = { submit() }) { Text(stringResource(R.string.common_save)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
+        dismissButton = { TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     )
 }
 
@@ -296,7 +296,7 @@ internal fun VariantDialog(product: TillProduct, onPick: (TillVariant) -> Unit, 
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
+        dismissButton = { TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     )
 }
 
@@ -540,7 +540,7 @@ private fun CustomerPicker(onPick: (TillCustomer) -> Unit, onDismiss: () -> Unit
                     )
                     error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = { creating = false }, modifier = Modifier.weight(1f).height(52.dp)) {
+                        OutlinedButton(colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { creating = false }, modifier = Modifier.weight(1f).height(52.dp)) {
                             Text(stringResource(R.string.common_cancel))
                         }
                         Button(onClick = { save() }, modifier = Modifier.weight(1f).height(52.dp)) { Text(stringResource(R.string.common_save)) }
@@ -548,7 +548,7 @@ private fun CustomerPicker(onPick: (TillCustomer) -> Unit, onDismiss: () -> Unit
                 } else {
                     SearchField(query, { query = it }, stringResource(R.string.till_customer_search))
                     OutlinedButton(
-                        onClick = {
+                        colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = {
                             val digits = query.filter(Char::isDigit)
                             if (digits.length >= 2 && query.none(Char::isLetter)) { phone = query.trim(); name = "" } else { name = query.trim(); phone = "" }
                             error = null

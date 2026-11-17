@@ -53,6 +53,11 @@ android {
         }
         debug {
             applicationIdSuffix '.debug'
+            // KASSIRON_MINIFY_DEBUG=1: run the release's code shrinking against a local server (to catch R8 problems).
+            if (System.getenv('KASSIRON_MINIFY_DEBUG') == '1') {
+                minifyEnabled true
+                proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            }
             // The emulator reaches the PC's localhost as 10.0.2.2.
             buildConfigField 'String', 'SERVER_URL', '"' + (System.getenv('KASSIRON_DEBUG_SERVER') ?: 'https://kassiron.uz') + '"'
         }
