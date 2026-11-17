@@ -1,44 +1,28 @@
 package uz.kassiron.app.ui.sales
 
 import android.widget.Toast
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.ReceiptLong
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.SearchOff
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
+import androidx.compose.material.icons.automirrored.outlined.Undo
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Print
+import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -52,10 +36,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.launch
 import uz.kassiron.app.App
@@ -63,30 +46,47 @@ import uz.kassiron.app.R
 import uz.kassiron.app.core.Money
 import uz.kassiron.app.core.Row
 import uz.kassiron.app.core.Time
-import uz.kassiron.app.core.Units
 import uz.kassiron.app.domain.RefundException
 import uz.kassiron.app.domain.RefundService
 import uz.kassiron.app.domain.ReportService
 import uz.kassiron.app.ui.Routes
-import uz.kassiron.app.ui.common.BigButton
-import uz.kassiron.app.ui.common.ConfirmDialog
-import uz.kassiron.app.ui.common.EmptyState
 import uz.kassiron.app.ui.common.dbState
 import uz.kassiron.app.ui.common.io
-import uz.kassiron.app.ui.reports.AmountLine
-import uz.kassiron.app.ui.reports.BoCard
-import uz.kassiron.app.ui.reports.BoScaffold
-import uz.kassiron.app.ui.reports.DateRangeButton
+import uz.kassiron.app.ui.kit.Edge
+import uz.kassiron.app.ui.kit.KBottomBar
+import uz.kassiron.app.ui.kit.KButton
+import uz.kassiron.app.ui.kit.KButtonKind
+import uz.kassiron.app.ui.kit.KCard
+import uz.kassiron.app.ui.kit.KCardTone
+import uz.kassiron.app.ui.kit.KChips
+import uz.kassiron.app.ui.kit.KConfirm
+import uz.kassiron.app.ui.kit.KEmpty
+import uz.kassiron.app.ui.kit.KField
+import uz.kassiron.app.ui.kit.KIconButton
+import uz.kassiron.app.ui.kit.KKeyValue
+import uz.kassiron.app.ui.kit.KMoney
+import uz.kassiron.app.ui.kit.KRow
+import uz.kassiron.app.ui.kit.KScreen
+import uz.kassiron.app.ui.kit.KSection
+import uz.kassiron.app.ui.kit.KStepper
+import uz.kassiron.app.ui.kit.KSub
+import uz.kassiron.app.ui.kit.KTag
+import uz.kassiron.app.ui.kit.KTagKind
+import uz.kassiron.app.ui.kit.KTopBar
+import uz.kassiron.app.ui.reports.BoRow
+import uz.kassiron.app.ui.reports.DateRangeDialog
+import uz.kassiron.app.ui.reports.EndColumn
 import uz.kassiron.app.ui.reports.NoAccess
-import uz.kassiron.app.ui.reports.PaymentBadge
-import uz.kassiron.app.ui.reports.Pill
-import uz.kassiron.app.ui.reports.SectionTitle
+import uz.kassiron.app.ui.reports.PayTag
 import uz.kassiron.app.ui.reports.paymentColor
 import uz.kassiron.app.ui.reports.paymentLabel
+import uz.kassiron.app.ui.reports.rangeLabel
 import uz.kassiron.app.ui.reports.receiptLabel
-import uz.kassiron.app.ui.theme.Brand
+import uz.kassiron.app.ui.theme.K
+import uz.kassiron.app.ui.theme.Onest
+import uz.kassiron.app.ui.till.printReceipt
 
-// ---------------------------------------------------------------- list
+// ---------------------------------------------------------------- list (mockup 19)
 
 private data class SaleItem(
     val uuid: String,
@@ -98,7 +98,6 @@ private data class SaleItem(
     val itemCount: Long,
     val refunded: Double,
     val customer: String?,
-    val cashier: String,
 )
 
 private data class SalesData(
@@ -128,23 +127,36 @@ private fun loadSales(from: String, to: String, filter: String?): SalesData {
         }
     }
     val sales = db.query(
-        """SELECT s.uuid, s.receipt_no, s.created_at, s.total, s.payment_type, s.status,
-                  c.full_name AS customer_name, COALESCE(u.full_name, '') AS cashier_name,
+        """SELECT s.uuid, s.receipt_no, s.created_at, s.total, s.payment_type, s.status, c.full_name AS customer_name,
                   (SELECT COUNT(*) FROM sale_items si WHERE si.sale_id = s.uuid) AS item_count,
                   (SELECT COALESCE(SUM(r.total_amount), 0) FROM refunds r WHERE r.sale_id = s.uuid) AS refunded
-           FROM sales s LEFT JOIN customers c ON c.uuid = s.customer_id LEFT JOIN users u ON u.uuid = s.cashier_id
+           FROM sales s LEFT JOIN customers c ON c.uuid = s.customer_id
            WHERE $where ORDER BY s.created_at DESC LIMIT 3000""",
         *args.toTypedArray(),
     ).map {
         SaleItem(
             it.str("uuid"), receiptLabel(it.strOrNull("receipt_no"), it.str("uuid")), it.str("created_at"), it.dbl("total"),
             it.str("payment_type"), it.str("status"), it.long("item_count"), it.dbl("refunded"),
-            it.strOrNull("customer_name")?.takeIf { n -> n.isNotBlank() }, it.str("cashier_name"),
+            it.strOrNull("customer_name")?.takeIf { n -> n.isNotBlank() },
         )
     }
-    val completed = sales.filter { it.status == "completed" }
+    // Totals are for the whole period, whatever the payment filter (like the website).
+    val (cnt, gross) = db.queryOne(
+        "SELECT COUNT(*) AS cnt, COALESCE(SUM(total), 0) AS gross FROM sales WHERE status = 'completed' AND created_at >= ? AND created_at < ?", start, end,
+    )?.let { it.long("cnt") to it.dbl("gross") } ?: (0L to 0.0)
     val refunds = db.scalarDouble("SELECT COALESCE(SUM(total_amount), 0) FROM refunds WHERE created_at >= ? AND created_at < ?", start, end)
-    return SalesData(sales, completed.size.toLong(), Money.round2(completed.sumOf { it.total }), Money.round2(refunds), ReportService.paymentBreakdown(db, from, to))
+    return SalesData(sales, cnt, Money.round2(gross), Money.round2(refunds), ReportService.paymentBreakdown(db, from, to))
+}
+
+/** The period chips: Bugun, Kecha, 7 kun, Oy (+ the picked range). */
+private fun presetRange(i: Int): Pair<String, String> {
+    val today = Time.today()
+    return when (i) {
+        0 -> today to today
+        1 -> Time.addDays(today, -1).let { it to it }
+        2 -> Time.addDays(today, -6) to today
+        else -> today.substring(0, 8) + "01" to today
+    }
 }
 
 @Composable
@@ -154,118 +166,109 @@ fun SalesScreen(nav: NavHostController) {
     var from by rememberSaveable { mutableStateOf(today) }
     var to by rememberSaveable { mutableStateOf(today) }
     var filter by rememberSaveable { mutableStateOf<String?>(null) }
+    var pick by remember { mutableStateOf(false) }
     val data by dbState<SalesData?>(null, from, to, filter) { loadSales(from, to, filter) }
     val multiDay = from != to
+    val preset = (0..3).firstOrNull { presetRange(it) == (from to to) }
 
-    BoScaffold(title = stringResource(R.string.sales_title)) { pad ->
-        LazyColumn(
-            Modifier.padding(pad).fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            item("range") {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    DateRangeButton(from, to, { f, t -> from = f; to = t }, Modifier.weight(1f))
-                    FilterChip(selected = from == today && to == today, onClick = { from = today; to = today }, label = { Text(stringResource(R.string.reports_today)) })
-                    val y = Time.addDays(today, -1)
-                    FilterChip(selected = from == y && to == y, onClick = { from = y; to = y }, label = { Text(stringResource(R.string.reports_yesterday)) })
-                }
+    KScreen(
+        topBar = {
+            KTopBar(stringResource(R.string.sales_title)) {
+                KIconButton(Icons.Outlined.CalendarMonth, { pick = true }, contentDescription = stringResource(R.string.bo_pick_range))
             }
-            val d = data
-            if (d != null) {
-                item("totals") { SalesTotals(d) }
-            }
+        },
+    ) {
+        val periodLabels = buildList {
+            add(stringResource(R.string.sales_today)); add(stringResource(R.string.sales_yesterday))
+            add(stringResource(R.string.sales_7days)); add(stringResource(R.string.sales_month))
+            if (preset == null) add(rangeLabel(from, to))
+        }
+        KChips(periodLabels, preset ?: 4, { i -> if (i == 4) pick = true else presetRange(i).let { (f, t) -> from = f; to = t } })
+        val d = data
+        LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(top = 10.dp, bottom = 20.dp)) {
+            if (d != null) item("totals") { SalesTotals(d) }
             item("filters") {
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FILTERS.forEach { f ->
-                        FilterChip(
-                            selected = filter == f, onClick = { filter = f },
-                            label = { Text(if (f == null) stringResource(R.string.sales_filter_all) else paymentLabel(f)) },
-                        )
-                    }
-                }
+                val labels = FILTERS.map { f -> if (f == null) stringResource(R.string.sales_filter_all) else paymentLabel(f) }
+                KChips(labels, FILTERS.indexOf(filter), { filter = FILTERS[it] }, Modifier.padding(top = 10.dp, bottom = 2.dp))
             }
             if (d != null && d.sales.isEmpty()) item("empty") {
-                EmptyState(Icons.Filled.ReceiptLong, stringResource(R.string.sales_empty), Modifier.height(240.dp))
+                KEmpty(
+                    Icons.AutoMirrored.Outlined.ReceiptLong,
+                    stringResource(R.string.sales_empty),
+                    stringResource(if (filter == null) R.string.sales_empty_hint else R.string.sales_empty_filter),
+                )
             }
-            if (d != null) items(d.sales, key = { it.uuid }) { s -> SaleRow(s, multiDay) { nav.navigate(Routes.sale(s.uuid)) } }
+            if (d != null) items(d.sales, key = { it.uuid }) { s ->
+                SaleRow(s, multiDay, Modifier.padding(start = Edge, end = Edge, top = 8.dp)) { nav.navigate(Routes.sale(s.uuid)) }
+            }
         }
     }
+    if (pick) DateRangeDialog(from, to, onDismiss = { pick = false }) { f, t -> from = f; to = t; pick = false }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SalesTotals(d: SalesData) {
-    BoCard {
-        Row {
+    KCard(Modifier.padding(horizontal = Edge)) {
+        Row(verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.sales_net), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(Money.format(d.gross - d.refunds), style = MaterialTheme.typography.headlineMedium)
+                Text(stringResource(R.string.sales_revenue), style = K.t.small, color = K.c.mu)
+                KMoney(d.gross - d.refunds, size = 24.sp)
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(stringResource(R.string.sales_count), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(d.count.toString(), style = MaterialTheme.typography.headlineMedium)
+                Text(stringResource(R.string.sales_count), style = K.t.small, color = K.c.mu)
+                Text(d.count.toString(), style = K.t.hero, color = K.c.tx)
             }
         }
-        if (d.refunds > 0) {
-            Text(
-                stringResource(R.string.sales_revenue) + ": " + Money.format(d.gross) + " · " + stringResource(R.string.sales_refunds) + ": −" + Money.format(d.refunds),
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Spacer(Modifier.height(8.dp))
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            RefundService.PAYMENT_TYPES.forEach { t ->
+        FlowRow(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            listOf("naqd", "karta", "qarz", "qr").forEach { t ->
                 val v = d.payments.net.getValue(t)
-                if (t != "qr" || v != 0.0) {
-                    Column {
-                        Text(paymentLabel(t), color = paymentColor(t), style = MaterialTheme.typography.labelLarge)
-                        Text(Money.format(v), fontWeight = FontWeight.Bold)
-                    }
-                }
+                if (t != "qr" || v != 0.0) PayFigure(paymentLabel(t), v, paymentColor(t))
             }
+            if (d.refunds > 0) PayFigure(stringResource(R.string.sales_refunded_sum), d.refunds, K.c.amb)
         }
     }
 }
 
 @Composable
-private fun SaleRow(s: SaleItem, multiDay: Boolean, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+private fun PayFigure(label: String, amount: Double, color: androidx.compose.ui.graphics.Color) {
+    Text("$label ${Money.format(amount, withCurrency = false)}", style = K.t.label, color = color, maxLines = 1)
+}
+
+@Composable
+private fun SaleRow(s: SaleItem, multiDay: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    BoRow(
+        modifier, onClick = onClick,
+        trailing = {
+            EndColumn {
+                KMoney(s.total)
+                PayTag(s.paymentType)
+            }
+        },
     ) {
-        Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("№ ${s.receipt}", style = MaterialTheme.typography.titleMedium, maxLines = 1)
-                    Text(Time.local(s.createdAt, if (multiDay) "dd.MM HH:mm" else "HH:mm"), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Text(
-                    listOfNotNull(stringResource(R.string.sales_items, s.itemCount.toInt()), s.customer, s.cashier.ifBlank { null }).joinToString(" · "),
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                )
-                if (s.refunded > 0) {
-                    Pill(stringResource(if (s.refunded >= s.total - 0.01) R.string.sales_refunded else R.string.sales_partly_refunded), Brand.Warning)
-                }
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(stringResource(R.string.bo_receipt_no, s.receipt), style = K.t.title, color = K.c.tx, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+            Spacer(Modifier.width(6.dp))
+            Text(Time.local(s.createdAt, if (multiDay) "dd.MM HH:mm" else "HH:mm"), style = K.t.small, color = K.c.mu, maxLines = 1, modifier = Modifier.padding(bottom = 1.dp))
+        }
+        KSub(listOfNotNull(stringResource(R.string.bo_items, s.itemCount.toInt()), s.customer).joinToString(" · "))
+        when {
+            s.refunded > 0 -> Row(Modifier.padding(top = 2.dp)) {
+                KTag(stringResource(if (s.refunded >= s.total - 0.01) R.string.sales_refunded else R.string.sales_partly_refunded), KTagKind.Low)
             }
-            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(Money.format(s.total), style = MaterialTheme.typography.titleMedium)
-                PaymentBadge(s.paymentType)
-            }
+            s.status != "completed" -> Row(Modifier.padding(top = 2.dp)) { KTag(s.status) }
         }
     }
 }
 
-// ---------------------------------------------------------------- detail
+// ---------------------------------------------------------------- detail (mockup 20)
 
 private data class RefundInfo(
     val uuid: String,
     val createdAt: String,
     val total: Double,
     val reason: String?,
-    val by: String,
     val items: List<Row>,
-    val payments: List<Row>,
 )
 
 private data class SaleDetail(
@@ -278,7 +281,7 @@ private data class SaleDetail(
 private fun loadSale(uuid: String): SaleDetail? {
     val db = App.db
     val sale = db.queryOne(
-        """SELECT s.*, COALESCE(u.full_name, '') AS cashier_name, c.full_name AS customer_name, c.phone AS customer_phone
+        """SELECT s.*, COALESCE(u.full_name, '') AS cashier_name, c.full_name AS customer_name
            FROM sales s LEFT JOIN users u ON u.uuid = s.cashier_id LEFT JOIN customers c ON c.uuid = s.customer_id
            WHERE s.uuid = ?""",
         uuid,
@@ -291,151 +294,137 @@ private fun loadSale(uuid: String): SaleDetail? {
     )
     val payments = if (rows.isNotEmpty()) rows.map { it.str("payment_type") to it.dbl("amount") }
     else RefundService.paymentSplit(db, sale).filterValues { it > 0 }.toList()
-    val refunds = db.query(
-        "SELECT r.*, COALESCE(u.full_name, '') AS by_name FROM refunds r LEFT JOIN users u ON u.uuid = r.refunded_by WHERE r.sale_id = ? ORDER BY r.created_at DESC",
-        uuid,
-    ).map { r ->
+    val refunds = db.query("SELECT * FROM refunds WHERE sale_id = ? ORDER BY created_at DESC", uuid).map { r ->
         RefundInfo(
-            r.str("uuid"), r.str("created_at"), r.dbl("total_amount"), r.strOrNull("reason")?.takeIf { it.isNotBlank() }, r.str("by_name"),
+            r.str("uuid"), r.str("created_at"), r.dbl("total_amount"), r.strOrNull("reason")?.takeIf { it.isNotBlank() },
             db.query(
-                "SELECT ri.qty, ri.amount, COALESCE(si.product_name, '?') AS product_name, si.variant_label FROM refund_items ri LEFT JOIN sale_items si ON si.uuid = ri.sale_item_id WHERE ri.refund_id = ? ORDER BY ri.rowid",
+                "SELECT ri.qty, COALESCE(si.product_name, '?') AS product_name FROM refund_items ri LEFT JOIN sale_items si ON si.uuid = ri.sale_item_id WHERE ri.refund_id = ? ORDER BY ri.rowid",
                 r.str("uuid"),
             ),
-            db.query("SELECT payment_type, amount FROM refund_payments WHERE refund_id = ?", r.str("uuid")),
         )
     }
     return SaleDetail(sale, lines, payments, refunds)
 }
 
+private fun lineName(l: RefundService.Line) = l.name + (l.variantLabel?.let { " ($it)" } ?: "")
+
 @Composable
 fun SaleDetailScreen(nav: NavHostController, uuid: String) {
     val loaded by dbState<Pair<Boolean, SaleDetail?>>(false to null, uuid) { true to loadSale(uuid) }
     val d = loaded.second
-    BoScaffold(
-        title = d?.let { stringResource(R.string.sales_receipt_title, receiptLabel(it.sale.strOrNull("receipt_no"), uuid)) } ?: stringResource(R.string.sales_title),
-        onBack = { nav.popBackStack() },
-    ) { pad ->
-        if (!loaded.first) return@BoScaffold
-        if (d == null) { EmptyState(Icons.Filled.SearchOff, stringResource(R.string.sales_not_found), Modifier.padding(pad)); return@BoScaffold }
-        val s = d.sale
-        val canRefund = App.session.can("sales") && d.lines.any { it.remainingQty > 0.0001 }
-        LazyColumn(
-            Modifier.padding(pad).fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            item("head") {
-                BoCard {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(Money.format(s.dbl("total")), style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
-                        PaymentBadge(s.str("payment_type"))
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    AmountLine(stringResource(R.string.sales_date), Time.local(s.str("created_at")))
-                    AmountLine(stringResource(R.string.sales_cashier), s.str("cashier_name").ifBlank { "—" })
-                    val customerUuid = s.strOrNull("customer_id")?.takeIf { it.isNotBlank() }
-                    if (customerUuid != null) {
-                        val name = s.strOrNull("customer_name") ?: "—"
-                        val canOpen = App.session.can("customers")
-                        Row(
-                            Modifier.fillMaxWidth().then(if (canOpen) Modifier.clickable { nav.navigate(Routes.customer(customerUuid)) } else Modifier).padding(vertical = 3.dp),
-                        ) {
-                            Text(stringResource(R.string.sales_customer), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
-                            Text(name + (s.strOrNull("customer_phone")?.takeIf { it.isNotBlank() }?.let { " · $it" } ?: ""),
-                                color = if (canOpen) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
-                        }
-                    }
-                    if (s.str("status") != "completed") Pill(s.str("status"), Brand.Warning)
-                }
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val canRefund = d != null && App.session.can("sales") && d.sale.str("status") == "completed" && d.lines.any { it.remainingQty > 0.0001 }
+
+    KScreen(
+        topBar = {
+            KTopBar(
+                d?.let { stringResource(R.string.bo_receipt_no, receiptLabel(it.sale.strOrNull("receipt_no"), uuid)) } ?: stringResource(R.string.sales_title),
+                onBack = { nav.popBackStack() },
+            ) {
+                if (d != null) KIconButton(Icons.Outlined.Print, { printReceipt(context, scope, snackbar, nav, uuid) }, contentDescription = stringResource(R.string.sales_print))
             }
-            item("btns") {
+        },
+        bottomBar = if (d == null) null else ({
+            KBottomBar {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (canRefund) {
-                        OutlinedButton(colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { nav.navigate(Routes.refund(uuid)) }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp)) {
-                            Icon(Icons.AutoMirrored.Filled.Undo, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.sales_refund_action))
-                        }
-                    }
-                    OutlinedButton(colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { nav.navigate(Routes.receipt(uuid)) }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp)) {
-                        Icon(Icons.Filled.Receipt, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.sales_open_receipt))
-                    }
+                    KButton(
+                        stringResource(R.string.sales_receipt), { nav.navigate(Routes.receipt(uuid)) }, Modifier.weight(1f),
+                        kind = KButtonKind.Alt, icon = Icons.AutoMirrored.Outlined.ReceiptLong, height = 46.dp, fontSize = 14.sp,
+                    )
+                    if (canRefund) KButton(
+                        stringResource(R.string.sales_refund), { nav.navigate(Routes.refund(uuid)) }, Modifier.weight(1f),
+                        kind = KButtonKind.Danger, icon = Icons.AutoMirrored.Outlined.Undo, height = 46.dp, fontSize = 14.sp,
+                    )
                 }
             }
-            item("items-title") { SectionTitle(stringResource(R.string.sales_items_title)) }
-            item("items") {
-                BoCard {
-                    d.lines.forEachIndexed { i, l ->
-                        if (i > 0) HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                        Row {
-                            Column(Modifier.weight(1f)) {
-                                Text(l.name + (l.variantLabel?.let { " ($it)" } ?: ""), fontWeight = FontWeight.SemiBold)
-                                Text("${Money.qty(l.qty)} × ${Money.format(l.unitPrice)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                if (l.refundedQty > 0) Text(stringResource(R.string.sales_refunded_qty, Money.qty(l.refundedQty)), style = MaterialTheme.typography.bodySmall, color = Brand.Warning)
-                            }
-                            Text(Money.format(l.subtotal), fontWeight = FontWeight.Bold)
+        }),
+        snackbar = snackbar,
+    ) {
+        if (!loaded.first) return@KScreen
+        if (d == null) { KEmpty(Icons.Outlined.SearchOff, stringResource(R.string.sales_not_found), modifier = Modifier.padding(top = 40.dp)); return@KScreen }
+        val s = d.sale
+        LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(top = 2.dp, bottom = 16.dp)) {
+            item("info") {
+                KCard(Modifier.padding(horizontal = Edge), padding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)) {
+                    KKeyValue(stringResource(R.string.sales_time), first = true) { Value(Time.local(s.str("created_at"))) }
+                    KKeyValue(stringResource(R.string.sales_cashier)) { Value(s.str("cashier_name").ifBlank { "—" }) }
+                    val customerUuid = s.strOrNull("customer_id")?.takeIf { it.isNotBlank() }
+                    KKeyValue(stringResource(R.string.sales_customer)) {
+                        if (customerUuid == null) Value("—")
+                        else {
+                            val canOpen = App.session.can("customers")
+                            Text(
+                                s.strOrNull("customer_name")?.takeIf { it.isNotBlank() } ?: "—",
+                                style = K.t.body.copy(fontSize = 14.sp), color = if (canOpen) K.c.ink else K.c.tx, maxLines = 1,
+                                modifier = if (canOpen) Modifier.clickable { nav.navigate(Routes.customer(customerUuid)) }.padding(vertical = 8.dp) else Modifier,
+                            )
                         }
                     }
-                    HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                    val discount = s.dbl("discount")
-                    if (discount > 0) {
-                        AmountLine(stringResource(R.string.sales_subtotal), Money.format(s.dbl("total") + discount))
-                        AmountLine(stringResource(R.string.sales_discount), "−" + Money.format(discount), color = Brand.Danger)
-                    }
-                    AmountLine(stringResource(R.string.sales_total), Money.format(s.dbl("total")), bold = true)
+                    if (s.str("status") != "completed") KKeyValue(stringResource(R.string.sales_status)) { KTag(s.str("status"), KTagKind.Low) }
                 }
             }
-            item("pay-title") { SectionTitle(stringResource(R.string.sales_payments)) }
+            item("items-title") { KSection(stringResource(R.string.sales_items_title)) }
+            items(d.lines, key = { "i" + it.saleItemUuid }) { l ->
+                KRow(
+                    lineName(l),
+                    Modifier.padding(horizontal = Edge, vertical = 4.dp),
+                    subtitle = {
+                        KSub("${Money.format(l.unitPrice, withCurrency = false)} × ${Money.qty(l.qty)}")
+                        if (l.refundedQty > 0) KSub(stringResource(R.string.sales_line_refunded, Money.qty(l.refundedQty)), K.c.amb)
+                    },
+                    trailing = { KMoney(l.subtotal) },
+                )
+            }
             item("pay") {
-                BoCard {
-                    d.payments.forEach { (t, a) -> AmountLine(paymentLabel(t), Money.format(a), color = paymentColor(t)) }
-                    val received = s.dblOrNull("cash_received")
+                KCard(Modifier.padding(start = Edge, end = Edge, top = 6.dp), padding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)) {
+                    val received = s.dblOrNull("cash_received") ?: 0.0
                     val naqd = d.payments.filter { it.first == "naqd" }.sumOf { it.second }
-                    if (received != null && received > 0) {
-                        AmountLine(stringResource(R.string.sales_cash_received), Money.format(received))
-                        if (received - naqd > 0.004) AmountLine(stringResource(R.string.sales_change), Money.format(received - naqd))
+                    var first = true
+                    d.payments.forEach { (t, a) ->
+                        val shown = if (t == "naqd" && received > a) received else a
+                        KKeyValue(paymentLabel(t), first = first) { Amount(shown) }
+                        first = false
                     }
+                    if (received - naqd > 0.004 && naqd > 0) KKeyValue(stringResource(R.string.sales_change)) { Amount(received - naqd) }
+                    val discount = s.dbl("discount")
+                    if (discount > 0) KKeyValue(stringResource(R.string.sales_discount), first = first) { Amount(-discount, K.c.red) }
+                    KKeyValue(stringResource(R.string.sales_total), first = first && discount <= 0) { KMoney(s.dbl("total")) }
                 }
             }
             if (d.refunds.isNotEmpty()) {
-                item("ref-title") { SectionTitle(stringResource(R.string.sales_refund_history)) }
-                items(d.refunds, key = { it.uuid }) { r ->
-                    BoCard {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("−" + Money.format(r.total), style = MaterialTheme.typography.titleMedium, color = Brand.Warning, modifier = Modifier.weight(1f))
-                            Text(Time.local(r.createdAt), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        if (r.by.isNotBlank()) Text(r.by, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        r.items.forEach { it2 ->
-                            AmountLine(
-                                it2.str("product_name") + (it2.strOrNull("variant_label")?.takeIf { v -> v.isNotBlank() }?.let { v -> " ($v)" } ?: "") + " × " + Money.qty(it2.dbl("qty")),
-                                Money.format(it2.dbl("amount")),
-                            )
-                        }
-                        if (r.payments.isNotEmpty()) {
-                            Text(
-                                r.payments.joinToString(" · ") { p -> "${paymentLabelPlain(p.str("payment_type"))}: ${Money.format(p.dbl("amount"))}" },
-                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        r.reason?.let { Text(stringResource(R.string.sales_reason) + ": " + it, style = MaterialTheme.typography.bodyMedium) }
-                    }
+                item("ref-title") { KSection(stringResource(R.string.sales_refunds_title)) }
+                items(d.refunds, key = { "r" + it.uuid }) { r ->
+                    KRow(
+                        Time.local(r.createdAt),
+                        Modifier.padding(horizontal = Edge, vertical = 4.dp),
+                        subtitle = {
+                            KSub(r.items.joinToString(", ") { it.str("product_name") + " × " + Money.qty(it.dbl("qty")) })
+                            r.reason?.let { KSub(it) }
+                        },
+                        trailing = { Amount(-r.total, K.c.amb) },
+                    )
                 }
             }
         }
     }
 }
 
-private fun paymentLabelPlain(type: String): String {
-    val ctx = App.app
-    return when (type) {
-        "naqd" -> ctx.getString(R.string.sales_pay_naqd)
-        "karta" -> ctx.getString(R.string.sales_pay_karta)
-        "qr" -> ctx.getString(R.string.sales_pay_qr)
-        "qarz" -> ctx.getString(R.string.sales_pay_qarz)
-        else -> type
-    }
+@Composable
+private fun Value(text: String) {
+    Text(text, style = K.t.body.copy(fontSize = 14.sp), color = K.c.tx, maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
-// ---------------------------------------------------------------- refund
+@Composable
+private fun Amount(v: Double, color: androidx.compose.ui.graphics.Color = K.c.tx) {
+    Text(
+        (if (v < 0) "−" else "") + Money.format(kotlin.math.abs(v), withCurrency = false),
+        style = K.t.title.copy(fontSize = 14.sp, fontWeight = FontWeight.ExtraBold), color = color, maxLines = 1,
+    )
+}
+
+// ---------------------------------------------------------------- refund (mockup 21)
 
 private data class RefundData(val sale: Row, val lines: List<RefundService.Line>, val split: Map<String, Double>)
 
@@ -447,7 +436,7 @@ fun RefundScreen(nav: NavHostController, uuid: String) {
             RefundData(sale, RefundService.refundable(App.db, uuid), RefundService.paymentSplit(App.db, sale))
         }
     }
-    val qty = remember { mutableStateMapOf<String, String>() }
+    val qty = remember { mutableStateMapOf<String, Double>() }
     var reason by rememberSaveable { mutableStateOf("") }
     var confirm by remember { mutableStateOf(false) }
     var saving by remember { mutableStateOf(false) }
@@ -455,117 +444,126 @@ fun RefundScreen(nav: NavHostController, uuid: String) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    BoScaffold(title = stringResource(R.string.sales_refund_title), onBack = { nav.popBackStack() }, snackbar = snackbar) { pad ->
-        if (!loaded.first) return@BoScaffold
-        val data = loaded.second
-        if (data == null) { EmptyState(Icons.Filled.SearchOff, stringResource(R.string.sales_not_found), Modifier.padding(pad)); return@BoScaffold }
-        val open = data.lines.filter { it.remainingQty > 0.0001 }
-        if (open.isEmpty()) { EmptyState(Icons.AutoMirrored.Filled.Undo, stringResource(R.string.sales_refund_nothing), Modifier.padding(pad)); return@BoScaffold }
-        val ratio = RefundService.discountRatio(data.sale)
-        val chosen = open.mapNotNull { l -> Money.parse(qty[l.saleItemUuid] ?: "")?.takeIf { it > 0 }?.let { l to it } }
-        val total = Money.round2(chosen.sumOf { (l, q) -> RefundService.lineAmount(l.unitPrice, minOf(q, l.remainingQty), ratio) })
+    val data = loaded.second
+    val open = data?.lines?.filter { it.remainingQty > 0.0001 }.orEmpty()
+    val ratio = data?.let { RefundService.discountRatio(it.sale) } ?: 1.0
+    val chosen = open.mapNotNull { l -> qty[l.saleItemUuid]?.takeIf { it > 0 }?.let { l to minOf(it, l.remainingQty) } }
+    val total = Money.round2(chosen.sumOf { (l, q) -> RefundService.lineAmount(l.unitPrice, q, ratio) })
+
+    KScreen(
+        topBar = { KTopBar(stringResource(R.string.sales_refund), onBack = { nav.popBackStack() }) },
+        bottomBar = if (open.isEmpty()) null else ({
+            KBottomBar {
+                KButton(
+                    if (total > 0) stringResource(R.string.sales_refund_btn, Money.format(total)) else stringResource(R.string.sales_refund_pick),
+                    { confirm = true }, Modifier.fillMaxWidth(), kind = KButtonKind.Danger, height = 54.dp, enabled = total > 0 && !saving,
+                )
+            }
+        }),
+        snackbar = snackbar,
+    ) {
+        if (!loaded.first) return@KScreen
+        if (data == null) { KEmpty(Icons.Outlined.SearchOff, stringResource(R.string.sales_not_found), modifier = Modifier.padding(top = 40.dp)); return@KScreen }
+        if (open.isEmpty()) { KEmpty(Icons.AutoMirrored.Outlined.Undo, stringResource(R.string.sales_refund_nothing), stringResource(R.string.sales_refund_nothing_hint), modifier = Modifier.padding(top = 40.dp)); return@KScreen }
         val allocation = RefundService.allocateByPayment(total, data.split.getValue("naqd"), data.split.getValue("karta"), data.split.getValue("qarz"), data.split.getValue("qr"))
 
-        LazyColumn(
-            Modifier.padding(pad).fillMaxSize().imePadding(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            item("hint") {
-                Text(
-                    stringResource(R.string.sales_receipt_title, receiptLabel(data.sale.strOrNull("receipt_no"), uuid)) + " · " + stringResource(R.string.sales_refund_hint),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+        LazyColumn(Modifier.weight(1f).imePadding(), contentPadding = PaddingValues(top = 2.dp, bottom = 16.dp)) {
             items(open, key = { it.saleItemUuid }) { l ->
-                val text = qty[l.saleItemUuid] ?: ""
-                val q = Money.parse(text) ?: 0.0
-                val step = 1.0
-                BoCard {
-                    Text(l.name + (l.variantLabel?.let { " ($it)" } ?: ""), style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        Money.format(l.unitPrice) + " · " + stringResource(R.string.sales_refund_remaining, Money.qty(l.remainingQty)),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilledTonalIconButton(onClick = {
-                            val n = maxOf(0.0, q - step)
-                            qty[l.saleItemUuid] = if (n <= 0) "" else Money.qty(n)
-                        }, modifier = Modifier.size(48.dp)) { Icon(Icons.Filled.Remove, null) }
-                        OutlinedTextField(
-                            value = text,
-                            onValueChange = { v -> qty[l.saleItemUuid] = v.filter { it.isDigit() || it == ',' || it == '.' } },
-                            modifier = Modifier.width(96.dp),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.titleMedium.copy(textAlign = TextAlign.Center),
-                            keyboardOptions = KeyboardOptions(keyboardType = if (Units.allowsFraction(l.unit)) KeyboardType.Decimal else KeyboardType.Number),
-                            isError = q > l.remainingQty + 0.0001,
-                            shape = RoundedCornerShape(12.dp),
+                val q = qty[l.saleItemUuid] ?: 0.0
+                val price = Money.format(l.unitPrice, withCurrency = false)
+                KRow(
+                    lineName(l),
+                    Modifier.padding(horizontal = Edge, vertical = 4.dp),
+                    selected = q > 0,
+                    subtitle = {
+                        KSub(
+                            if (l.refundedQty > 0) stringResource(R.string.sales_ref_sold_back, price, Money.qty(l.qty), Money.qty(l.refundedQty))
+                            else stringResource(R.string.sales_ref_sold, price, Money.qty(l.qty)),
                         )
-                        FilledTonalIconButton(onClick = {
-                            qty[l.saleItemUuid] = Money.qty(minOf(l.remainingQty, q + step))
-                        }, modifier = Modifier.size(48.dp)) { Icon(Icons.Filled.Add, null) }
-                        TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = { qty[l.saleItemUuid] = Money.qty(l.remainingQty) }) { Text(stringResource(R.string.sales_refund_all)) }
-                    }
-                    if (q > 0) Text(
-                        "= " + Money.format(RefundService.lineAmount(l.unitPrice, minOf(q, l.remainingQty), ratio)),
-                        fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
+                    },
+                    trailing = {
+                        KStepper(
+                            Money.qty(q),
+                            onMinus = { qty[l.saleItemUuid] = maxOf(0.0, q - 1.0) },
+                            onPlus = { qty[l.saleItemUuid] = minOf(l.remainingQty, q + 1.0) },
+                            onQtyClick = { qty[l.saleItemUuid] = if (q >= l.remainingQty) 0.0 else l.remainingQty },
+                        )
+                    },
+                )
             }
             item("reason") {
-                OutlinedTextField(
-                    reason, { reason = it }, label = { Text(stringResource(R.string.sales_reason)) },
-                    modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp), minLines = 2,
+                KField(
+                    reason, { reason = it },
+                    Modifier.padding(start = Edge, end = Edge, top = 8.dp),
+                    label = stringResource(R.string.sales_reason),
+                    placeholder = stringResource(R.string.sales_reason_ph),
                 )
             }
-            item("total") {
-                BoCard {
-                    AmountLine(stringResource(R.string.sales_refund_amount), Money.format(total), bold = true)
-                    allocation.filterValues { it > 0 }.forEach { (t, a) -> AmountLine(paymentLabel(t), Money.format(a), color = paymentColor(t)) }
+            item("sum") {
+                KCard(Modifier.padding(start = Edge, end = Edge, top = 14.dp), tone = KCardTone.Tint, padding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)) {
+                    val parts = allocation.filterValues { it > 0 }
+                    if (parts.isEmpty()) {
+                        KKeyValue(stringResource(R.string.sales_refund_sum), first = true) { RefundAmount(0.0) }
+                    } else {
+                        var first = true
+                        parts.forEach { (t, a) ->
+                            KKeyValue(refundPartLabel(t), first = first) { RefundAmount(a) }
+                            first = false
+                        }
+                    }
                 }
             }
-            item("go") {
-                BigButton(stringResource(R.string.sales_refund_confirm), onClick = { confirm = true }, enabled = chosen.isNotEmpty() && !saving, icon = Icons.AutoMirrored.Filled.Undo)
-                Spacer(Modifier.height(24.dp))
-            }
-        }
-
-        if (confirm) {
-            ConfirmDialog(
-                title = stringResource(R.string.sales_refund_confirm),
-                text = stringResource(R.string.sales_refund_confirm_text, Money.format(total)),
-                confirm = stringResource(R.string.common_yes),
-                dismiss = stringResource(R.string.common_no),
-                onDismiss = { confirm = false },
-                onConfirm = {
-                    confirm = false
-                    saving = true
-                    val lines = chosen.associate { (l, q) -> l.saleItemUuid to q }
-                    val r = reason.trim().ifEmpty { null }
-                    scope.launch {
-                        val err = io<Int?> {
-                            try {
-                                RefundService.create(uuid, App.session.current().uuid, lines, r)
-                                App.sync.requestSync()
-                                null
-                            } catch (e: RefundException) {
-                                refundError(e.code)
-                            } catch (e: Exception) {
-                                R.string.sales_err_unexpected
-                            }
-                        }
-                        saving = false
-                        if (err == null) {
-                            Toast.makeText(context, R.string.sales_refund_done, Toast.LENGTH_SHORT).show()
-                            nav.popBackStack()
-                        } else snackbar.showSnackbar(context.getString(err))
-                    }
-                },
-            )
         }
     }
+
+    if (confirm) {
+        KConfirm(
+            title = stringResource(R.string.sales_refund_confirm, Money.format(total)),
+            text = stringResource(R.string.sales_refund_confirm_text),
+            confirm = stringResource(R.string.sales_refund),
+            dismiss = stringResource(R.string.bo_cancel),
+            danger = true,
+            onDismiss = { confirm = false },
+            onConfirm = {
+                confirm = false
+                saving = true
+                val lines = chosen.associate { (l, q) -> l.saleItemUuid to q }
+                val r = reason.trim().ifEmpty { null }
+                scope.launch {
+                    val err = io<Int?> {
+                        try {
+                            RefundService.create(uuid, App.session.current().uuid, lines, r)
+                            App.sync.requestSync()
+                            null
+                        } catch (e: RefundException) {
+                            refundError(e.code)
+                        } catch (e: Exception) {
+                            R.string.sales_err_unexpected
+                        }
+                    }
+                    saving = false
+                    if (err == null) {
+                        Toast.makeText(context, R.string.sales_refund_done, Toast.LENGTH_SHORT).show()
+                        nav.popBackStack()
+                    } else snackbar.showSnackbar(context.getString(err))
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun refundPartLabel(type: String): String = when (type) {
+    "naqd" -> stringResource(R.string.sales_back_naqd)
+    "karta" -> stringResource(R.string.sales_back_karta)
+    "qarz" -> stringResource(R.string.sales_back_qarz)
+    "qr" -> stringResource(R.string.sales_back_qr)
+    else -> type
+}
+
+@Composable
+private fun RefundAmount(v: Double) {
+    Text(Money.format(v), style = K.t.amount.copy(fontFamily = Onest, fontSize = 18.sp), color = if (v > 0) K.c.ink else K.c.mu, maxLines = 1)
 }
 
 private fun refundError(code: String): Int = when (code) {

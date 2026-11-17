@@ -2,55 +2,38 @@ package uz.kassiron.app.ui.customers
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AddCard
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Payments
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.PersonOff
-import androidx.compose.material.icons.filled.Sms
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Call
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.PersonOff
+import androidx.compose.material.icons.outlined.Remove
+import androidx.compose.material.icons.outlined.Sms
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -62,12 +45,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
@@ -82,21 +67,45 @@ import uz.kassiron.app.domain.Debts
 import uz.kassiron.app.domain.ExpenseService
 import uz.kassiron.app.domain.ReportService
 import uz.kassiron.app.ui.Routes
-import uz.kassiron.app.ui.common.AmountField
-import uz.kassiron.app.ui.common.BigButton
-import uz.kassiron.app.ui.common.EmptyState
-import uz.kassiron.app.ui.common.SearchField
 import uz.kassiron.app.ui.common.dbState
 import uz.kassiron.app.ui.common.io
-import uz.kassiron.app.ui.reports.BoCard
-import uz.kassiron.app.ui.reports.BoScaffold
+import uz.kassiron.app.ui.kit.Edge
+import uz.kassiron.app.ui.kit.KAlert
+import uz.kassiron.app.ui.kit.KAmountField
+import uz.kassiron.app.ui.kit.KAvatar
+import uz.kassiron.app.ui.kit.KBottomBar
+import uz.kassiron.app.ui.kit.KButton
+import uz.kassiron.app.ui.kit.KButtonKind
+import uz.kassiron.app.ui.kit.KCard
+import uz.kassiron.app.ui.kit.KCardTone
+import uz.kassiron.app.ui.kit.KChips
+import uz.kassiron.app.ui.kit.KEmpty
+import uz.kassiron.app.ui.kit.KFab
+import uz.kassiron.app.ui.kit.KField
+import uz.kassiron.app.ui.kit.KIconButton
+import uz.kassiron.app.ui.kit.KMoney
+import uz.kassiron.app.ui.kit.KRow
+import uz.kassiron.app.ui.kit.KScreen
+import uz.kassiron.app.ui.kit.KSearch
+import uz.kassiron.app.ui.kit.KSection
+import uz.kassiron.app.ui.kit.KSheet
+import uz.kassiron.app.ui.kit.KSheetTitle
+import uz.kassiron.app.ui.kit.KSub
+import uz.kassiron.app.ui.kit.KTag
+import uz.kassiron.app.ui.kit.KTagKind
+import uz.kassiron.app.ui.kit.KToneIcon
+import uz.kassiron.app.ui.kit.KTopBar
+import uz.kassiron.app.ui.kit.KValueChip
+import uz.kassiron.app.ui.reports.EndColumn
+import uz.kassiron.app.ui.reports.MutedNote
 import uz.kassiron.app.ui.reports.NoAccess
-import uz.kassiron.app.ui.reports.PaymentBadge
-import uz.kassiron.app.ui.reports.Pill
-import uz.kassiron.app.ui.reports.SectionTitle
+import uz.kassiron.app.ui.reports.PickerField
 import uz.kassiron.app.ui.reports.SingleDateDialog
+import uz.kassiron.app.ui.reports.formatPhone
 import uz.kassiron.app.ui.reports.receiptLabel
-import uz.kassiron.app.ui.theme.Brand
+import uz.kassiron.app.ui.theme.K
+import uz.kassiron.app.ui.theme.Onest
+import uz.kassiron.app.ui.theme.Tone
 
 private const val BALANCE_SQL = "SELECT customer_id, SUM(CASE WHEN type = 'qarz' THEN amount ELSE -amount END) AS balance FROM debt_transactions GROUP BY customer_id"
 
@@ -112,7 +121,7 @@ private data class CustomerItem(
 private fun CustomerItem.limitExceeded() = creditLimit != null && balance > creditLimit + 0.001
 private fun overdue(due: String?, balance: Double) = balance > 0 && !due.isNullOrBlank() && due < Time.today()
 
-// ---------------------------------------------------------------- list
+// ---------------------------------------------------------------- list (mockup 22)
 
 @Composable
 fun CustomersScreen(nav: NavHostController) {
@@ -145,50 +154,34 @@ fun CustomersScreen(nav: NavHostController) {
     }
     val totals by dbState(0.0 to 0L) { ReportService.totalDebt(App.db) to ReportService.debtorsCount(App.db) }
 
-    BoScaffold(
-        title = stringResource(R.string.customers_title),
-        actions = {
-            IconButton(onClick = { nav.navigate(Routes.QUICK_DEBTS) }) {
-                Icon(Icons.AutoMirrored.Filled.PlaylistAdd, contentDescription = stringResource(R.string.customers_quick_debts))
+    KScreen(
+        topBar = {
+            KTopBar(stringResource(R.string.cust_title)) {
+                KIconButton(Icons.AutoMirrored.Outlined.PlaylistAdd, { nav.navigate(Routes.QUICK_DEBTS) }, contentDescription = stringResource(R.string.cust_quick_title))
             }
         },
-        fab = {
-            ExtendedFloatingActionButton(
-                onClick = { nav.navigate(Routes.customerEdit("new")) },
-                icon = { Icon(Icons.Filled.PersonAdd, contentDescription = null) },
-                text = { Text(stringResource(R.string.customers_new)) },
+        fab = { KFab(Icons.Outlined.Add, { nav.navigate(Routes.customerEdit("new")) }, stringResource(R.string.cust_new)) },
+    ) {
+        KCard(Modifier.padding(horizontal = Edge), tone = KCardTone.Red, padding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)) {
+            Text(stringResource(R.string.cust_total, totals.second.toInt()), style = K.t.small, color = K.c.mu)
+            KMoney(totals.first, size = 24.sp, color = K.c.red)
+        }
+        Spacer(Modifier.height(10.dp))
+        KSearch(query, { query = it }, stringResource(R.string.cust_search))
+        KChips(
+            listOf(stringResource(R.string.cust_filter_debtors), stringResource(R.string.cust_filter_all)),
+            if (onlyDebtors) 0 else 1, { onlyDebtors = it == 0 }, Modifier.padding(top = 10.dp),
+        )
+        val items = list
+        when {
+            items == null -> Unit
+            items.isEmpty() -> KEmpty(
+                Icons.Outlined.People,
+                stringResource(if (query.isNotBlank()) R.string.cust_empty_search else if (onlyDebtors) R.string.cust_empty_debtors else R.string.cust_empty),
+                stringResource(if (query.isNotBlank()) R.string.cust_empty_search_hint else if (onlyDebtors) R.string.cust_empty_debtors_hint else R.string.cust_empty_hint),
             )
-        },
-    ) { pad ->
-        Column(Modifier.padding(pad).fillMaxSize()) {
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = Brand.Danger.copy(alpha = 0.10f)),
-            ) {
-                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.customers_total_debt), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(Money.format(totals.first), style = MaterialTheme.typography.headlineMedium, color = Brand.Danger)
-                    }
-                    Text(stringResource(R.string.customers_debtors_count, totals.second.toInt()), style = MaterialTheme.typography.labelLarge)
-                }
-            }
-            SearchField(query, { query = it }, stringResource(R.string.customers_search), Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
-            Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = onlyDebtors, onClick = { onlyDebtors = true }, label = { Text(stringResource(R.string.customers_filter_debtors)) })
-                FilterChip(selected = !onlyDebtors, onClick = { onlyDebtors = false }, label = { Text(stringResource(R.string.customers_filter_all)) })
-            }
-            val items = list
-            when {
-                items == null -> Unit
-                items.isEmpty() -> EmptyState(
-                    Icons.Filled.People,
-                    stringResource(if (onlyDebtors && query.isBlank()) R.string.customers_empty_debtors else R.string.customers_empty),
-                )
-                else -> LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(items, key = { it.uuid }) { c -> CustomerRow(c) { nav.navigate(Routes.customer(c.uuid)) } }
-                }
+            else -> LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(start = Edge, end = Edge, top = 10.dp, bottom = 88.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(items, key = { it.uuid }) { c -> CustomerRow(c) { nav.navigate(Routes.customer(c.uuid)) } }
             }
         }
     }
@@ -196,40 +189,30 @@ fun CustomersScreen(nav: NavHostController) {
 
 @Composable
 private fun CustomerRow(c: CustomerItem, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp).heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(c.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (c.phone.isNotBlank()) Text(c.phone, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if (c.limitExceeded()) Pill(stringResource(R.string.customers_limit_exceeded), Brand.Danger)
-                    if (overdue(c.dueDate, c.balance)) Pill(stringResource(R.string.customers_overdue), Brand.Warning)
-                }
+    KRow(
+        c.name,
+        leading = { KAvatar(c.name) },
+        subtitle = {
+            if (c.phone.isNotBlank()) KSub(formatPhone(c.phone))
+            val limit = c.limitExceeded()
+            val late = overdue(c.dueDate, c.balance)
+            if (limit || late) Row(Modifier.padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (limit) KTag(stringResource(R.string.cust_limit_over), KTagKind.Red)
+                if (late) KTag(stringResource(R.string.cust_overdue), KTagKind.Low)
             }
-            Spacer(Modifier.width(8.dp))
-            BalanceText(c.balance, MaterialTheme.typography.titleMedium.fontSize.value)
-        }
-    }
+        },
+        trailing = {
+            when {
+                c.balance > 0 -> KMoney(c.balance, color = K.c.red)
+                c.balance < 0 -> EndColumn { KMoney(-c.balance, color = K.c.grn); KTag(stringResource(R.string.cust_overpaid), KTagKind.Green) }
+                else -> KTag(stringResource(R.string.cust_no_debt))
+            }
+        },
+        onClick = onClick,
+    )
 }
 
-@Composable
-private fun BalanceText(balance: Double, size: Float) {
-    val color = when {
-        balance > 0 -> Brand.Danger
-        balance < 0 -> Brand.Success
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    Column(horizontalAlignment = Alignment.End) {
-        Text(Money.format(balance), color = color, fontWeight = FontWeight.ExtraBold, fontSize = size.sp)
-        if (balance < 0) Text(stringResource(R.string.customers_overpaid), color = Brand.Success, style = MaterialTheme.typography.bodySmall)
-    }
-}
-
-// ---------------------------------------------------------------- detail
+// ---------------------------------------------------------------- detail (mockup 23)
 
 private data class LedgerEntry(
     val uuid: String,
@@ -239,23 +222,17 @@ private data class LedgerEntry(
     val createdAt: String,
     val saleUuid: String?,
     val receipt: String?,
-    val by: String,
 )
 
-private data class CustomerDetail(
-    val customer: Row,
-    val balance: Double,
-    val ledger: List<LedgerEntry>,
-    val purchases: List<Row>,
-)
+private data class CustomerDetail(val customer: Row, val balance: Double, val ledger: List<LedgerEntry>)
 
 private fun loadDetail(uuid: String): CustomerDetail? {
     val db = App.db
     val c = db.queryOne("SELECT * FROM customers WHERE uuid = ?", uuid) ?: return null
     // DebtTransaction::historyByCustomer: running balance in time order, newest first.
     val rows = db.query(
-        """SELECT d.uuid, d.type, d.amount, d.created_at, d.sale_id, s.receipt_no, COALESCE(u.full_name, '') AS by_name
-           FROM debt_transactions d LEFT JOIN sales s ON s.uuid = d.sale_id LEFT JOIN users u ON u.uuid = d.created_by
+        """SELECT d.uuid, d.type, d.amount, d.created_at, d.sale_id, s.receipt_no
+           FROM debt_transactions d LEFT JOIN sales s ON s.uuid = d.sale_id
            WHERE d.customer_id = ? ORDER BY d.created_at ASC, d.rowid ASC""",
         uuid,
     )
@@ -264,15 +241,9 @@ private fun loadDetail(uuid: String): CustomerDetail? {
         val amount = r.dbl("amount")
         running = Money.round2(running + if (r.str("type") == Debts.QARZ) amount else -amount)
         val sale = r.strOrNull("sale_id")?.takeIf { it.isNotBlank() }
-        LedgerEntry(r.str("uuid"), r.str("type"), amount, running, r.str("created_at"), sale, sale?.let { receiptLabel(r.strOrNull("receipt_no"), it) }, r.str("by_name"))
+        LedgerEntry(r.str("uuid"), r.str("type"), amount, running, r.str("created_at"), sale, sale?.let { receiptLabel(r.strOrNull("receipt_no"), it) })
     }.reversed()
-    val purchases = db.query(
-        """SELECT s.uuid, s.receipt_no, s.created_at, s.total, s.payment_type,
-                  (SELECT COUNT(*) FROM sale_items si WHERE si.sale_id = s.uuid) AS item_count
-           FROM sales s WHERE s.customer_id = ? ORDER BY s.created_at DESC LIMIT 200""",
-        uuid,
-    )
-    return CustomerDetail(c, Debts.balance(db, uuid), ledger, purchases)
+    return CustomerDetail(c, Debts.balance(db, uuid), ledger)
 }
 
 @Composable
@@ -282,140 +253,94 @@ fun CustomerDetailScreen(nav: NavHostController, uuid: String) {
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    var dialog by remember { mutableStateOf<String?>(null) } // "pay" | "debt"
+    var sheet by remember { mutableStateOf<String?>(null) } // "pay" | "debt"
+    var busy by remember { mutableStateOf(false) }
 
     val detail = loaded.second
-    BoScaffold(
-        title = detail?.customer?.str("full_name") ?: stringResource(R.string.customers_title),
-        onBack = { nav.popBackStack() },
-        snackbar = snackbar,
-        actions = {
-            if (detail != null) IconButton(onClick = { nav.navigate(Routes.customerEdit(uuid)) }) {
-                Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.customers_edit))
+    KScreen(
+        topBar = {
+            KTopBar(detail?.customer?.str("full_name") ?: stringResource(R.string.cust_title), onBack = { nav.popBackStack() }) {
+                if (detail != null) KIconButton(Icons.Outlined.Edit, { nav.navigate(Routes.customerEdit(uuid)) }, contentDescription = stringResource(R.string.cust_edit))
             }
         },
-    ) { pad ->
-        if (!loaded.first) return@BoScaffold
+        snackbar = snackbar,
+    ) {
+        if (!loaded.first) return@KScreen
         if (detail == null) {
-            EmptyState(Icons.Filled.PersonOff, stringResource(R.string.customers_not_found), Modifier.padding(pad))
-            return@BoScaffold
+            KEmpty(Icons.Outlined.PersonOff, stringResource(R.string.cust_not_found), modifier = Modifier.padding(top = 40.dp))
+            return@KScreen
         }
         val c = detail.customer
         val phone = c.str("phone")
+        val balance = detail.balance
         val creditLimit = c.dblOrNull("credit_limit")
         val due = c.strOrNull("debt_due_date")?.takeIf { it.isNotBlank() }
         val shopName = App.kv.shop().optString("name").ifBlank { stringResource(R.string.app_name) }
-        val reminder = if (due != null) stringResource(R.string.customers_reminder_due, shopName, c.str("full_name"), Money.format(detail.balance), Time.showDate(due))
-        else stringResource(R.string.customers_reminder_no_due, shopName, c.str("full_name"), Money.format(detail.balance))
+        val reminder = if (due != null) stringResource(R.string.cust_sms_due, shopName, c.str("full_name"), Money.format(balance), Time.showDate(due))
+        else stringResource(R.string.cust_sms, shopName, c.str("full_name"), Money.format(balance))
 
-        LazyColumn(
-            modifier = Modifier.padding(pad).fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
+        LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(top = 2.dp, bottom = 20.dp)) {
             item("head") {
-                BoCard {
-                    Text(stringResource(R.string.customers_balance), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    BalanceText(detail.balance, 34f)
-                    if (phone.isNotBlank()) Text(phone, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 4.dp))
-                    val note = c.str("note")
-                    if (note.isNotBlank()) Text(note, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
-                    Spacer(Modifier.height(8.dp))
-                    InfoLine(stringResource(R.string.customers_credit_limit), creditLimit?.let { Money.format(it) } ?: stringResource(R.string.customers_not_set),
-                        if (creditLimit != null && detail.balance > creditLimit + 0.001) Brand.Danger else Color.Unspecified)
-                    InfoLine(stringResource(R.string.customers_due_date), due?.let { Time.showDate(it) } ?: stringResource(R.string.customers_not_set),
-                        if (overdue(due, detail.balance)) Brand.Warning else Color.Unspecified)
-                    if (phone.isNotBlank()) {
-                        Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(
-                                colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))) } },
-                                modifier = Modifier.weight(1f).height(48.dp),
-                            ) { Icon(Icons.Filled.Call, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.customers_call)) }
-                            OutlinedButton(
-                                colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = {
-                                    runCatching {
-                                        val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$phone"))
-                                        if (detail.balance > 0) intent.putExtra("sms_body", reminder)
-                                        context.startActivity(intent)
-                                    }
-                                },
-                                modifier = Modifier.weight(1f).height(48.dp),
-                            ) { Icon(Icons.Filled.Sms, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.customers_sms)) }
-                        }
-                    }
+                Column(Modifier.fillMaxWidth().padding(horizontal = Edge), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        stringResource(if (balance < 0) R.string.cust_overpaid else R.string.cust_debt_label),
+                        style = K.t.small, color = K.c.mu,
+                    )
+                    KMoney(kotlin.math.abs(balance), size = 32.sp, color = if (balance > 0) K.c.red else if (balance < 0) K.c.grn else K.c.mu)
+                    val info = listOfNotNull(
+                        due?.let { stringResource(R.string.cust_due_short, Time.showDate(it)) },
+                        creditLimit?.let { stringResource(R.string.cust_limit_short, Money.format(it)) },
+                    )
+                    if (info.isNotEmpty()) Text(
+                        info.joinToString(" · "), style = K.t.small, textAlign = TextAlign.Center,
+                        color = if (overdue(due, balance) || (creditLimit != null && balance > creditLimit + 0.001)) K.c.red else K.c.mu,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
                 }
             }
             item("actions") {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    BigButton(
-                        stringResource(R.string.customers_receive_payment), { dialog = "pay" },
-                        Modifier.weight(1f), enabled = detail.balance > 0, icon = Icons.Filled.Payments,
-                    )
-                    FilledTonalButton(onClick = { dialog = "debt" }, modifier = Modifier.weight(1f).height(56.dp), shape = RoundedCornerShape(16.dp)) {
-                        Icon(Icons.Filled.AddCard, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.customers_add_debt))
+                Column(Modifier.padding(start = Edge, end = Edge, top = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (phone.isNotBlank()) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        KButton(
+                            stringResource(R.string.cust_call), { runCatching { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))) } },
+                            Modifier.weight(1f), kind = KButtonKind.Alt, icon = Icons.Outlined.Call, height = 46.dp, fontSize = 14.sp,
+                        )
+                        KButton(
+                            stringResource(R.string.cust_sms_btn), {
+                                runCatching {
+                                    val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$phone"))
+                                    if (balance > 0) intent.putExtra("sms_body", reminder)
+                                    context.startActivity(intent)
+                                }
+                            },
+                            Modifier.weight(1f), kind = KButtonKind.Alt, icon = Icons.Outlined.Sms, height = 46.dp, fontSize = 14.sp,
+                        )
                     }
+                    KButton(stringResource(R.string.cust_receive), { sheet = "pay" }, Modifier.fillMaxWidth(), height = 50.dp, enabled = balance > 0)
                 }
             }
-            item("hist") { SectionTitle(stringResource(R.string.customers_history)) }
-            if (detail.ledger.isEmpty()) item("hist-empty") {
-                Text(stringResource(R.string.customers_history_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            items(detail.ledger, key = { "l" + it.uuid }) { e -> LedgerRow(e) { s -> nav.navigate(Routes.sale(s)) } }
-            if (detail.purchases.isNotEmpty()) {
-                item("purch") { SectionTitle(stringResource(R.string.customers_purchases)) }
-                items(detail.purchases, key = { "p" + it.str("uuid") }) { s ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth().clickable { nav.navigate(Routes.sale(s.str("uuid"))) },
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    ) {
-                        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) {
-                                Text("№ " + receiptLabel(s.strOrNull("receipt_no"), s.str("uuid")), fontWeight = FontWeight.Bold)
-                                Text(
-                                    Time.local(s.str("created_at")) + " · " + stringResource(R.string.customers_items, s.long("item_count").toInt()),
-                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text(Money.format(s.dbl("total")), fontWeight = FontWeight.Bold)
-                                PaymentBadge(s.str("payment_type"))
-                            }
-                        }
-                    }
-                }
+            item("hist") { KSection(stringResource(R.string.cust_history), stringResource(R.string.cust_add_debt), { sheet = "debt" }) }
+            if (detail.ledger.isEmpty()) item("hist-empty") { MutedNote(stringResource(R.string.cust_history_empty)) }
+            items(detail.ledger, key = { "l" + it.uuid }) { e ->
+                LedgerRow(e, Modifier.padding(horizontal = Edge, vertical = 4.dp)) { s -> nav.navigate(Routes.sale(s)) }
             }
         }
 
-        when (dialog) {
-            "pay" -> AmountDialog(
-                title = stringResource(R.string.customers_receive_payment),
-                fill = detail.balance,
-                warning = { null },
-                onDismiss = { dialog = null },
+        val mode = sheet
+        if (mode != null) KSheet(onDismiss = { sheet = null }) {
+            AmountSheetContent(
+                debt = mode == "debt", balance = balance, creditLimit = creditLimit, busy = busy,
+                onClose = { sheet = null },
             ) { amount ->
+                busy = true
                 scope.launch {
-                    val err = io { CustomerActions.recordPayment(uuid, amount, App.session.current().uuid) }
-                    if (err == null) { dialog = null; snackbar.showSnackbar(context.getString(R.string.customers_payment_recorded)) }
-                    else snackbar.showSnackbar(context.getString(err))
-                }
-            }
-            "debt" -> {
-                val limitWarning = stringResource(R.string.customers_limit_warning)
-                AmountDialog(
-                    title = stringResource(R.string.customers_add_debt),
-                    fill = null,
-                    warning = { a ->
-                        if (a != null && creditLimit != null && detail.balance + a > creditLimit + 0.001)
-                            String.format(limitWarning, Money.format(detail.balance + a), Money.format(creditLimit)) else null
-                    },
-                    onDismiss = { dialog = null },
-                ) { amount ->
-                    scope.launch {
-                        val err = io { CustomerActions.addDebt(uuid, amount, App.session.current().uuid) }
-                        if (err == null) { dialog = null; snackbar.showSnackbar(context.getString(R.string.customers_debt_added)) }
-                        else snackbar.showSnackbar(context.getString(err))
-                    }
+                    val user = App.session.current().uuid
+                    val err = io { if (mode == "pay") CustomerActions.recordPayment(uuid, amount, user) else CustomerActions.addDebt(uuid, amount, user) }
+                    busy = false
+                    if (err == null) {
+                        sheet = null
+                        snackbar.showSnackbar(context.getString(if (mode == "pay") R.string.cust_paid_done else R.string.cust_debt_done))
+                    } else snackbar.showSnackbar(context.getString(err))
                 }
             }
         }
@@ -423,64 +348,74 @@ fun CustomerDetailScreen(nav: NavHostController, uuid: String) {
 }
 
 @Composable
-private fun InfoLine(label: String, value: String, color: Color) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
-        Text(value, color = color, fontWeight = FontWeight.SemiBold)
+private fun LedgerRow(e: LedgerEntry, modifier: Modifier, openSale: (String) -> Unit) {
+    val up = e.type == Debts.QARZ
+    val title = when {
+        up && e.receipt != null -> stringResource(R.string.cust_led_sale, e.receipt)
+        up -> stringResource(R.string.cust_led_old)
+        e.type == Debts.TOLOV -> stringResource(R.string.cust_led_paid)
+        else -> stringResource(R.string.cust_led_refund)
     }
-}
-
-@Composable
-private fun LedgerRow(e: LedgerEntry, openSale: (String) -> Unit) {
-    val (label, color, sign) = when (e.type) {
-        Debts.QARZ -> Triple(stringResource(R.string.customers_type_qarz), Brand.Danger, "+")
-        Debts.TOLOV -> Triple(stringResource(R.string.customers_type_tolov), Brand.Success, "−")
-        else -> Triple(stringResource(R.string.customers_type_refund), Brand.Warning, "−")
-    }
-    Card(
-        modifier = Modifier.fillMaxWidth().then(if (e.saleUuid != null) Modifier.clickable { openSale(e.saleUuid) } else Modifier),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Pill(label, color)
-                    if (e.receipt != null) Text(stringResource(R.string.customers_sale_link, e.receipt), color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.bodyMedium)
-                }
-                Text(
-                    Time.local(e.createdAt) + if (e.by.isNotBlank()) " · ${e.by}" else "",
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Text(sign + Money.format(e.amount), color = color, fontWeight = FontWeight.Bold)
-                Text(stringResource(R.string.customers_balance_after, Money.format(e.running)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-    }
-}
-
-@Composable
-private fun AmountDialog(title: String, fill: Double?, warning: (Double?) -> String?, onDismiss: () -> Unit, onConfirm: (Double?) -> Unit) {
-    var text by remember { mutableStateOf("") }
-    val amount = Money.parse(text)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title, fontWeight = FontWeight.Bold) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                AmountField(text, { text = it }, stringResource(R.string.customers_amount))
-                if (fill != null && fill > 0) {
-                    TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = { text = Money.format(fill, withCurrency = false) }) {
-                        Text(stringResource(R.string.customers_pay_all) + ": " + Money.format(fill))
-                    }
-                }
-                warning(amount)?.let { Text(it, color = Brand.Warning, style = MaterialTheme.typography.bodyMedium) }
-            }
+    val date = Time.local(e.createdAt, if (Time.local(e.createdAt, "yyyy") == Time.today().take(4)) "dd.MM" else "dd.MM.yyyy")
+    KRow(
+        title, modifier,
+        leading = {
+            if (up) KToneIcon(Icons.Outlined.Add, Tone(K.c.red, K.c.redBg), 34.dp)
+            else KToneIcon(Icons.Outlined.Remove, Tone(K.c.grn, K.c.grnBg), 34.dp)
         },
-        confirmButton = { TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), enabled = amount != null && amount > 0, onClick = { onConfirm(amount) }) { Text(stringResource(R.string.common_save)) } },
-        dismissButton = { TextButton(colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
+        subtitle = { KSub(stringResource(R.string.cust_led_sub, date, Money.format(e.running, withCurrency = false))) },
+        trailing = {
+            Text(
+                (if (up) "+" else "−") + Money.format(e.amount, withCurrency = false),
+                style = K.t.amount.copy(fontSize = 15.sp), color = if (up) K.c.red else K.c.grn, maxLines = 1,
+            )
+        },
+        onClick = e.saleUuid?.let { s -> { openSale(s) } },
+    )
+}
+
+/**
+ * The payment sheet (mockup 24) and the "add old debt" sheet: big amount, quick
+ * chips, what is left, one button. Internal so the screenshot test can show it.
+ */
+@Composable
+internal fun AmountSheetContent(debt: Boolean, balance: Double, creditLimit: Double?, busy: Boolean, onClose: () -> Unit, initial: String = "", onSubmit: (Double) -> Unit) {
+    var text by remember { mutableStateOf(initial) }
+    val amount = Money.parse(text)?.let { Money.round2(it) }
+    KSheetTitle(stringResource(if (debt) R.string.cust_add_debt else R.string.cust_receive), onClose)
+    KAmountField(text, { text = it }, label = stringResource(R.string.cust_amount), big = true)
+    if (!debt && balance > 0) {
+        val half = Money.round2(kotlin.math.ceil(balance / 2 / 1000) * 1000).coerceAtMost(balance)
+        val fifth = Money.round2(kotlin.math.round(balance / 5 / 1000) * 1000)
+        val chips = buildList {
+            add(stringResource(R.string.cust_all) to balance)
+            add(stringResource(R.string.cust_half) to half)
+            if (fifth >= 1000 && fifth < half) add(Money.format(fifth, withCurrency = false) to fifth)
+        }
+        Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            chips.forEach { (label, v) ->
+                KValueChip(label, amount == v, { text = Money.format(v, withCurrency = false) }, Modifier.weight(1f))
+            }
+        }
+    }
+    val a = amount ?: 0.0
+    val (label, value, bad) = when {
+        !debt && a > balance + 0.001 -> Triple(stringResource(R.string.cust_too_much), balance, true)
+        !debt -> Triple(stringResource(R.string.cust_left), Money.round2(balance - a), false)
+        creditLimit != null && balance + a > creditLimit + 0.001 -> Triple(stringResource(R.string.cust_over_limit, Money.format(creditLimit)), Money.round2(balance + a), true)
+        else -> Triple(stringResource(R.string.cust_new_total), Money.round2(balance + a), false)
+    }
+    Row(
+        Modifier.padding(top = 12.dp, bottom = 10.dp).fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(14.dp))
+            .background(if (bad) K.c.redBg else K.c.tint).padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, style = K.t.title.copy(fontSize = 14.sp), color = K.c.tx, modifier = Modifier.weight(1f))
+        Text(Money.format(value), style = K.t.amount.copy(fontFamily = Onest, fontSize = 19.sp), color = if (bad) K.c.red else K.c.ink, maxLines = 1)
+    }
+    KButton(
+        stringResource(if (debt) R.string.cust_add else R.string.cust_accept), { amount?.let(onSubmit) }, Modifier.fillMaxWidth(),
+        height = 54.dp, enabled = !busy && amount != null && amount > 0 && (debt || amount <= balance + 0.001),
     )
 }
 
@@ -500,6 +435,7 @@ fun CustomerEditScreen(nav: NavHostController, uuid: String) {
     var limit by rememberSaveable { mutableStateOf("") }
     var due by rememberSaveable { mutableStateOf<String?>(null) }
     var pickDate by remember { mutableStateOf(false) }
+    var errField by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -508,63 +444,77 @@ fun CustomerEditScreen(nav: NavHostController, uuid: String) {
     LaunchedEffect(existing.first) {
         if (initialized || !existing.first) return@LaunchedEffect
         existing.second?.let { c ->
-            name = c.str("full_name"); phone = c.str("phone"); note = c.str("note")
+            name = c.str("full_name"); phone = formatPhone(c.str("phone")); note = c.str("note")
             limit = c.dblOrNull("credit_limit")?.let { Money.format(it, withCurrency = false) } ?: ""
             due = c.strOrNull("debt_due_date")?.takeIf { it.isNotBlank() }
         }
         initialized = true
     }
 
-    BoScaffold(
-        title = stringResource(if (isNew) R.string.customers_new else R.string.customers_edit_title),
-        onBack = { nav.popBackStack() },
-    ) { pad ->
-        if (!isNew && existing.first && existing.second == null) {
-            EmptyState(Icons.Filled.PersonOff, stringResource(R.string.customers_not_found), Modifier.padding(pad))
-            return@BoScaffold
-        }
-        Column(
-            Modifier.padding(pad).fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.customers_full_name) + " *") }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp))
-            OutlinedTextField(
-                phone, { phone = it }, label = { Text(stringResource(R.string.customers_phone)) }, singleLine = true,
-                placeholder = { Text("+998 90 123 45 67") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp),
-            )
-            OutlinedTextField(note, { note = it }, label = { Text(stringResource(R.string.customers_note)) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp), minLines = 2)
-            AmountField(limit, { limit = it }, stringResource(R.string.customers_credit_limit))
-            Text(stringResource(R.string.customers_credit_limit_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { pickDate = true }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(14.dp)) {
-                    Icon(Icons.Filled.CalendarMonth, null); Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.customers_due_date) + ": " + (due?.let { Time.showDate(it) } ?: stringResource(R.string.customers_not_set)))
+    fun save() {
+        saving = true
+        scope.launch {
+            val r = io { CustomerActions.save(if (isNew) null else uuid, name, phone, note, limit, due) }
+            saving = false
+            when (r) {
+                is CustomerActions.SaveResult.Ok -> {
+                    nav.popBackStack()
+                    if (isNew) nav.navigate(Routes.customer(r.uuid))
                 }
-                if (due != null) IconButton(onClick = { due = null }) { Icon(Icons.Filled.Close, stringResource(R.string.customers_clear)) }
-            }
-            error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            BigButton(stringResource(R.string.common_save), enabled = !saving, onClick = {
-                saving = true
-                scope.launch {
-                    val r = io { CustomerActions.save(if (isNew) null else uuid, name, phone, note, limit, due) }
-                    saving = false
-                    when (r) {
-                        is CustomerActions.SaveResult.Ok -> {
-                            nav.popBackStack()
-                            if (isNew) nav.navigate(Routes.customer(r.uuid))
-                        }
-                        is CustomerActions.SaveResult.Error -> error = if (r.arg != null) context.getString(r.res, r.arg) else context.getString(r.res)
+                is CustomerActions.SaveResult.Error -> {
+                    error = if (r.arg != null) context.getString(r.res, r.arg) else context.getString(r.res)
+                    errField = when (r.res) {
+                        R.string.cust_err_name -> "name"
+                        R.string.cust_err_phone, R.string.cust_err_phone_taken -> "phone"
+                        R.string.cust_err_limit -> "limit"
+                        else -> null
                     }
                 }
-            })
+            }
+        }
+    }
+
+    val missing = !isNew && existing.first && existing.second == null
+    KScreen(
+        topBar = { KTopBar(stringResource(if (isNew) R.string.cust_new else R.string.cust_edit_title), onBack = { nav.popBackStack() }) },
+        bottomBar = if (missing) null else ({ KBottomBar { KButton(stringResource(R.string.bo_save), { save() }, Modifier.fillMaxWidth(), enabled = !saving) } }),
+    ) {
+        if (missing) {
+            KEmpty(Icons.Outlined.PersonOff, stringResource(R.string.cust_not_found), modifier = Modifier.padding(top = 40.dp))
+            return@KScreen
+        }
+        Column(
+            Modifier.weight(1f).imePadding().verticalScroll(rememberScrollState()).padding(start = Edge, end = Edge, top = 2.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            KField(
+                name, { name = it; if (errField == "name") errField = null },
+                label = stringResource(R.string.cust_name), placeholder = stringResource(R.string.cust_name_ph),
+                error = error.takeIf { errField == "name" },
+            )
+            KField(
+                phone, { phone = it; if (errField == "phone") errField = null },
+                label = stringResource(R.string.cust_phone), placeholder = "+998 90 123 45 67", keyboard = KeyboardType.Phone,
+                error = error.takeIf { errField == "phone" },
+            )
+            KField(note, { note = it }, label = stringResource(R.string.cust_note), placeholder = stringResource(R.string.cust_note_ph), singleLine = false)
+            KAmountField(
+                limit, { limit = it; if (errField == "limit") errField = null },
+                label = stringResource(R.string.cust_limit), placeholder = stringResource(R.string.cust_limit_ph),
+                error = error.takeIf { errField == "limit" },
+            )
+            PickerField(
+                stringResource(R.string.cust_due),
+                due?.let { Time.showDate(it) } ?: stringResource(R.string.cust_due_none),
+                { pickDate = true }, placeholder = due == null, onClear = if (due != null) ({ due = null }) else null,
+            )
+            if (error != null && errField == null) Text(error!!, style = K.t.small.copy(fontSize = 13.sp), color = K.c.red)
         }
     }
     if (pickDate) SingleDateDialog(due, allowFuture = true, onDismiss = { pickDate = false }) { due = it; pickDate = false }
 }
 
-// ---------------------------------------------------------------- quick debts
+// ---------------------------------------------------------------- quick old debts (mockup 25)
 
 private class QuickRow(val id: Long) {
     var name by mutableStateOf("")
@@ -580,12 +530,13 @@ private fun looksLikeFormula(v: String): Boolean =
 @Composable
 fun QuickDebtsScreen(nav: NavHostController) {
     if (!App.session.can("customers")) { NoAccess(); return }
-    var nextId by remember { mutableStateOf(3L) }
-    val rows = remember { mutableStateListOf(QuickRow(0), QuickRow(1), QuickRow(2)) }
+    var nextId by remember { mutableStateOf(5L) }
+    val rows = remember { mutableStateListOf(QuickRow(0), QuickRow(1), QuickRow(2), QuickRow(3), QuickRow(4)) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var saving by remember { mutableStateOf(false) }
+    val filled = rows.count { !it.blank }
 
     fun save() {
         // QuickEntryController::debtsStore validation, row by row.
@@ -598,18 +549,18 @@ fun QuickDebtsScreen(nav: NavHostController) {
             val phone = CustomerActions.normalize(r.phone)
             val amount = Money.parse(r.amount)
             r.error = when {
-                name.isEmpty() -> R.string.customers_name_required
-                name.length > 200 || looksLikeFormula(name) -> R.string.customers_quick_name_bad
-                phone == null -> R.string.customers_phone_invalid
-                r.amount.isBlank() -> R.string.customers_quick_amount_required
-                amount == null || amount <= 0 -> R.string.customers_payment_invalid
-                amount > ExpenseService.MONEY_MAX -> R.string.customers_amount_too_large
+                name.isEmpty() -> R.string.cust_err_name
+                name.length > 200 || looksLikeFormula(name) -> R.string.cust_quick_err_name
+                phone == null -> R.string.cust_quick_err_phone
+                r.amount.isBlank() -> R.string.cust_quick_err_amount
+                amount == null || amount <= 0 -> R.string.cust_err_amount
+                amount > ExpenseService.MONEY_MAX -> R.string.cust_err_too_large
                 else -> null
             }
             if (r.error == null) valid += Valid(r, name, phone!!.ifEmpty { null }, Money.round2(amount!!))
         }
         if (valid.isEmpty()) {
-            scope.launch { snackbar.showSnackbar(context.getString(if (rows.any { it.error != null }) R.string.customers_quick_errors else R.string.customers_quick_nothing)) }
+            if (rows.none { it.error != null }) scope.launch { snackbar.showSnackbar(context.getString(R.string.cust_quick_nothing)) }
             return
         }
         saving = true
@@ -624,7 +575,7 @@ fun QuickDebtsScreen(nav: NavHostController) {
                             Debts.record(this, customer, null, Debts.QARZ, v.amount, user)
                             ok += v
                         } catch (e: Exception) {
-                            v.row.error = R.string.customers_quick_failed
+                            v.row.error = R.string.cust_quick_failed
                         }
                     }
                 }
@@ -633,56 +584,100 @@ fun QuickDebtsScreen(nav: NavHostController) {
             }
             saving = false
             rows.removeAll(saved.map { it.row }.toSet())
-            if (rows.isEmpty()) rows.add(QuickRow(nextId++))
-            if (saved.isNotEmpty()) {
-                snackbar.showSnackbar(context.getString(R.string.customers_quick_saved, saved.size, Money.format(saved.sumOf { it.amount })))
-            } else snackbar.showSnackbar(context.getString(R.string.customers_quick_errors))
+            while (rows.size < 5) rows.add(QuickRow(nextId++))
+            if (saved.isNotEmpty()) snackbar.showSnackbar(context.getString(R.string.cust_quick_saved, saved.size, Money.format(saved.sumOf { it.amount })))
         }
     }
 
-    BoScaffold(title = stringResource(R.string.customers_quick_debts), onBack = { nav.popBackStack() }, snackbar = snackbar) { pad ->
-        LazyColumn(
-            Modifier.padding(pad).fillMaxSize().imePadding(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            item("hint") { Text(stringResource(R.string.customers_quick_hint), color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            itemsIndexed(rows, key = { _, r -> r.id }) { index, r ->
-                BoCard {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("${index + 1}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                        IconButton(onClick = { rows.remove(r); if (rows.isEmpty()) rows.add(QuickRow(nextId++)) }) {
-                            Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.common_delete))
-                        }
-                    }
-                    OutlinedTextField(r.name, { r.name = it; r.error = null }, label = { Text(stringResource(R.string.customers_full_name)) }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp))
-                    Spacer(Modifier.height(6.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            r.phone, { r.phone = it; r.error = null }, label = { Text(stringResource(R.string.customers_phone)) }, singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                            modifier = Modifier.weight(1.2f), shape = RoundedCornerShape(14.dp),
-                        )
-                        AmountField(r.amount, { r.amount = it; r.error = null }, stringResource(R.string.customers_amount), Modifier.weight(1f))
-                    }
-                    r.error?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 6.dp)) }
+    KScreen(
+        topBar = {
+            KTopBar(stringResource(R.string.cust_quick_title), onBack = { nav.popBackStack() }) {
+                if (filled > 0) KTag(stringResource(R.string.cust_quick_rows, filled), KTagKind.Ok)
+            }
+        },
+        bottomBar = {
+            KBottomBar {
+                KButton(
+                    if (filled > 0) stringResource(R.string.cust_quick_save, filled) else stringResource(R.string.bo_save),
+                    { save() }, Modifier.fillMaxWidth(), enabled = filled > 0 && !saving,
+                )
+            }
+        },
+        snackbar = snackbar,
+    ) {
+        LazyColumn(Modifier.weight(1f).imePadding(), contentPadding = PaddingValues(top = 2.dp, bottom = 16.dp)) {
+            item("head") {
+                Row(Modifier.padding(start = Edge, end = Edge, bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    GridHead(stringResource(R.string.cust_quick_name), Modifier.weight(1f))
+                    GridHead(stringResource(R.string.cust_quick_phone), Modifier.weight(1.35f))
+                    GridHead(stringResource(R.string.cust_quick_sum), Modifier.weight(0.85f))
                 }
+            }
+            items(rows, key = { it.id }) { r ->
+                val bad = r.error != null
+                Row(Modifier.padding(start = Edge, end = Edge, bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    GridCell(r.name, { r.name = it; r.error = null }, stringResource(R.string.cust_quick_name), Modifier.weight(1f), bad && r.error in NAME_ERRORS)
+                    GridCell(r.phone, { r.phone = it; r.error = null }, stringResource(R.string.cust_quick_phone_ph), Modifier.weight(1.35f), bad && r.error == R.string.cust_quick_err_phone, KeyboardType.Phone)
+                    GridCell(r.amount, { v -> r.amount = v.filter { it.isDigit() || it == ' ' || it == ',' || it == '.' }; r.error = null }, "0", Modifier.weight(0.85f), bad && r.error in AMOUNT_ERRORS, KeyboardType.Number, last = true)
+                }
+            }
+            val errors = rows.filter { it.error != null }
+            if (errors.isNotEmpty()) item("errors") {
+                val first = errors.first()
+                val who = first.name.trim().ifEmpty { stringResource(R.string.cust_quick_row_n, rows.indexOf(first) + 1) }
+                KAlert(
+                    stringResource(R.string.cust_quick_err_line, who, stringResource(first.error!!)) +
+                        if (errors.size > 1) " " + stringResource(R.string.cust_quick_err_more, errors.size - 1) else "",
+                    Icons.Outlined.ErrorOutline, Modifier.padding(top = 4.dp, bottom = 4.dp), tone = KCardTone.Red,
+                )
             }
             item("add") {
-                OutlinedButton(colors = uz.kassiron.app.ui.theme.Btn.outlined(), onClick = { rows.add(QuickRow(nextId++)) }, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
-                    Icon(Icons.Filled.Add, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.customers_quick_add_row))
-                }
-            }
-            item("total") {
-                val total = rows.sumOf { Money.parse(it.amount)?.takeIf { a -> a > 0 } ?: 0.0 }
-                HorizontalDivider()
-                Row(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                    Text(stringResource(R.string.customers_total_debt), modifier = Modifier.weight(1f))
-                    Text(Money.format(total), fontWeight = FontWeight.ExtraBold)
-                }
-                BigButton(stringResource(R.string.common_save), onClick = { save() }, enabled = !saving)
-                Spacer(Modifier.size(24.dp))
+                KButton(
+                    stringResource(R.string.cust_quick_add10), { repeat(10) { rows.add(QuickRow(nextId++)) } },
+                    Modifier.fillMaxWidth().padding(start = Edge, end = Edge, top = 6.dp), kind = KButtonKind.Alt, icon = Icons.Outlined.Add, height = 44.dp, fontSize = 14.sp,
+                )
             }
         }
     }
+}
+
+private val NAME_ERRORS = setOf(R.string.cust_err_name, R.string.cust_quick_err_name, R.string.cust_quick_failed)
+private val AMOUNT_ERRORS = setOf(R.string.cust_quick_err_amount, R.string.cust_err_amount, R.string.cust_err_too_large)
+
+@Composable
+private fun GridHead(text: String, modifier: Modifier) {
+    Text(text, style = K.t.label.copy(fontSize = 11.5.sp), color = K.c.mu, modifier = modifier.padding(horizontal = 2.dp, vertical = 2.dp), maxLines = 1)
+}
+
+/** One cell of the quick-entry grid: 44dp, 11dp radius, hairline (red when wrong). */
+@Composable
+private fun GridCell(
+    value: String,
+    onChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier,
+    error: Boolean,
+    keyboard: KeyboardType = KeyboardType.Text,
+    last: Boolean = false,
+) {
+    val shape = RoundedCornerShape(11.dp)
+    BasicTextField(
+        value = value,
+        onValueChange = onChange,
+        singleLine = true,
+        textStyle = K.t.body.copy(fontSize = 13.5.sp, color = K.c.tx),
+        cursorBrush = SolidColor(K.c.ink),
+        keyboardOptions = KeyboardOptions(keyboardType = keyboard, imeAction = if (last) ImeAction.Done else ImeAction.Next),
+        modifier = modifier,
+        decorationBox = { inner ->
+            Box(
+                Modifier.fillMaxWidth().height(44.dp).clip(shape).background(K.c.s1)
+                    .border(1.dp, if (error) K.c.red else K.c.bd, shape).padding(horizontal = 10.dp),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                if (value.isEmpty()) Text(placeholder, style = K.t.body.copy(fontSize = 13.5.sp, fontWeight = FontWeight.Medium), color = K.c.mu, maxLines = 1)
+                inner()
+            }
+        },
+    )
 }
