@@ -106,8 +106,9 @@ object Shots {
         kv.set(Keys.SHOP_SETTINGS, "{}")
         App.session.signIn(owner)
         // Two sales today.
-        SaleService.create(listOf(CartLine(products["Non"]!!, null, 2.0), CartLine(products["Sut 1L"]!!, null, 1.0)), 20000.0, 0.0, 0.0, null)
-        lastSale = SaleService.create(listOf(CartLine(products["Choy Ahmad 100 g"]!!, null, 1.0)), 11000.0, 0.0, 0.0, null).uuid
+        App.db.write { SaleService.createIn(this, owner, listOf(CartLine(products["Non"]!!, null, 2.0), CartLine(products["Sut 1L"]!!, null, 1.0)), 20000.0, 0.0, 0.0, null) }
+        // createIn, not create: create() starts a background sync that would outlive the test.
+        lastSale = App.db.write { SaleService.createIn(this, owner, listOf(CartLine(products["Choy Ahmad 100 g"]!!, null, 1.0)), 11000.0, 0.0, 0.0, null) }.uuid
         App.db.write { exec("DELETE FROM sync_outbox") }
         if (!signIn) App.session.signOut()
     }
