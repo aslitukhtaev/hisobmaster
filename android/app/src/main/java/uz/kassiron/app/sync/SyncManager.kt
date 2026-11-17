@@ -296,8 +296,8 @@ class SyncManager(private val context: Context, private val db: Db, private val 
         for (table in Schema.TABLES) exec("DELETE FROM ${table.name}")
         exec("DELETE FROM sync_outbox")
         exec(
-            "DELETE FROM kv WHERE key NOT IN (?, ?, ?)",
-            Keys.LANG, Keys.PRINTER_ADDRESS, Keys.PRINTER_WIDTH,
+            "DELETE FROM kv WHERE key NOT IN (?, ?, ?, ?, ?)",
+            Keys.LANG, Keys.PRINTER_ADDRESS, Keys.PRINTER_WIDTH, "theme", "printer_charset",
         )
     }
 
