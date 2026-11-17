@@ -1,8 +1,6 @@
 package uz.kassiron.app.ui.products
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,37 +10,23 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.LocalShipping
-import androidx.compose.material.icons.filled.MoveToInbox
-import androidx.compose.material.icons.filled.ReceiptLong
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.LocalShipping
+import androidx.compose.material.icons.outlined.MoveToInbox
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -53,13 +37,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.launch
 import uz.kassiron.app.App
@@ -73,15 +56,37 @@ import uz.kassiron.app.domain.ProductService
 import uz.kassiron.app.domain.PurchaseLine
 import uz.kassiron.app.domain.PurchaseService
 import uz.kassiron.app.ui.Routes
-import uz.kassiron.app.ui.common.AppTopBar
 import uz.kassiron.app.ui.common.BarcodeScannerDialog
-import uz.kassiron.app.ui.common.EmptyState
-import uz.kassiron.app.ui.common.SearchField
 import uz.kassiron.app.ui.common.dbState
 import uz.kassiron.app.ui.common.io
+import uz.kassiron.app.ui.kit.Edge
+import uz.kassiron.app.ui.kit.KBottomBar
+import uz.kassiron.app.ui.kit.KButton
+import uz.kassiron.app.ui.kit.KButtonKind
+import uz.kassiron.app.ui.kit.KCard
+import uz.kassiron.app.ui.kit.KEmpty
+import uz.kassiron.app.ui.kit.KFab
+import uz.kassiron.app.ui.kit.KField
+import uz.kassiron.app.ui.kit.KGroup
+import uz.kassiron.app.ui.kit.KGroupRow
+import uz.kassiron.app.ui.kit.KIconButton
+import uz.kassiron.app.ui.kit.KKeyValue
+import uz.kassiron.app.ui.kit.KList
+import uz.kassiron.app.ui.kit.KMoney
+import uz.kassiron.app.ui.kit.KRow
+import uz.kassiron.app.ui.kit.KScreen
+import uz.kassiron.app.ui.kit.KSearch
+import uz.kassiron.app.ui.kit.KSection
+import uz.kassiron.app.ui.kit.KSheet
+import uz.kassiron.app.ui.kit.KSheetTitle
+import uz.kassiron.app.ui.kit.KStepper
+import uz.kassiron.app.ui.kit.KSub
+import uz.kassiron.app.ui.kit.KSwitch
+import uz.kassiron.app.ui.kit.KTopBar
+import uz.kassiron.app.ui.theme.K
 
 // ====================================================================
-// Purchases list
+// Purchases list ("Kirimlar"), grouped by day
 // ====================================================================
 
 private sealed interface PurchaseListEntry {
@@ -90,13 +95,10 @@ private sealed interface PurchaseListEntry {
     data class Item(val row: DbRow) : PurchaseListEntry { override val key get() = row.str("uuid") }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PurchasesScreen(nav: NavHostController) {
     val purchases by dbState<List<DbRow>?>(null) { PurchaseService.recent(App.db) }
-    val snackbar = remember { SnackbarHostState() }
 
-    // Grouped by the local day, with each day's total.
     val entries = remember(purchases) {
         val out = ArrayList<PurchaseListEntry>()
         purchases.orEmpty()
@@ -108,47 +110,34 @@ fun PurchasesScreen(nav: NavHostController) {
         out
     }
 
-    ProductsScaffold(
-        snackbar = snackbar,
+    KScreen(
         topBar = {
-            AppTopBar(stringResource(R.string.purchases_title), onBack = { nav.popBackStack() }) {
-                IconButton(onClick = { nav.navigate(Routes.SUPPLIERS) }) {
-                    Icon(Icons.Filled.LocalShipping, contentDescription = stringResource(R.string.suppliers_title))
-                }
+            KTopBar(stringResource(R.string.purchases_title), onBack = { nav.popBackStack() }) {
+                KIconButton(Icons.Outlined.LocalShipping, { nav.navigate(Routes.SUPPLIERS) }, contentDescription = stringResource(R.string.suppliers_title))
             }
         },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { nav.navigate(Routes.PURCHASE_NEW) },
-                icon = { Icon(Icons.Filled.Add, null) },
-                text = { Text(stringResource(R.string.purchases_new)) },
-            )
-        },
-    ) { padding ->
+        fab = { KFab(Icons.Outlined.Add, { nav.navigate(Routes.PURCHASE_NEW) }, stringResource(R.string.purchases_new)) },
+    ) {
         val list = purchases
         when {
             list == null -> Unit
-            list.isEmpty() -> EmptyState(Icons.Filled.MoveToInbox, stringResource(R.string.purchases_empty), Modifier.padding(padding))
-            else -> LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
+            list.isEmpty() -> KEmpty(
+                Icons.Outlined.MoveToInbox,
+                stringResource(R.string.purchases_empty_title),
+                stringResource(R.string.purchases_empty_text),
+                action = stringResource(R.string.purchases_new),
+                onAction = { nav.navigate(Routes.PURCHASE_NEW) },
+            )
+            else -> LazyColumn(
+                Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = Edge, end = Edge, bottom = 96.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 entries.forEach { e ->
                     when (e) {
-                        is PurchaseListEntry.Day -> stickyHeader(key = e.key) {
-                            Row(
-                                Modifier.fillMaxWidth()
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(Time.showDate(e.date), style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-                                Text(
-                                    stringResource(R.string.purchases_day_total, e.count, Money.format(e.total)),
-                                    style = MaterialTheme.typography.labelLarge,
-                                )
-                            }
-                        }
+                        is PurchaseListEntry.Day -> item(key = e.key) { DayHeader(e) }
                         is PurchaseListEntry.Item -> item(key = e.key) {
                             PurchaseRow(e.row) { nav.navigate(Routes.purchase(e.row.str("uuid"))) }
-                            HorizontalDivider(Modifier.padding(start = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
                         }
                     }
                 }
@@ -158,35 +147,35 @@ fun PurchasesScreen(nav: NavHostController) {
 }
 
 @Composable
-private fun PurchaseRow(row: DbRow, onClick: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).heightIn(min = 64.dp).padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                row.strOrNull("supplier_name")?.takeIf { it.isNotBlank() } ?: stringResource(R.string.purchases_no_supplier),
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            val sub = buildList {
-                add(Time.local(row.str("created_at"), "HH:mm"))
-                add(stringResource(R.string.purchases_items_count, row.long("item_count").toInt()))
-                row.strOrNull("created_by_name")?.takeIf { it.isNotBlank() }?.let(::add)
-            }
-            Text(sub.joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-        }
-        Text(Money.format(row.dbl("total_amount")), style = MaterialTheme.typography.titleMedium)
+private fun DayHeader(day: PurchaseListEntry.Day) {
+    Row(Modifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(Time.showDate(day.date), style = K.t.section, color = K.c.tx, modifier = Modifier.weight(1f))
+        Text(stringResource(R.string.purchases_day_count, day.count) + " · ", style = K.t.small, color = K.c.mu)
+        KMoney(day.total, size = 13.sp)
     }
 }
 
+@Composable
+private fun PurchaseRow(row: DbRow, onClick: () -> Unit) {
+    val sub = buildList {
+        add(Time.local(row.str("created_at"), "HH:mm"))
+        add(stringResource(R.string.purchases_items_count, row.long("item_count").toInt()))
+        row.strOrNull("created_by_name")?.takeIf { it.isNotBlank() }?.let(::add)
+    }.joinToString(" · ")
+    KRow(
+        title = row.strOrNull("supplier_name")?.takeIf { it.isNotBlank() } ?: stringResource(R.string.purchases_no_supplier),
+        subtitle = { KSub(sub) },
+        trailing = { KMoney(row.dbl("total_amount")) },
+        onClick = onClick,
+    )
+}
+
 // ====================================================================
-// New purchase
+// New purchase (mockup 18)
 // ====================================================================
 
 /** Something a purchase line can be: a product without active variants, or one variant. */
-private data class PurchaseTarget(
+internal data class PurchaseTarget(
     val productUuid: String,
     val variantUuid: String?,
     val name: String,
@@ -242,7 +231,11 @@ private fun loadTargets(): List<PurchaseTarget> {
 }
 
 @Composable
-fun PurchaseNewScreen(nav: NavHostController) {
+fun PurchaseNewScreen(nav: NavHostController) = PurchaseNew(nav)
+
+/** [prefill] (product name → qty) lets the screenshot tests show a purchase with items. */
+@Composable
+internal fun PurchaseNew(nav: NavHostController, prefill: List<Pair<String, Double>> = emptyList(), prefillSupplier: String? = null) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
@@ -252,19 +245,28 @@ fun PurchaseNewScreen(nav: NavHostController) {
 
     var query by remember { mutableStateOf("") }
     val lines = remember { mutableStateListOf<LineState>() }
-    var supplierId by rememberSaveable { mutableStateOf<String?>(null) }
+    var supplierId by rememberSaveable { mutableStateOf(prefillSupplier) }
     var note by rememberSaveable { mutableStateOf("") }
-    var updateCost by rememberSaveable { mutableStateOf(false) }
+    // The approved design has it on: most shops want the cost price of the last purchase.
+    var updateCost by rememberSaveable { mutableStateOf(true) }
     var scanning by remember { mutableStateOf(false) }
     var saving by remember { mutableStateOf(false) }
-    var newSupplier by remember { mutableStateOf<String?>(null) }
+    var supplierSheet by remember { mutableStateOf(false) }
+    var noteSheet by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<LineState?>(null) }
+    var prefilled by remember { mutableStateOf(false) }
+
+    if (!prefilled && prefill.isNotEmpty() && targets.isNotEmpty()) {
+        prefilled = true
+        prefill.reversed().forEach { (name, qty) ->
+            targets.firstOrNull { it.name == name }?.let { lines.add(0, LineState(it, Money.qty(qty), editNumber(it.cost))) }
+        }
+    }
 
     val results = remember(targets, query) {
         val q = query.trim().lowercase()
         if (q.isEmpty()) emptyList()
-        else targets.filter { it.searchText.contains(q) }
-            .sortedByDescending { it.barcode?.lowercase() == q }
-            .take(30)
+        else targets.filter { it.searchText.contains(q) }.sortedByDescending { it.barcode?.lowercase() == q }.take(30)
     }
     val total = Money.round2(lines.sumOf { it.subtotal })
 
@@ -296,7 +298,7 @@ fun PurchaseNewScreen(nav: NavHostController) {
             scope.launch {
                 val r = snackbar.showSnackbar(
                     ctx.getString(R.string.purchases_code_unknown, code),
-                    actionLabel = ctx.getString(R.string.products_add),
+                    actionLabel = ctx.getString(R.string.purchases_code_add),
                     duration = SnackbarDuration.Long,
                 )
                 if (r == SnackbarResult.ActionPerformed) nav.navigate(Routes.productEdit("new", code))
@@ -313,9 +315,10 @@ fun PurchaseNewScreen(nav: NavHostController) {
         val bad = lines.firstOrNull { l ->
             val q = l.qtyValue
             val c = l.costValue
-            q == null || q <= 0 || c == null || c < 0
+            q == null || q <= 0 || c == null || c < 0 || !Units.fits(q, l.target.unit)
         }
         if (bad != null) {
+            editing = bad
             scope.launch { snackbar.showSnackbar(ctx.getString(R.string.purchases_err_line, bad.target.title)) }
             return
         }
@@ -330,108 +333,107 @@ fun PurchaseNewScreen(nav: NavHostController) {
         }
     }
 
-    ProductsScaffold(
-        snackbar = snackbar,
-        topBar = { AppTopBar(stringResource(R.string.purchases_new), onBack = { nav.popBackStack() }) },
-        bottomBar = {
-            Surface(tonalElevation = 3.dp) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.purchases_total), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(Money.format(total), style = MaterialTheme.typography.headlineMedium)
+    Box(Modifier.fillMaxSize().imePadding()) {
+        KScreen(
+            snackbar = snackbar,
+            topBar = { KTopBar(stringResource(R.string.purchases_new), onBack = { nav.popBackStack() }) },
+            bottomBar = {
+                KBottomBar {
+                    Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.purchases_total), style = K.t.label.copy(fontSize = 13.sp), color = K.c.mu, modifier = Modifier.weight(1f))
+                        KMoney(total, size = 24.sp)
                     }
-                    androidx.compose.material3.Button(
-                        onClick = { save() },
-                        enabled = !saving && lines.isNotEmpty(),
-                        modifier = Modifier.height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                    ) { Text(stringResource(R.string.purchases_save)) }
+                    KButton(stringResource(R.string.purchases_save), { save() }, Modifier.fillMaxWidth(), enabled = !saving && lines.isNotEmpty())
                 }
-            }
-        },
-    ) { padding ->
-        LazyColumn(
-            Modifier.padding(padding).fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            },
         ) {
-            item(key = "search") {
-                // Enter (a hardware scanner ends each code with it): an exact barcode, or the only result, is added.
-                androidx.compose.material3.OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    placeholder = { Text(stringResource(R.string.purchases_search)) },
-                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                    trailingIcon = {
-                        if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Filled.Close, contentDescription = null) }
-                        else ScanButton { scanning = true }
-                    },
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = {
-                        val q = query.trim()
-                        when {
-                            q.isEmpty() -> Unit
-                            targets.any { it.barcode == q } -> onCode(q)
-                            results.size == 1 -> { add(results.first()); query = "" }
-                            q.all { it.isDigit() } && q.length >= 4 -> onCode(q)
-                        }
-                    }),
-                    shape = RoundedCornerShape(14.dp),
-                )
-            }
-            if (results.isNotEmpty()) {
-                items(results, key = { "r" + it.key }) { t ->
-                    Row(
-                        Modifier.fillMaxWidth()
-                            .clickable { add(t); query = "" }
-                            .heightIn(min = 52.dp)
-                            .padding(horizontal = 8.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(Icons.Filled.Add, null, tint = MaterialTheme.colorScheme.secondary)
-                        Spacer(Modifier.width(10.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(t.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(
-                                listOfNotNull(t.barcode?.takeIf { it.isNotBlank() }, t.unit, if (!t.active) ctx.getString(R.string.products_inactive) else null).joinToString(" · "),
-                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Text(Money.format(t.cost), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                item(key = "results-end") { HorizontalDivider() }
-            } else if (query.isNotBlank()) {
-                item(key = "no-results") {
-                    Text(stringResource(R.string.products_not_found), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(8.dp))
-                }
-            }
-
-            if (lines.isEmpty()) {
-                item(key = "empty") {
-                    Text(
-                        stringResource(if (targets.isEmpty()) R.string.purchases_no_products else R.string.purchases_empty_lines),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 24.dp),
+            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 2.dp, bottom = 20.dp)) {
+                item(key = "supplier") {
+                    val name = suppliers.firstOrNull { it.str("uuid") == supplierId }?.str("name")
+                    PickField(
+                        stringResource(R.string.purchases_supplier), name, stringResource(R.string.purchases_no_supplier),
+                        { supplierSheet = true }, Modifier.padding(horizontal = Edge),
                     )
                 }
-            }
-            items(lines, key = { "l" + it.target.key }) { line ->
-                LineCard(line, onRemove = { lines.remove(line) })
-            }
-
-            item(key = "details") {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
-                    SupplierPicker(suppliers, supplierId, onSelect = { supplierId = it }, onNew = { newSupplier = "" })
-                    FormField(note, { note = it }, stringResource(R.string.purchases_note), singleLine = false, imeAction = ImeAction.Default)
-                    Row(
-                        Modifier.fillMaxWidth().clickable { updateCost = !updateCost }.heightIn(min = 48.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Checkbox(checked = updateCost, onCheckedChange = { updateCost = it })
-                        Text(stringResource(R.string.purchases_update_cost))
+                item(key = "search") {
+                    Spacer(Modifier.height(12.dp))
+                    // Enter (a hardware scanner ends each code with it): an exact barcode, or the only result, is added.
+                    KSearch(
+                        query, { query = it }, stringResource(R.string.purchases_search),
+                        onScan = { scanning = true }, scanLime = true,
+                        onSubmit = {
+                            val q = query.trim()
+                            when {
+                                q.isEmpty() -> Unit
+                                targets.any { it.barcode == q } -> onCode(q)
+                                results.size == 1 -> { add(results.first()); query = "" }
+                                q.all { it.isDigit() } && q.length >= 4 -> onCode(q)
+                            }
+                        },
+                    )
+                    Spacer(Modifier.height(10.dp))
+                }
+                if (query.isNotBlank()) {
+                    if (results.isEmpty()) {
+                        item(key = "no-results") {
+                            Text(
+                                stringResource(R.string.products_not_found), style = K.t.body, color = K.c.mu, textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                            )
+                        }
+                    }
+                    items(results, key = { "r" + it.key }) { t ->
+                        val sub = listOfNotNull(
+                            t.barcode?.takeIf { it.isNotBlank() },
+                            stringResource(R.string.purchases_cost_line, Money.format(t.cost, withCurrency = false)),
+                            if (!t.active) stringResource(R.string.products_inactive) else null,
+                        ).joinToString(" · ")
+                        KRow(
+                            title = t.title,
+                            modifier = Modifier.padding(start = Edge, end = Edge, bottom = 8.dp),
+                            subtitle = { KSub(sub) },
+                            trailing = {
+                                Box(Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(K.c.primary), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Outlined.Add, null, tint = K.c.onPrimary, modifier = Modifier.size(20.dp))
+                                }
+                            },
+                            onClick = { add(t); query = "" },
+                        )
+                    }
+                } else {
+                    if (lines.isEmpty()) {
+                        item(key = "empty") {
+                            Text(
+                                stringResource(if (targets.isEmpty()) R.string.purchases_no_products else R.string.purchases_empty_lines),
+                                style = K.t.body, color = K.c.mu, textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 24.dp),
+                            )
+                        }
+                    }
+                    items(lines, key = { "l" + it.target.key }) { line ->
+                        LineRow(
+                            line,
+                            onMinus = {
+                                val q = (line.qtyValue ?: 0.0) - 1
+                                if (q <= 0.000001) lines.remove(line) else line.qty = Money.qty(q)
+                            },
+                            onPlus = { line.qty = Money.qty((line.qtyValue ?: 0.0) + 1) },
+                            onEdit = { editing = line },
+                        )
+                    }
+                    item(key = "options") {
+                        Spacer(Modifier.height(4.dp))
+                        KGroup {
+                            KGroupRow(
+                                stringResource(R.string.purchases_update_cost), first = true,
+                                trailing = { KSwitch(updateCost) { updateCost = it } },
+                            )
+                            KGroupRow(
+                                stringResource(R.string.purchases_note),
+                                value = note.ifBlank { stringResource(R.string.purchases_note_empty) }.take(24),
+                                onClick = { noteSheet = true },
+                            )
+                        }
                     }
                 }
             }
@@ -439,87 +441,86 @@ fun PurchaseNewScreen(nav: NavHostController) {
     }
 
     if (scanning) {
-        BarcodeScannerDialog(
-            continuous = true,
-            onResult = { onCode(it) },
-            onDismiss = { scanning = false },
-        )
+        BarcodeScannerDialog(continuous = true, onResult = { onCode(it) }, onDismiss = { scanning = false })
     }
 
-    newSupplier?.let { name ->
-        NameDialog(
-            title = stringResource(R.string.suppliers_add),
-            label = stringResource(R.string.suppliers_name),
-            value = name,
-            onChange = { newSupplier = it },
-            onDismiss = { newSupplier = null },
-            onSave = {
+    if (supplierSheet) {
+        PickSheet(
+            title = stringResource(R.string.purchases_supplier),
+            items = listOf(PickItem(null, stringResource(R.string.purchases_no_supplier))) +
+                suppliers.map { PickItem(it.str("uuid"), it.str("name"), it.str("phone").takeIf { p -> p.isNotBlank() }?.let(::showPhone)) },
+            selected = supplierId,
+            searchHint = stringResource(R.string.suppliers_search),
+            newTitle = { ctx.getString(R.string.suppliers_new_named, it) },
+            newSub = stringResource(R.string.suppliers_new_hint),
+            onPick = { supplierId = it; supplierSheet = false },
+            onCreate = { name ->
                 scope.launch {
                     runCatching { io { ProductService.saveSupplier(null, name, "", "", "") } }
-                        .onSuccess { id -> newSupplier = null; supplierId = id }
+                        .onSuccess { id -> supplierId = id; supplierSheet = false }
                         .onFailure { snackbar.showSnackbar(ctx.productError(it)) }
                 }
             },
+            onDismiss = { supplierSheet = false },
         )
     }
+
+    if (noteSheet) {
+        var draft by remember { mutableStateOf(note) }
+        KSheet({ noteSheet = false }) {
+            KSheetTitle(stringResource(R.string.purchases_note), { noteSheet = false })
+            KField(draft, { draft = it }, placeholder = stringResource(R.string.purchases_note_ph), singleLine = false)
+            Spacer(Modifier.height(14.dp))
+            KButton(stringResource(R.string.common_save), { note = draft.trim(); noteSheet = false }, Modifier.fillMaxWidth())
+        }
+    }
+
+    editing?.let { line ->
+        val t = line.target
+        val qtyBad = line.qty.isNotBlank() && (line.qtyValue == null || line.qtyValue!! <= 0 || !Units.fits(line.qtyValue!!, t.unit))
+        KSheet({ editing = null }) {
+            KSheetTitle(t.title, { editing = null })
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                NumberField(
+                    line.qty, { line.qty = numberInput(it) }, Modifier.weight(1f),
+                    label = stringResource(R.string.purchases_qty, t.unit),
+                    error = if (qtyBad) stringResource(R.string.purchases_qty_whole_short) else null,
+                )
+                NumberField(line.cost, { line.cost = numberInput(it) }, Modifier.weight(1f), label = stringResource(R.string.products_cost_price))
+            }
+            if (t.packSize != null) {
+                Spacer(Modifier.height(10.dp))
+                KButton(
+                    stringResource(R.string.purchases_add_pack, Money.qty(t.packSize.toDouble()), t.unit),
+                    { line.qty = Money.qty((line.qtyValue ?: 0.0) + t.packSize) },
+                    Modifier.fillMaxWidth(), kind = KButtonKind.Alt, icon = Icons.Outlined.Add, height = 46.dp, fontSize = 14.sp,
+                )
+            }
+            Spacer(Modifier.height(14.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                KButton(
+                    stringResource(R.string.common_delete), { lines.remove(line); editing = null },
+                    Modifier.weight(1f), kind = KButtonKind.Danger, icon = Icons.Outlined.Delete,
+                )
+                KButton(stringResource(R.string.common_save), { editing = null }, Modifier.weight(1f), enabled = !qtyBad)
+            }
+        }
+    }
 }
 
 @Composable
-private fun LineCard(line: LineState, onRemove: () -> Unit) {
+private fun LineRow(line: LineState, onMinus: () -> Unit, onPlus: () -> Unit, onEdit: () -> Unit) {
     val t = line.target
-    val qtyBad = line.qty.isNotBlank() && (line.qtyValue == null || line.qtyValue!! <= 0 || !Units.fits(line.qtyValue!!, t.unit))
-    Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(t.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                IconButton(onClick = onRemove) { Icon(Icons.Filled.Close, stringResource(R.string.purchases_remove_line)) }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                FormField(
-                    line.qty, { line.qty = numberInput(it) }, stringResource(R.string.purchases_qty, t.unit),
-                    modifier = Modifier.weight(1f), keyboardType = KeyboardType.Decimal, isError = qtyBad,
-                )
-                FormField(
-                    line.cost, { line.cost = numberInput(it) }, stringResource(R.string.purchases_unit_cost),
-                    modifier = Modifier.weight(1.2f), keyboardType = KeyboardType.Decimal,
-                )
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (t.packSize != null) {
-                    TextButton(
-                        colors = uz.kassiron.app.ui.theme.Btn.text(), onClick = { line.qty = Money.qty((line.qtyValue ?: 0.0) + t.packSize) },
-                        modifier = Modifier.heightIn(min = 48.dp),
-                    ) { Text(stringResource(R.string.purchases_add_pack, Money.qty(t.packSize.toDouble()), t.unit)) }
-                }
-                Spacer(Modifier.weight(1f))
-                Text(Money.format(line.subtotal), style = MaterialTheme.typography.titleMedium)
-            }
-            if (qtyBad && line.qtyValue != null && line.qtyValue!! > 0) {
-                Text(stringResource(R.string.products_err_qty_whole, t.unit), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
-        }
-    }
-}
-
-@Composable
-private fun SupplierPicker(suppliers: List<DbRow>, selected: String?, onSelect: (String?) -> Unit, onNew: () -> Unit) {
-    var open by remember { mutableStateOf(false) }
-    val name = suppliers.firstOrNull { it.str("uuid") == selected }?.str("name") ?: stringResource(R.string.purchases_no_supplier)
-    Box {
-        FormField(value = name, onChange = {}, label = stringResource(R.string.purchases_supplier), readOnly = true, trailing = { Icon(Icons.Filled.ArrowDropDown, null) })
-        Box(Modifier.matchParentSize().clickable { open = true })
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.suppliers_add)) },
-                leadingIcon = { Icon(Icons.Filled.Add, null) },
-                onClick = { open = false; onNew() },
-            )
-            DropdownMenuItem(text = { Text(stringResource(R.string.purchases_no_supplier)) }, onClick = { open = false; onSelect(null) })
-            suppliers.forEach { s ->
-                DropdownMenuItem(text = { Text(s.str("name")) }, onClick = { open = false; onSelect(s.str("uuid")) })
-            }
-        }
-    }
+    val sub = stringResource(R.string.purchases_cost_line, Money.format(line.costValue ?: 0.0, withCurrency = false)) +
+        if ((line.qtyValue ?: 0.0) > 1) " · " + Money.format(line.subtotal) else ""
+    KRow(
+        title = t.title,
+        modifier = Modifier.padding(start = Edge, end = Edge, bottom = 8.dp),
+        selected = true,
+        subtitle = { KSub(sub) },
+        trailing = { KStepper(line.qty.ifBlank { "0" }, onMinus, onPlus, onQtyClick = onEdit) },
+        onClick = onEdit,
+    )
 }
 
 // ====================================================================
@@ -528,73 +529,60 @@ private fun SupplierPicker(suppliers: List<DbRow>, selected: String?, onSelect: 
 
 @Composable
 fun PurchaseDetailScreen(nav: NavHostController, uuid: String) {
-    val snackbar = remember { SnackbarHostState() }
     val data by dbState<Pair<DbRow?, List<DbRow>>?>(null, uuid) {
         PurchaseService.find(App.db, uuid) to PurchaseService.items(App.db, uuid)
     }
-
-    ProductsScaffold(
-        snackbar = snackbar,
-        topBar = { AppTopBar(stringResource(R.string.purchases_detail_title), onBack = { nav.popBackStack() }) },
-    ) { padding ->
-        val d = data
-        val p = d?.first
+    val d = data
+    val p = d?.first
+    KScreen(
+        topBar = {
+            KTopBar(
+                if (p != null) stringResource(R.string.purchases_detail_title_at, Time.local(p.str("created_at"), "dd.MM HH:mm"))
+                else stringResource(R.string.purchases_detail_title),
+                onBack = { nav.popBackStack() },
+            )
+        },
+    ) {
         when {
             d == null -> Unit
-            p == null -> EmptyState(Icons.Filled.ReceiptLong, stringResource(R.string.purchases_not_found), Modifier.padding(padding))
-            else -> LazyColumn(
-                Modifier.padding(padding).fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
+            p == null -> KEmpty(Icons.AutoMirrored.Outlined.ReceiptLong, stringResource(R.string.purchases_not_found))
+            else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 2.dp, bottom = 20.dp)) {
                 item(key = "head") {
-                    Card(shape = RoundedCornerShape(16.dp)) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text(stringResource(R.string.purchases_total), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(Money.format(p.dbl("total_amount")), style = MaterialTheme.typography.headlineMedium)
-                            Spacer(Modifier.height(8.dp))
-                            InfoLine(stringResource(R.string.purchases_date), Time.local(p.str("created_at")))
-                            InfoLine(
-                                stringResource(R.string.purchases_supplier),
-                                p.strOrNull("supplier_name")?.takeIf { it.isNotBlank() } ?: stringResource(R.string.purchases_no_supplier),
+                    KCard(Modifier.padding(horizontal = Edge), padding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)) {
+                        KKeyValue(stringResource(R.string.purchases_date), first = true) { Value(Time.local(p.str("created_at"))) }
+                        KKeyValue(stringResource(R.string.purchases_supplier)) {
+                            Value(p.strOrNull("supplier_name")?.takeIf { it.isNotBlank() } ?: stringResource(R.string.purchases_no_supplier))
+                        }
+                        p.strOrNull("created_by_name")?.takeIf { it.isNotBlank() }?.let { KKeyValue(stringResource(R.string.purchases_created_by)) { Value(it) } }
+                        p.strOrNull("note")?.takeIf { it.isNotBlank() }?.let { KKeyValue(stringResource(R.string.purchases_note)) { Value(it) } }
+                    }
+                }
+                item(key = "items-title") { KSection(stringResource(R.string.purchases_items_title)) }
+                item(key = "items") {
+                    KList {
+                        d.second.forEach { it ->
+                            val name = it.strOrNull("product_name")?.takeIf { n -> n.isNotBlank() } ?: "—"
+                            val label = it.strOrNull("variant_label")?.takeIf { l -> l.isNotBlank() }
+                            KRow(
+                                title = if (label != null) "$name — $label" else name,
+                                subtitle = { KSub(Money.format(it.dbl("unit_cost"), withCurrency = false) + " × " + qtyUnit(it.dbl("qty"), it.strOrNull("unit"))) },
+                                trailing = { KMoney(it.dbl("subtotal")) },
                             )
-                            p.strOrNull("created_by_name")?.takeIf { it.isNotBlank() }?.let {
-                                InfoLine(stringResource(R.string.purchases_created_by), it)
-                            }
-                            p.strOrNull("note")?.takeIf { it.isNotBlank() }?.let {
-                                Spacer(Modifier.height(4.dp))
-                                Text(stringResource(R.string.purchases_note), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(it)
-                            }
                         }
                     }
                 }
-                item(key = "items-title") {
-                    Text(
-                        stringResource(R.string.purchases_items_count, d.second.size),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
-                }
-                items(d.second, key = { it.str("uuid") }) { it ->
-                    val name = it.strOrNull("product_name")?.takeIf { n -> n.isNotBlank() } ?: "—"
-                    val label = it.strOrNull("variant_label")?.takeIf { l -> l.isNotBlank() }
-                    Row(
-                        Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(if (label != null) "$name — $label" else name, style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                qtyUnit(it.dbl("qty"), it.strOrNull("unit")) + " × " + Money.format(it.dbl("unit_cost")),
-                                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Text(Money.format(it.dbl("subtotal")), style = MaterialTheme.typography.titleMedium)
+                item(key = "total") {
+                    Spacer(Modifier.height(10.dp))
+                    KCard(Modifier.padding(horizontal = Edge), padding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)) {
+                        KKeyValue(stringResource(R.string.purchases_total), first = true) { KMoney(p.dbl("total_amount"), size = 18.sp) }
                     }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
             }
         }
     }
+}
+
+@Composable
+private fun Value(text: String) {
+    Text(text, style = K.t.body.copy(fontSize = 14.sp), color = K.c.tx, maxLines = 2)
 }
