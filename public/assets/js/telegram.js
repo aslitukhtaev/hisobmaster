@@ -8,15 +8,29 @@
     var isDark = document.documentElement.getAttribute('data-theme') === 'dark'
         || (!document.documentElement.getAttribute('data-theme') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-    try {
-        tg.ready();
-        tg.expand();
-        tg.setHeaderColor(isDark ? '#11150e' : '#a9fa06');
-        tg.setBackgroundColor(isDark ? '#090c07' : '#f4f6f1');
-    } catch (e) {
-        // Older Telegram clients may not support every WebApp call.
-    }
+    var at = function (v) { return typeof tg.isVersionAtLeast === 'function' && tg.isVersionAtLeast(v); };
+    var call = function (fn) { try { fn(); } catch (e) { /* older clients lack some calls */ } };
+    var mobile = tg.platform === 'android' || tg.platform === 'ios';
+    var surface = isDark ? '#11150e' : '#ffffff';
+    var page = isDark ? '#090c07' : '#f4f6f1';
 
+    call(function () { tg.ready(); });
+    call(function () { tg.expand(); });
+    // Full screen on phones (Bot API 8.0): the app gets the whole screen;
+    // safe areas keep it clear of the status bar, notch and Telegram's
+    // own buttons (see the --sa-* variables in app.css).
+    if (mobile && at('8.0')) {
+        call(function () { tg.requestFullscreen(); });
+    }
+    // A downward scroll must scroll the page, not close the app.
+    if (at('7.7')) {
+        call(function () { tg.disableVerticalSwipes(); });
+    }
+    call(function () { tg.setHeaderColor(surface); });
+    call(function () { tg.setBackgroundColor(page); });
+    if (at('7.10')) {
+        call(function () { tg.setBottomBarColor(surface); });
+    }
     document.documentElement.classList.add('in-telegram');
 
     // The login page inside the Telegram WebApp (tg.initData is signed by
@@ -102,4 +116,48 @@
             window.open(link.href, '_blank');
         }
     });
+
+    // Telegram's back arrow on every page but the main ones.
+    var path = location.pathname;
+    var roots = ['/', '/login', '/sales/new', '/sales', '/products', '/customers', '/subscription', '/signup'];
+    if (at('6.1') && tg.BackButton) {
+        if (roots.indexOf(path) === -1) {
+            call(function () { tg.BackButton.show(); });
+            tg.BackButton.onClick(function () {
+                if (history.length > 1 && document.referrer && new URL(document.referrer).origin === location.origin) {
+                    history.back();
+                } else {
+                    location.href = '/';
+                }
+            });
+        } else {
+            call(function () { tg.BackButton.hide(); });
+        }
+    }
+
+    // Light taps on buttons and the bottom menu; success / error buzz for messages.
+    var haptic = at('6.1') && tg.HapticFeedback ? tg.HapticFeedback : null;
+    if (haptic) {
+        document.addEventListener('click', function (e) {
+            var el = e.target.closest ? e.target.closest('.btn, .bottom-link, .product-tile, .payment-btn, button') : null;
+            if (el && !el.disabled) {
+                call(function () { haptic.impactOccurred('light'); });
+            }
+        }, true);
+        if (document.querySelector('.flash-alert.alert-success')) {
+            call(function () { haptic.notificationOccurred('success'); });
+        } else if (document.querySelector('.flash-alert.alert-error')) {
+            call(function () { haptic.notificationOccurred('error'); });
+        }
+    }
+
+    // The till: closing the app with goods in the cart asks first.
+    if (at('6.2')) {
+        document.addEventListener('kassiron:cart', function (e) {
+            var count = e.detail && e.detail.count ? e.detail.count : 0;
+            call(function () {
+                if (count > 0) { tg.enableClosingConfirmation(); } else { tg.disableClosingConfirmation(); }
+            });
+        });
+    }
 })();

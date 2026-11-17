@@ -387,6 +387,8 @@
     }
 
     function renderCart() {
+        // The Telegram WebApp asks before closing while the cart has items.
+        document.dispatchEvent(new CustomEvent('kassiron:cart', { detail: { count: cart.size } }));
         if (cartCountEl) {
             cartCountEl.textContent = cart.size;
             cartCountEl.hidden = cart.size === 0;

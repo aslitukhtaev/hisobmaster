@@ -8,10 +8,37 @@ if ('serviceWorker' in navigator) {
 
 // Forms that need a confirmation carry it as data-confirm (inline onsubmit
 // handlers are blocked by the Content-Security-Policy).
+// Inside the Telegram WebApp the question is Telegram's own dialog (the
+// browser's confirm() there looks foreign and, on some clients, never shows).
 document.addEventListener('submit', function (e) {
     var form = e.target;
     var message = form && form.getAttribute ? form.getAttribute('data-confirm') : null;
-    if (message && !window.confirm(message)) {
+    if (!message) {
+        return;
+    }
+    if (form.getAttribute('data-confirmed') === '1') {
+        form.removeAttribute('data-confirmed');
+        return;
+    }
+    var tg = window.Telegram && window.Telegram.WebApp;
+    if (tg && tg.initData && tg.isVersionAtLeast && tg.isVersionAtLeast('6.2')) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        var submitter = e.submitter || null;
+        tg.showConfirm(message, function (ok) {
+            if (!ok) {
+                return;
+            }
+            form.setAttribute('data-confirmed', '1');
+            if (form.requestSubmit) {
+                form.requestSubmit(submitter);
+            } else {
+                form.submit();
+            }
+        });
+        return;
+    }
+    if (!window.confirm(message)) {
         e.preventDefault();
         e.stopImmediatePropagation();
     }
