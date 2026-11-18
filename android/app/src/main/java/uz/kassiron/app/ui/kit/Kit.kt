@@ -568,10 +568,21 @@ fun KStepper(qty: String, onMinus: () -> Unit, onPlus: () -> Unit, onQtyClick: (
         Box(Modifier.size(36.dp).clip(shape).background(K.c.s1).border(1.dp, K.c.bd, shape).clickable(onClick = onMinus), contentAlignment = Alignment.Center) {
             Text("−", style = K.t.button.copy(fontSize = 20.sp), color = K.c.tx)
         }
-        Text(
-            qty, style = K.t.amount, color = K.c.tx, textAlign = TextAlign.Center,
-            modifier = Modifier.widthIn(min = 34.dp).then(if (onQtyClick != null) Modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick = onQtyClick) else Modifier).padding(horizontal = 4.dp, vertical = 6.dp),
-        )
+        if (onQtyClick != null) {
+            // Drawn as a field, so it is clear the number can be typed.
+            Box(
+                Modifier.padding(horizontal = 2.dp).height(36.dp).widthIn(min = 46.dp).clip(shape).background(K.c.s1).border(1.dp, K.c.bd, shape)
+                    .clickable(onClick = onQtyClick).padding(horizontal = 6.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(qty, style = K.t.amount, color = K.c.tx, textAlign = TextAlign.Center, maxLines = 1)
+            }
+        } else {
+            Text(
+                qty, style = K.t.amount, color = K.c.tx, textAlign = TextAlign.Center,
+                modifier = Modifier.widthIn(min = 34.dp).padding(horizontal = 4.dp, vertical = 6.dp),
+            )
+        }
         Box(Modifier.size(36.dp).clip(shape).background(K.c.primary).clickable(onClick = onPlus), contentAlignment = Alignment.Center) {
             Text("+", style = K.t.button.copy(fontSize = 20.sp), color = K.c.onPrimary)
         }

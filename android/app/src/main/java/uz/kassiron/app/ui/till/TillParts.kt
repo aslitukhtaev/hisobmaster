@@ -442,7 +442,8 @@ private fun NewCustomerRow(title: String, hint: String?, onClick: () -> Unit) {
 
 @Composable
 internal fun QtySheet(item: CartItem, onSet: (Double) -> Boolean, onDismiss: () -> Unit) {
-    var text by remember { mutableStateOf(Money.qty(item.qty)) }
+    // Starts empty with the current amount as the hint: the cashier just types the new number.
+    var text by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     val focus = remember { FocusRequester() }
     val wholeMsg = stringResource(R.string.till_qty_whole)
@@ -451,6 +452,7 @@ internal fun QtySheet(item: CartItem, onSet: (Double) -> Boolean, onDismiss: () 
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
 
     fun submit() {
+        if (text.isBlank()) { onDismiss(); return }
         val qty = Money.parse(text)
         when {
             qty == null || qty < 0 -> error = invalidMsg
@@ -465,7 +467,7 @@ internal fun QtySheet(item: CartItem, onSet: (Double) -> Boolean, onDismiss: () 
         KAmountField(
             text, { v -> text = v.filter { it.isDigit() || ((it == ',' || it == '.') && item.fractional) }; error = null },
             modifier = Modifier.focusRequester(focus),
-            label = stringResource(R.string.till_qty, item.unit), big = true, error = error, onDone = { submit() },
+            label = stringResource(R.string.till_qty, item.unit), placeholder = Money.qty(item.qty), big = true, error = error, onDone = { submit() },
         )
         if (error == null) {
             Spacer(Modifier.height(6.dp))

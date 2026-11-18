@@ -746,13 +746,25 @@ img.logo-for-dark-theme { display: none; }
     width: 26px; height: 26px; border-radius: 8px; border: 1px solid var(--border);
     background: var(--surface); color: var(--text); font-weight: 700; cursor: pointer; font-size: 1rem; line-height: 1;
 }
-.qty-stepper span { min-width: 24px; text-align: center; font-weight: 600; font-size: .85rem; }
-.qty-stepper-fractional .qty-direct-input {
-    width: 58px; min-width: 0; text-align: center; font: inherit; font-weight: 600; font-size: .85rem;
-    padding: 4px 2px; border: 1px solid var(--border); border-radius: 8px;
+.qty-stepper .qty-direct-input {
+    width: 46px; height: 26px; min-width: 0; text-align: center; font: inherit; font-weight: 600; font-size: .85rem;
+    padding: 0 2px; border: 1px solid var(--border); border-radius: 8px;
     background: var(--surface); color: var(--text); outline: none;
 }
-.qty-stepper-fractional .qty-direct-input:focus { border-color: var(--primary-ink); box-shadow: 0 0 0 3px var(--ring); }
+.qty-stepper-fractional .qty-direct-input { width: 58px; }
+.qty-stepper .qty-direct-input:focus { border-color: var(--primary-ink); box-shadow: 0 0 0 3px var(--ring); }
+/* Touch: finger-sized controls, and 16px text so iOS doesn't zoom the page on focus. */
+@media (pointer: coarse) {
+    .qty-stepper button { width: 34px; height: 34px; }
+    .qty-stepper .qty-direct-input { width: 50px; height: 34px; font-size: 16px; }
+    .qty-stepper-fractional .qty-direct-input { width: 60px; }
+}
+/* Phones: the name gets its own line instead of being squeezed beside the controls. */
+@media (max-width: 560px) {
+    .cart-row { flex-wrap: wrap; row-gap: 6px; }
+    .cart-row-main { flex: 1 0 100%; }
+    .cart-row-subtotal { margin-left: auto; }
+}
 .cart-row-subtotal { font-weight: 700; font-size: .85rem; min-width: 76px; text-align: right; flex-shrink: 0; }
 .cart-remove { background: none; border: none; color: var(--danger); font-size: 1rem; cursor: pointer; padding: 4px; flex-shrink: 0; }
 
@@ -911,8 +923,8 @@ img.logo-for-dark-theme { display: none; }
     :root[data-pos="on"][data-page="till"] .cart-row-name { font-size: 1rem; }
     :root[data-pos="on"][data-page="till"] .cart-row-price { font-size: .8rem; }
     :root[data-pos="on"][data-page="till"] .qty-stepper button { width: 46px; height: 46px; font-size: 1.4rem; border-radius: 10px; }
-    :root[data-pos="on"][data-page="till"] .qty-stepper span { min-width: 34px; font-size: 1.1rem; }
-    :root[data-pos="on"][data-page="till"] .qty-stepper-fractional .qty-direct-input { width: 80px; padding: 11px 4px; font-size: 1.05rem; }
+    :root[data-pos="on"][data-page="till"] .qty-stepper .qty-direct-input { width: 72px; height: 46px; padding: 0 4px; font-size: 1.1rem; border-radius: 10px; }
+    :root[data-pos="on"][data-page="till"] .qty-stepper-fractional .qty-direct-input { width: 80px; }
     :root[data-pos="on"][data-page="till"] .cart-row-subtotal { font-size: 1rem; min-width: 90px; }
     :root[data-pos="on"][data-page="till"] .cart-remove { font-size: 1.4rem; padding: 10px; }
 

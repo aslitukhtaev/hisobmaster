@@ -352,16 +352,49 @@
             return;
         }
         var next = resolved.fractional ? roundQty(qty) : Math.round(qty);
+        if (next > resolved.stock) {
+            // Keep the old amount: a barcode scanned into this field by accident
+            // must not turn into "all the stock". renderCart clears the form
+            // error, so the message goes after it.
+            renderCart();
+            showFormError(i18n.stockLimitReached || 'Stock limit reached');
+            return;
+        }
         if (next <= 0) {
             cart.delete(key);
         } else {
-            if (next > resolved.stock) {
-                next = resolved.stock;
-                showFormError(i18n.stockLimitReached || 'Stock limit reached');
-            }
             entry.qty = next;
         }
         renderCart();
+    }
+
+    // Applies what was typed into a cart line's quantity field. An empty field
+    // puts the old amount back; only a typed 0 removes the line.
+    var qtyCommitting = false;
+    function commitQtyInput(input) {
+        // renderCart removes the focused field, which fires focusout again.
+        if (qtyCommitting) {
+            return;
+        }
+        var entry = cart.get(input.getAttribute('data-key'));
+        if (!entry) {
+            return;
+        }
+        var typed = parseFloat(input.value);
+        if (isNaN(typed) || typed === entry.qty) {
+            input.value = formatQty(entry.qty);
+            return;
+        }
+        qtyCommitting = true;
+        setQty(input.getAttribute('data-key'), typed);
+        qtyCommitting = false;
+    }
+
+    function commitFocusedQty() {
+        var active = document.activeElement;
+        if (active && active.classList.contains('qty-direct-input')) {
+            commitQtyInput(active);
+        }
     }
 
     function cartSubtotal() {
@@ -412,9 +445,8 @@
                 var qty = entry.qty;
                 var lineTotal = resolved.price * qty;
                 var fractional = resolved.fractional;
-                var qtyControl = fractional
-                    ? '<input type="number" class="qty-direct-input" data-key="' + key + '" min="0.01" max="' + resolved.stock + '" step="0.01" value="' + qty + '" inputmode="decimal" aria-label="' + escapeHtml(i18n.editQty || '') + ' — ' + escapeHtml(resolved.name) + '">'
-                    : '<span>' + escapeHtml(formatQty(qty)) + '</span>';
+                // Text, not type="number": phones and Uzbek/Russian keyboards type "1,5".
+                var qtyControl = '<input type="text" class="qty-direct-input" data-key="' + key + '" data-fractional="' + (fractional ? '1' : '0') + '" value="' + escapeHtml(formatQty(qty)) + '" inputmode="' + (fractional ? 'decimal' : 'numeric') + '" enterkeyhint="done" autocomplete="off" aria-label="' + escapeHtml(i18n.editQty || '') + ' — ' + escapeHtml(resolved.name) + '">';
 
                 rows.push(
                     '<div class="cart-row" data-key="' + key + '">' +
@@ -754,6 +786,7 @@
         }
         var key = btn.getAttribute('data-key');
         var action = btn.getAttribute('data-action');
+        commitFocusedQty();
         if (action === 'inc') {
             changeQty(key, 1);
         } else if (action === 'dec') {
@@ -764,13 +797,90 @@
         }
     });
 
-    // Direct numeric qty entry (fractional-unit products only) commits on
-    // change (blur/Enter) rather than every keystroke, so a full re-render
-    // doesn't steal focus mid-type.
-    cartListEl.addEventListener('change', function (e) {
+    // Pressing − / + must not blur the quantity field first: the commit would
+    // redraw the cart and the button under the pointer would miss its click.
+    // The first press on a quantity field focuses it here, because the browser's
+    // own handling would put the caret down and undo the selection below.
+    cartListEl.addEventListener('mousedown', function (e) {
+        var active = document.activeElement;
+        var editing = active && active.classList.contains('qty-direct-input');
+        if (e.target.closest('button[data-action]') && editing) {
+            e.preventDefault();
+        } else if (e.target.classList.contains('qty-direct-input') && e.target !== active) {
+            e.preventDefault();
+            e.target.focus();
+        }
+    });
+
+    // Typing a quantity: the old number is selected so the first key replaces
+    // it, and the amount applies on Enter or on leaving the field rather than on
+    // every keystroke, so a redraw doesn't steal focus mid-type.
+    cartListEl.addEventListener('focusin', function (e) {
         if (e.target.classList.contains('qty-direct-input')) {
-            var key = e.target.getAttribute('data-key');
-            setQty(key, parseFloat(e.target.value) || 0);
+            e.target.select();
+        }
+    });
+    cartListEl.addEventListener('input', function (e) {
+        if (!e.target.classList.contains('qty-direct-input')) {
+            return;
+        }
+        var clean = e.target.value.replace(/,/g, '.');
+        if (e.target.getAttribute('data-fractional') === '1') {
+            clean = clean.replace(/[^\d.]/g, '');
+            var dot = clean.indexOf('.');
+            if (dot !== -1) {
+                clean = clean.slice(0, dot + 1) + clean.slice(dot + 1).replace(/\./g, '');
+            }
+        } else {
+            clean = clean.replace(/\D/g, '');
+        }
+        if (clean !== e.target.value) {
+            e.target.value = clean;
+        }
+    });
+    cartListEl.addEventListener('focusout', function (e) {
+        if (!e.target.classList.contains('qty-direct-input')) {
+            return;
+        }
+        // Tabbing to another control in the cart: the commit redraws the cart,
+        // so focus has to be put back on that control's new copy.
+        var next = e.relatedTarget;
+        var nextSelector = null;
+        if (next && cartListEl.contains(next)) {
+            var nextAction = next.getAttribute('data-action');
+            nextSelector = (nextAction ? 'button[data-action="' + nextAction + '"]' : '.qty-direct-input') + '[data-key="' + next.getAttribute('data-key') + '"]';
+        }
+        commitQtyInput(e.target);
+        if (nextSelector) {
+            setTimeout(function () {
+                var control = cartListEl.querySelector(nextSelector);
+                if (control && control !== document.activeElement) {
+                    control.focus();
+                }
+            }, 0);
+        }
+    });
+    cartListEl.addEventListener('keydown', function (e) {
+        if (!e.target.classList.contains('qty-direct-input')) {
+            return;
+        }
+        if (e.key === 'Enter') {
+            // Enter here must not submit the sale.
+            e.preventDefault();
+            commitQtyInput(e.target);
+            // Back to the search box for the next scan; on a phone that would
+            // only pop the keyboard up again.
+            if (window.matchMedia('(pointer: fine)').matches) {
+                searchEl.focus();
+            } else if (document.activeElement && document.activeElement.classList.contains('qty-direct-input')) {
+                document.activeElement.blur();
+            }
+        } else if (e.key === 'Escape') {
+            var entry = cart.get(e.target.getAttribute('data-key'));
+            if (entry) {
+                e.target.value = formatQty(entry.qty);
+            }
+            e.target.blur();
         }
     });
 
@@ -834,6 +944,8 @@
     });
 
     saleFormEl.addEventListener('submit', function (e) {
+        // F9 submits without leaving the quantity field.
+        commitFocusedQty();
         if (cart.size === 0) {
             e.preventDefault();
             showFormError(i18n.emptyCart || 'Cart is empty');
