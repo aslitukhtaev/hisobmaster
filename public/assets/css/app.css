@@ -991,6 +991,8 @@ img.logo-for-dark-theme { display: none; }
 
 @media print {
     .sidebar, .topbar, .bottom-nav, .no-print { display: none !important; }
+    /* The layout's own notices sit above the page content: none belong on paper. */
+    #desktop-status, #desktop-update, .flash-alert, .trial-banner { display: none !important; }
     body, .content { padding: 0 !important; margin: 0 !important; background: #fff !important; }
     .receipt { box-shadow: none; border-radius: 0; margin: 0; padding: 6px; max-width: 100%; }
     @page { margin: 4mm; }
