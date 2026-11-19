@@ -126,6 +126,32 @@
     <string name="categories_empty_text">Добавьте, чтобы группировать товары</string>
     <string name="categories_saved">Категория сохранена</string>
     <string name="categories_err_taken">Такая категория уже есть</string>
+    <string name="categories_tab_products">Товары</string>
+    <string name="categories_tab_expenses">Расходы</string>
+    <string name="categories_expenses_count">Расходов: %1$d</string>
+    <string name="categories_empty_text_exp">Добавьте, чтобы группировать расходы</string>
+    <string name="categories_name_ph_exp">Например: Транспорт</string>
+    <string name="categories_action_rename">Переименовать</string>
+    <string name="categories_action_merge">Объединить с другой</string>
+    <string name="categories_action_merge_sub">Всё перейдёт в выбранную категорию</string>
+    <string name="categories_action_delete">Удалить</string>
+    <string name="categories_action_delete_sub">Товары останутся, просто без категории</string>
+    <string name="categories_action_delete_sub_exp">Расходы останутся, просто без категории</string>
+    <string name="categories_merge_pick">С какой категорией объединить «%1$s»?</string>
+    <string name="categories_merge_none">Нет другой категории для объединения</string>
+    <string name="categories_merge_title">Объединить категории</string>
+    <string name="categories_merge_text_products">Товары из «%1$s» (%2$d) перейдут в «%3$s», «%1$s» будет удалена.</string>
+    <string name="categories_merge_text_expenses">Расходы из «%1$s» (%2$d) перейдут в «%3$s», «%1$s» будет удалена.</string>
+    <string name="categories_merge_text_empty">«%1$s» пустая — она будет удалена, «%2$s» останется.</string>
+    <string name="categories_merge_confirm">Объединить</string>
+    <string name="categories_merged">Категории объединены</string>
+    <string name="categories_delete_title">Удалить «%1$s»?</string>
+    <string name="categories_delete_text_products">Товары (%1$d) не удалятся, просто останутся без категории.</string>
+    <string name="categories_delete_text_expenses">Расходы (%1$d) не удалятся, просто останутся без категории.</string>
+    <string name="categories_delete_text_empty">В этой категории ничего нет.</string>
+    <string name="categories_deleted">Категория удалена</string>
+    <string name="categories_taken_title">«%1$s» уже есть</string>
+    <string name="categories_taken_text">Объединить их? Всё из «%2$s» перейдёт в «%1$s».</string>
 
     <!-- Suppliers -->
     <string name="suppliers_title">Поставщики</string>

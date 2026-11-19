@@ -110,6 +110,12 @@ class TillShots {
         shot("till_cart") { nav -> TillContent(nav, vm) }
     }
 
+    @Test fun till_category() {
+        val vm = TillViewModel()
+        vm.category = App.db.queryOne("SELECT uuid FROM categories WHERE name = 'Ichimliklar'")!!.str("uuid")
+        shot("till_category") { nav -> TillContent(nav, vm) }
+    }
+
     @Test fun till_empty() = run {
         val vm = TillViewModel()
         shot("till_empty") { nav -> TillContent(nav, vm) }

@@ -125,4 +125,5 @@
     <string name="print_err_write">Printerga yuborib bo‘lmadi — qaytadan urinib ko‘ring</string>
     <string name="print_err_not_found">Printer topilmadi — qaytadan tanlang</string>
     <string name="print_err_unknown">Chop etib bo‘lmadi</string>
+    <string name="till_cat_all">Hammasi</string>
 </resources>

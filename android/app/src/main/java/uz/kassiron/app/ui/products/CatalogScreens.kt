@@ -1,6 +1,23 @@
 package uz.kassiron.app.ui.products
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.MergeType
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import uz.kassiron.app.domain.ProductException
+import uz.kassiron.app.ui.theme.K
+import uz.kassiron.app.ui.kit.KConfirm
+import uz.kassiron.app.ui.kit.KOption
+import uz.kassiron.app.ui.kit.KSegmented
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -62,28 +79,54 @@ fun CategoriesScreen(nav: NavHostController) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
-    val categories by dbState<List<DbRow>?>(null) {
+    var tab by rememberSaveable { mutableStateOf(0) }
+    val type = if (tab == 0) "product" else "expense"
+    val categories by dbState<List<DbRow>?>(null, type) {
         App.db.query(
-            """SELECT c.uuid, c.name, (SELECT COUNT(*) FROM products p WHERE p.category_id = c.uuid) AS product_count
-               FROM categories c WHERE c.type = 'product' ORDER BY c.name COLLATE NOCASE"""
+            """SELECT c.uuid, c.name,
+                      (SELECT COUNT(*) FROM products p WHERE p.category_id = c.uuid) +
+                      (SELECT COUNT(*) FROM expenses e WHERE e.category_id = c.uuid) AS use_count
+               FROM categories c WHERE c.type = ? ORDER BY c.name COLLATE NOCASE""",
+            type,
         )
     }
     // null = closed; "" = new; uuid = rename.
     var editing by remember { mutableStateOf<String?>(null) }
     var editName by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    var actionsFor by remember { mutableStateOf<DbRow?>(null) }
+    var mergeFrom by remember { mutableStateOf<DbRow?>(null) }
+    var askMerge by remember { mutableStateOf<Pair<DbRow, DbRow>?>(null) }
+    var askDelete by remember { mutableStateOf<DbRow?>(null) }
+    // Renaming onto a name another category has: (the one renamed, the one with that name).
+    var askTaken by remember { mutableStateOf<Pair<DbRow, DbRow>?>(null) }
+
+    fun countText(n: Int) = ctx.getString(if (type == "product") R.string.products_count else R.string.categories_expenses_count, n)
+    fun byUuid(uuid: String) = categories.orEmpty().firstOrNull { it.str("uuid") == uuid }
+    fun merge(from: DbRow, into: DbRow) {
+        scope.launch {
+            runCatching { io { ProductService.mergeCategory(from.str("uuid"), into.str("uuid")) } }
+                .onSuccess { snackbar.showSnackbar(ctx.getString(R.string.categories_merged)) }
+                .onFailure { snackbar.showSnackbar(ctx.productError(it)) }
+        }
+    }
 
     KScreen(
         snackbar = snackbar,
         topBar = { KTopBar(stringResource(R.string.categories_title), onBack = { nav.popBackStack() }) },
         fab = { KFab(Icons.Outlined.Add, { editing = ""; editName = ""; error = null }, stringResource(R.string.categories_add)) },
     ) {
+        KSegmented(
+            listOf(KOption(stringResource(R.string.categories_tab_products)), KOption(stringResource(R.string.categories_tab_expenses))),
+            tab, { tab = it }, Modifier.fillMaxWidth().padding(horizontal = Edge).padding(bottom = 10.dp),
+        )
         val list = categories
         when {
             list == null -> Unit
             list.isEmpty() -> KEmpty(
-                Icons.Outlined.Category, stringResource(R.string.categories_empty_title), stringResource(R.string.categories_empty_text),
-                action = stringResource(R.string.categories_add), onAction = { editing = ""; editName = "" },
+                Icons.Outlined.Category, stringResource(R.string.categories_empty_title),
+                stringResource(if (type == "product") R.string.categories_empty_text else R.string.categories_empty_text_exp),
+                action = stringResource(R.string.categories_add), onAction = { editing = ""; editName = ""; error = null },
             )
             else -> LazyColumn(
                 Modifier.fillMaxSize(),
@@ -91,14 +134,35 @@ fun CategoriesScreen(nav: NavHostController) {
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(list, key = { it.str("uuid") }) { c ->
-                    val n = c.long("product_count").toInt()
+                    val n = c.long("use_count").toInt()
                     KRow(
                         title = c.str("name"),
-                        trailing = { KTag(stringResource(R.string.products_count, n), if (n > 0) KTagKind.Ok else KTagKind.Neutral) },
-                        onClick = { editing = c.str("uuid"); editName = c.str("name"); error = null },
+                        trailing = { KTag(countText(n), if (n > 0) KTagKind.Ok else KTagKind.Neutral) },
+                        onClick = { actionsFor = c },
                     )
                 }
             }
+        }
+    }
+
+    actionsFor?.let { c ->
+        KSheet({ actionsFor = null }) {
+            KSheetTitle(c.str("name"), { actionsFor = null })
+            KSub(countText(c.long("use_count").toInt()))
+            Spacer(Modifier.height(12.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ActionRow(Icons.Outlined.Edit, stringResource(R.string.categories_action_rename), null) {
+                    actionsFor = null; editing = c.str("uuid"); editName = c.str("name"); error = null
+                }
+                ActionRow(Icons.Outlined.MergeType, stringResource(R.string.categories_action_merge), stringResource(R.string.categories_action_merge_sub)) {
+                    actionsFor = null; mergeFrom = c
+                }
+                ActionRow(
+                    Icons.Outlined.DeleteOutline, stringResource(R.string.categories_action_delete),
+                    stringResource(if (type == "product") R.string.categories_action_delete_sub else R.string.categories_action_delete_sub_exp), danger = true,
+                ) { actionsFor = null; askDelete = c }
+            }
+            Spacer(Modifier.height(16.dp))
         }
     }
 
@@ -106,7 +170,7 @@ fun CategoriesScreen(nav: NavHostController) {
         NameSheet(
             title = stringResource(if (target.isEmpty()) R.string.categories_add else R.string.categories_rename),
             label = stringResource(R.string.categories_name),
-            placeholder = stringResource(R.string.categories_name_ph),
+            placeholder = stringResource(if (type == "product") R.string.categories_name_ph else R.string.categories_name_ph_exp),
             value = editName,
             error = error,
             onChange = { editName = it; error = null },
@@ -114,13 +178,111 @@ fun CategoriesScreen(nav: NavHostController) {
             onSave = {
                 scope.launch {
                     runCatching {
-                        io { if (target.isEmpty()) ProductService.findOrCreateCategory(editName) else ProductService.renameCategory(target, editName) }
+                        io { if (target.isEmpty()) ProductService.findOrCreateCategory(editName, type) else ProductService.renameCategory(target, editName) }
                     }.onSuccess { editing = null; snackbar.showSnackbar(ctx.getString(R.string.categories_saved)) }
-                        .onFailure { error = ctx.productError(it) }
+                        .onFailure { e ->
+                            val other = (e as? ProductException)?.takeIf { it.code == ProductException.NAME_TAKEN }?.arg?.let(::byUuid)
+                            val self = byUuid(target)
+                            if (other != null && self != null) { editing = null; askTaken = self to other } else error = ctx.productError(e)
+                        }
                 }
             },
         )
     }
+
+    mergeFrom?.let { from ->
+        val others = categories.orEmpty().filter { it.str("uuid") != from.str("uuid") }
+        KSheet({ mergeFrom = null }) {
+            KSheetTitle(stringResource(R.string.categories_action_merge), { mergeFrom = null })
+            KSub(stringResource(R.string.categories_merge_pick, from.str("name")))
+            Spacer(Modifier.height(12.dp))
+            if (others.isEmpty()) {
+                KSub(stringResource(R.string.categories_merge_none))
+                Spacer(Modifier.height(16.dp))
+            } else {
+                LazyColumn(
+                    Modifier.fillMaxWidth().heightIn(max = 420.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp),
+                ) {
+                    items(others, key = { it.str("uuid") }) { o ->
+                        KRow(
+                            title = o.str("name"),
+                            trailing = { KSub(countText(o.long("use_count").toInt())) },
+                            onClick = { mergeFrom = null; askMerge = from to o },
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    askMerge?.let { (from, into) ->
+        val n = from.long("use_count").toInt()
+        KConfirm(
+            title = stringResource(R.string.categories_merge_title),
+            text = when {
+                n == 0 -> stringResource(R.string.categories_merge_text_empty, from.str("name"), into.str("name"))
+                type == "product" -> stringResource(R.string.categories_merge_text_products, from.str("name"), n, into.str("name"))
+                else -> stringResource(R.string.categories_merge_text_expenses, from.str("name"), n, into.str("name"))
+            },
+            confirm = stringResource(R.string.categories_merge_confirm),
+            dismiss = stringResource(R.string.common_cancel),
+            onDismiss = { askMerge = null },
+            onConfirm = { askMerge = null; merge(from, into) },
+        )
+    }
+
+    askTaken?.let { (self, other) ->
+        KConfirm(
+            title = stringResource(R.string.categories_taken_title, other.str("name")),
+            text = stringResource(R.string.categories_taken_text, other.str("name"), self.str("name")),
+            confirm = stringResource(R.string.categories_merge_confirm),
+            dismiss = stringResource(R.string.common_cancel),
+            onDismiss = { askTaken = null },
+            onConfirm = { askTaken = null; merge(self, other) },
+        )
+    }
+
+    askDelete?.let { c ->
+        val n = c.long("use_count").toInt()
+        KConfirm(
+            title = stringResource(R.string.categories_delete_title, c.str("name")),
+            text = when {
+                n == 0 -> stringResource(R.string.categories_delete_text_empty)
+                type == "product" -> stringResource(R.string.categories_delete_text_products, n)
+                else -> stringResource(R.string.categories_delete_text_expenses, n)
+            },
+            confirm = stringResource(R.string.common_delete),
+            dismiss = stringResource(R.string.common_cancel),
+            danger = true,
+            onDismiss = { askDelete = null },
+            onConfirm = {
+                askDelete = null
+                scope.launch {
+                    runCatching { io { ProductService.deleteCategory(c.str("uuid")) } }
+                        .onSuccess { snackbar.showSnackbar(ctx.getString(R.string.categories_deleted)) }
+                        .onFailure { snackbar.showSnackbar(ctx.productError(it)) }
+                }
+            },
+        )
+    }
+}
+
+/** One line of an actions sheet: icon tile, title, optional hint. */
+@Composable
+private fun ActionRow(icon: ImageVector, title: String, sub: String?, danger: Boolean = false, onClick: () -> Unit) {
+    KRow(
+        title = title,
+        leading = {
+            Box(Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(if (danger) K.c.redBg else K.c.s2), contentAlignment = Alignment.Center) {
+                Icon(icon, null, tint = if (danger) K.c.red else K.c.tx, modifier = Modifier.size(19.dp))
+            }
+        },
+        subtitle = sub?.let { { KSub(it) } },
+        titleColor = if (danger) K.c.red else K.c.tx,
+        onClick = onClick,
+    )
 }
 
 // ====================================================================

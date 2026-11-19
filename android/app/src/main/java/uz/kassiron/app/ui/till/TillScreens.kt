@@ -92,6 +92,7 @@ import uz.kassiron.app.ui.kit.KAlert
 import uz.kassiron.app.ui.kit.KBottomBar
 import uz.kassiron.app.ui.kit.KButton
 import uz.kassiron.app.ui.kit.KButtonKind
+import uz.kassiron.app.ui.kit.KChips
 import uz.kassiron.app.ui.kit.KConfirm
 import uz.kassiron.app.ui.kit.KEmpty
 import uz.kassiron.app.ui.kit.KIconButton
@@ -205,7 +206,11 @@ internal fun TillContent(
     var payError by remember { mutableStateOf<String?>(null) }
 
     val q = vm.query
-    val results by dbState<List<TillProduct>?>(null, q) { TillData.search(q) }
+    val categories by dbState(emptyList<Pair<String, String>>()) { TillData.categories() }
+    // A chip only means something with two or more categories; a category that went away clears itself.
+    val showChips = categories.size >= 2
+    val cat = vm.category?.takeIf { c -> showChips && categories.any { it.first == c } }
+    val results by dbState<List<TillProduct>?>(null, q, cat) { TillData.search(q, cat) }
 
     fun say(message: String, action: String? = null, onAction: () -> Unit = {}) {
         scope.launch {
@@ -356,6 +361,12 @@ internal fun TillContent(
                 } else false
             },
         )
+        if (showChips) {
+            Spacer(Modifier.height(10.dp))
+            val labels = listOf(stringResource(R.string.till_cat_all)) + categories.map { it.second }
+            val selected = cat?.let { c -> 1 + categories.indexOfFirst { it.first == c } } ?: 0
+            KChips(labels, selected, { i -> vm.category = if (i == 0 || i == selected) null else categories[i - 1].first })
+        }
 
         val list = results
         val entries: List<TillEntry> = remember(list, vm.cart.toList(), q) {

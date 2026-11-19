@@ -125,4 +125,5 @@
     <string name="print_err_write">Не удалось отправить на принтер — попробуйте ещё раз</string>
     <string name="print_err_not_found">Принтер не найден — выберите заново</string>
     <string name="print_err_unknown">Не удалось напечатать</string>
+    <string name="till_cat_all">Все</string>
 </resources>
