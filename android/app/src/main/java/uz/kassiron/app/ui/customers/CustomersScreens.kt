@@ -107,6 +107,7 @@ import uz.kassiron.app.ui.theme.K
 import uz.kassiron.app.ui.theme.Onest
 import uz.kassiron.app.ui.theme.Tone
 import uz.kassiron.app.core.Ids
+import uz.kassiron.app.core.SearchText
 
 private const val BALANCE_SQL = "SELECT customer_id, SUM(CASE WHEN type = 'qarz' THEN amount ELSE -amount END) AS balance FROM debt_transactions GROUP BY customer_id"
 
@@ -138,18 +139,22 @@ fun CustomersScreen(nav: NavHostController) {
         if (q.isEmpty()) {
             if (onlyDebtors) where.append(" AND ROUND(COALESCE(l.balance, 0), 2) > 0")
         } else {
-            // Searching looks through every customer, debtor or not.
-            where.append(" AND (c.full_name LIKE ?")
-            args += "%$q%"
-            if (digits.length >= 2) { where.append(" OR c.phone LIKE ?"); args += "%$digits%" }
-            where.append(")")
+            // Searching looks through every customer, debtor or not. A name with
+            // Cyrillic letters or apostrophes is matched below, in Kotlin.
+            if (!SearchText.needsKotlin(q)) {
+                where.append(" AND (c.full_name LIKE ?")
+                args += "%$q%"
+                if (digits.length >= 2) { where.append(" OR c.phone LIKE ?"); args += "%$digits%" }
+                where.append(")")
+            }
         }
+        val nameKey = if (q.isNotEmpty() && SearchText.needsKotlin(q)) SearchText.key(q) else null
         App.db.query(
             """SELECT c.uuid, c.full_name, c.phone, c.credit_limit, c.debt_due_date, ROUND(COALESCE(l.balance, 0), 2) AS balance
                FROM customers c LEFT JOIN ($BALANCE_SQL) l ON l.customer_id = c.uuid
                $where ORDER BY balance DESC, c.full_name COLLATE NOCASE LIMIT 1000""",
             *args.toTypedArray(),
-        ).map {
+        ).filter { nameKey == null || SearchText.matches(it.str("full_name"), nameKey) }.map {
             CustomerItem(it.str("uuid"), it.str("full_name"), it.str("phone"), it.dbl("balance"), it.dblOrNull("credit_limit"), it.strOrNull("debt_due_date"))
         }
     }

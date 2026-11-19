@@ -55,6 +55,7 @@ import uz.kassiron.app.ui.kit.KTag
 import uz.kassiron.app.ui.kit.KTagKind
 import uz.kassiron.app.ui.kit.KTopBar
 import uz.kassiron.app.ui.theme.K
+import uz.kassiron.app.core.SearchText
 
 // Products list (mockup 15).
 
@@ -97,7 +98,7 @@ internal fun ProductsList(nav: NavHostController, initialFilter: StockFilter = S
     val inactiveCount = remember(all) { all.count { !it.active } }
 
     val shown = remember(all, query, filter, categoryId, shopDefault) {
-        val q = query.trim().lowercase()
+        val q = SearchText.key(query)
         all.filter { p ->
             (categoryId == null || p.categoryId == categoryId) &&
                 (q.isEmpty() || p.searchText.contains(q)) &&

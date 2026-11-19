@@ -50,6 +50,8 @@ data class SyncState(
     val lastSyncAt: Long = 0,          // epoch millis, 0 = never
     val error: String? = null,         // last error code (network, unauthorized, shop_blocked...)
     val pendingSales: Long = 0,        // sales not on the server yet
+    val pendingTotal: Long = 0,        // any change not on the server yet (debt payments, purchases, products...)
+    val rejected: Long = 0,            // changes the server refused (running total)
     val blockedReason: String? = null, // device_revoked | shop_blocked | offline_too_long: the app must stop selling
 )
 
@@ -92,13 +94,16 @@ class SyncManager(private val context: Context, private val db: Db, private val 
         // Read synchronously: the first screen is chosen from this state.
         _state.value = readState()
 
-        runCatching {
-            val request = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
-                .setConstraints(networkConstraint())
-                .build()
-            WorkManager.getInstance(context)
-                .enqueueUniquePeriodicWork(PERIODIC_WORK, ExistingPeriodicWorkPolicy.KEEP, request)
-        }.onFailure { Log.w(TAG, "periodic sync not scheduled", it) }
+        // WorkManager's first use is slow (it opens its own database): off the main thread.
+        scope.launch {
+            runCatching {
+                val request = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
+                    .setConstraints(networkConstraint())
+                    .build()
+                WorkManager.getInstance(context)
+                    .enqueueUniquePeriodicWork(PERIODIC_WORK, ExistingPeriodicWorkPolicy.KEEP, request)
+            }.onFailure { Log.w(TAG, "periodic sync not scheduled", it) }
+        }
 
         (context.applicationContext as? Application)?.registerActivityLifecycleCallbacks(foregroundWatcher)
 
@@ -112,6 +117,11 @@ class SyncManager(private val context: Context, private val db: Db, private val 
     }
 
     /** Drops a requested sync that hasn't started yet (tests: it must not run on the next test's database). */
+    /** Re-reads the state shown on screens (after something outside a sync changed it). */
+    fun refreshState() {
+        _state.value = readState()
+    }
+
     fun cancelPending() {
         debounce?.cancel()
         debounce = null
@@ -325,6 +335,8 @@ class SyncManager(private val context: Context, private val db: Db, private val 
             lastSyncAt = kv.long(Keys.LAST_SYNC_AT),
             error = kv.get(Keys.LAST_SYNC_ERROR),
             pendingSales = Outbox.pendingSales(db),
+            pendingTotal = Outbox.pendingTotal(db),
+            rejected = kv.long(Keys.SYNC_REJECTED),
             blockedReason = if (!activated) null else kv.get(Keys.BLOCKED_REASON) ?: offlineReason(),
         )
     }.getOrElse {

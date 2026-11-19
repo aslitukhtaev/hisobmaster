@@ -270,8 +270,11 @@ fun SettingsScreen(nav: NavHostController) {
     if (confirmDisconnect) {
         KConfirm(
             title = stringResource(R.string.settings_disconnect_confirm_title),
-            text = if (sync.pendingSales > 0) stringResource(R.string.settings_disconnect_pending, sync.pendingSales.toInt())
-            else stringResource(R.string.settings_disconnect_confirm_text),
+            text = when {
+                sync.pendingSales > 0 -> stringResource(R.string.settings_disconnect_pending, sync.pendingSales.toInt())
+                sync.pendingTotal > 0 -> stringResource(R.string.settings_disconnect_pending_other)
+                else -> stringResource(R.string.settings_disconnect_confirm_text)
+            },
             confirm = stringResource(R.string.settings_disconnect_yes),
             dismiss = stringResource(R.string.common_cancel),
             danger = true,
@@ -319,7 +322,8 @@ private fun ThemeRow(mode: String, onSelect: (String) -> Unit) {
 @Composable
 private fun SyncCard(sync: SyncState, busy: Boolean, onSync: () -> Unit) {
     val running = busy || sync.running
-    val problem = !running && (sync.pendingSales > 0 || sync.error != null)
+    // Refused changes stay amber even while a sync runs: they won't go away by themselves.
+    val problem = (!running && (sync.pendingSales > 0 || sync.error != null)) || sync.rejected > 0
     KCard(Modifier.padding(horizontal = Edge), tone = if (problem) KCardTone.Amber else KCardTone.Tint) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(
@@ -336,6 +340,7 @@ private fun SyncCard(sync: SyncState, busy: Boolean, onSync: () -> Unit) {
                     when {
                         running -> stringResource(R.string.settings_sync_running)
                         sync.pendingSales > 0 -> stringResource(R.string.settings_sync_pending, sync.pendingSales.toInt())
+                        sync.rejected > 0 -> stringResource(R.string.sync_rejected_title)
                         sync.lastSyncAt > 0 -> stringResource(R.string.settings_sync_ok)
                         else -> stringResource(R.string.settings_sync_never)
                     },
@@ -347,6 +352,9 @@ private fun SyncCard(sync: SyncState, busy: Boolean, onSync: () -> Unit) {
                     else -> null
                 }
                 if (detail != null) Text(detail, style = K.t.small.copy(fontSize = 12.5.sp), color = K.c.mu)
+                if (sync.rejected > 0) {
+                    Text(stringResource(R.string.sync_rejected, sync.rejected.toInt()), style = K.t.small.copy(fontSize = 12.5.sp), color = K.c.red)
+                }
             }
             KIconButton(
                 Icons.Outlined.Refresh, { if (!running) onSync() }, primary = !running, size = 38.dp,

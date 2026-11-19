@@ -133,8 +133,12 @@ class Db(context: Context) : SQLiteOpenHelper(context, "kassiron.db", null, VERS
         db.delete(table, "uuid = ?", arrayOf(uuid))
     }
 
-    /** Runs [block] in one transaction; observers are told once it commits. Nested calls join the outer one. */
-    fun <T> write(block: Db.() -> T): T {
+    /**
+     * Runs [block] in one transaction; observers are told once it commits
+     * (unless [notify] is false: bookkeeping only, nothing on screen changed).
+     * Nested calls join the outer one.
+     */
+    fun <T> write(notify: Boolean = true, block: Db.() -> T): T {
         val outer = !db.inTransaction()
         db.beginTransactionNonExclusive()
         try {
@@ -143,7 +147,7 @@ class Db(context: Context) : SQLiteOpenHelper(context, "kassiron.db", null, VERS
             return result
         } finally {
             db.endTransaction()
-            if (outer) _changes.value = _changes.value + 1
+            if (outer && notify) _changes.value = _changes.value + 1
         }
     }
 

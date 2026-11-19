@@ -603,8 +603,11 @@ fun BlockedScreen(nav: NavHostController) {
     if (confirmDisconnect) {
         KConfirm(
             title = stringResource(R.string.settings_disconnect_confirm_title),
-            text = if (sync.pendingSales > 0) stringResource(R.string.settings_disconnect_pending, sync.pendingSales)
-            else stringResource(R.string.settings_disconnect_confirm_text),
+            text = when {
+                sync.pendingSales > 0 -> stringResource(R.string.settings_disconnect_pending, sync.pendingSales)
+                sync.pendingTotal > 0 -> stringResource(R.string.settings_disconnect_pending_other)
+                else -> stringResource(R.string.settings_disconnect_confirm_text)
+            },
             confirm = stringResource(R.string.settings_disconnect_yes),
             dismiss = stringResource(R.string.common_cancel),
             danger = true,

@@ -77,6 +77,8 @@ import uz.kassiron.app.ui.kit.KTopBar
 import uz.kassiron.app.ui.kit.KValueChip
 import uz.kassiron.app.ui.theme.K
 import uz.kassiron.app.core.Ids
+import androidx.compose.runtime.saveable.Saver
+import org.json.JSONObject
 
 // Add / edit a product (mockup 16).
 
@@ -130,7 +132,11 @@ internal fun ProductEdit(
         )
     }
 
-    var form by remember { mutableStateOf(preset ?: if (isNew) ProductForm(barcode = barcode?.trim().orEmpty()) else null) }
+    // Saveable: a half-typed product survives the screen being recreated (dark mode
+    // turning on by itself, Android closing the app in the background).
+    var form by rememberSaveable(stateSaver = ProductFormSaver) {
+        mutableStateOf(preset ?: if (isNew) ProductForm(barcode = barcode?.trim().orEmpty()) else null)
+    }
     LaunchedEffect(data) {
         val p = data?.product
         if (form == null && p != null) {
@@ -621,3 +627,30 @@ private fun SwitchLine(text: String, checked: Boolean, onChange: (Boolean) -> Un
         KSwitch(checked, onChange)
     }
 }
+
+/** [ProductForm] as JSON for rememberSaveable. */
+private val ProductFormSaver = Saver<ProductForm?, String>(
+    save = { f ->
+        f?.let {
+            JSONObject()
+                .put("name", it.name).put("barcode", it.barcode).put("unit", it.unit).put("sell", it.sellPrice)
+                .put("cost", it.costPrice).put("stock", it.initialStock).put("cat", it.categoryId ?: JSONObject.NULL)
+                .put("low", it.lowStockThreshold).put("pack", it.packSize).put("mxik", it.mxik).put("pkg", it.packageCode)
+                .put("vat", it.vatRate).put("active", it.active).put("opt", it.wholesalePrice ?: JSONObject.NULL)
+                .toString()
+        }
+    },
+    restore = { s ->
+        runCatching {
+            val o = JSONObject(s)
+            ProductForm(
+                name = o.optString("name"), barcode = o.optString("barcode"), unit = o.optString("unit", "dona"),
+                sellPrice = o.optString("sell"), costPrice = o.optString("cost"), initialStock = o.optString("stock"),
+                categoryId = if (o.isNull("cat")) null else o.optString("cat"), lowStockThreshold = o.optString("low"),
+                packSize = o.optString("pack"), mxik = o.optString("mxik"), packageCode = o.optString("pkg"),
+                vatRate = o.optString("vat"), active = o.optBoolean("active", true),
+                wholesalePrice = if (o.isNull("opt")) null else o.optString("opt"),
+            )
+        }.getOrNull()
+    },
+)

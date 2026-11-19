@@ -6,6 +6,7 @@ import uz.kassiron.app.core.Ids
 import uz.kassiron.app.core.Money
 import uz.kassiron.app.core.Outbox
 import uz.kassiron.app.core.Time
+import uz.kassiron.app.core.SearchText
 
 /** An expense the rules refuse; [code]: values_must_be_positive, amount_too_large, expense_date_invalid, expense_date_future. */
 class ExpenseException(val code: String) : Exception(code)
@@ -23,7 +24,10 @@ object ExpenseService {
 
     /** Category::findOrCreate for type 'expense' (case-insensitive name). Call inside db.write. */
     fun findOrCreateCategory(db: Db, name: String): String {
-        db.queryOne("SELECT uuid FROM categories WHERE type = 'expense' AND LOWER(name) = LOWER(?)", name)?.let { return it.str("uuid") }
+        val key = SearchText.key(name.replace(Regex("\\s+"), " "))
+        db.query("SELECT uuid, name FROM categories WHERE type = 'expense'")
+            .firstOrNull { SearchText.key(it.str("name").replace(Regex("\\s+"), " ")) == key }
+            ?.let { return it.str("uuid") }
         val uuid = Ids.new()
         db.insert("categories", mapOf("uuid" to uuid, "name" to name, "type" to "expense", "created_at" to Time.now()))
         Outbox.upsert(db, "categories", uuid)

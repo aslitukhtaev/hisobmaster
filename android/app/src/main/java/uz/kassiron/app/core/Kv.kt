@@ -35,6 +35,7 @@ object Keys {
     const val PUSHED_UPTO = "pushed_upto"
     const val LAST_SYNC_AT = "last_sync_at"      // epoch millis
     const val LAST_SYNC_ERROR = "last_sync_error"
+    const val SYNC_REJECTED = "sync_rejected"    // changes the server refused, running total
     const val SERVER_TIME_OFFSET = "server_time_offset" // seconds, server - device
     const val SHOP = "shop"                      // JSON
     const val SHOP_SETTINGS = "shop_settings"    // JSON

@@ -81,14 +81,16 @@ object Customers {
     }
 
     /** The customer with this phone (last 9 digits match), or a new one. Call inside db.write { }. */
-    fun findOrCreate(db: Db, fullName: String, phone: String?): String {
+    /** [newUuid]: the id a new customer gets (a form's draft id, so saving it twice stays one customer). */
+    fun findOrCreate(db: Db, fullName: String, phone: String?, newUuid: String = Ids.new()): String {
         val normalized = normalizePhone(phone)
         if (normalized != null) {
             val last9 = normalized.takeLast(9)
-            db.query("SELECT uuid, phone FROM customers WHERE phone IS NOT NULL").firstOrNull {
+            // The exact number uses the phone index; the suffix catches one saved in another format.
+            db.query("SELECT uuid, phone FROM customers WHERE phone = ? OR phone LIKE ?", normalized, "%$last9").firstOrNull {
                 it.str("phone").filter(Char::isDigit).takeLast(9) == last9
             }?.let { return it.str("uuid") }
         }
-        return create(db, fullName.ifBlank { normalized ?: "?" }, normalized)
+        return create(db, fullName.ifBlank { normalized ?: "?" }, normalized, uuid = newUuid)
     }
 }

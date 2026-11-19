@@ -4,8 +4,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import org.json.JSONArray
+import org.json.JSONObject
 import uz.kassiron.app.App
+import uz.kassiron.app.core.SearchText
+import uz.kassiron.app.core.Time
 import uz.kassiron.app.core.Money
 import uz.kassiron.app.core.Row
 import uz.kassiron.app.core.Units
@@ -51,6 +56,8 @@ data class CartItem(
     val qty: Double,
     val retail: Double = price,
     val optom: Double? = null,
+    /** Gone from the shop, switched off, or less in stock than in the cart (re-read after each sync). */
+    val unavailable: Boolean = false,
 ) {
     fun priced(wholesale: Boolean): CartItem = copy(price = if (wholesale) optom ?: retail else retail)
     val key: String get() = productUuid + "/" + (variantUuid ?: "")
@@ -108,13 +115,20 @@ object TillData {
         val inCategory = if (category != null) "AND p.category_id = ?" else ""
         val catArgs = listOfNotNull(category).toTypedArray()
         if (q.isEmpty()) {
+            // Best sellers of the last 30 days, counted once in one grouped pass
+            // (not a count per product), so this stays quick with a big catalogue.
             return App.db.query(
-                """SELECT $PRODUCT_COLS FROM products p WHERE p.status = 'active' $inCategory
-                   ORDER BY (SELECT COUNT(*) FROM sale_items si WHERE si.product_id = p.uuid) DESC, p.name COLLATE NOCASE
+                """SELECT $PRODUCT_COLS FROM products p
+                   LEFT JOIN (SELECT si.product_id AS pid, COUNT(*) AS n FROM sale_items si
+                              JOIN sales s ON s.uuid = si.sale_id
+                              WHERE s.created_at >= ? GROUP BY si.product_id) b ON b.pid = p.uuid
+                   WHERE p.status = 'active' $inCategory
+                   ORDER BY COALESCE(b.n, 0) DESC, p.name COLLATE NOCASE
                    LIMIT 80""",
-                *catArgs,
+                Time.utcDaysAgo(30), *catArgs,
             ).map { product(it, low) }
         }
+        if (SearchText.needsKotlin(q)) return searchInKotlin(q, inCategory, catArgs, low)
         val like = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
         return App.db.query(
             """SELECT $PRODUCT_COLS FROM products p
@@ -127,6 +141,37 @@ object TillData {
                LIMIT 80""",
             *catArgs, like, q, q, like, q, q.replace("%", "\\%").replace("_", "\\_") + "%",
         ).map { product(it, low) }
+    }
+
+    /** Cyrillic or apostrophes in the query: compared here, since SQLite's LIKE only folds ASCII. */
+    private fun searchInKotlin(q: String, inCategory: String, catArgs: Array<String>, low: Double?): List<TillProduct> {
+        val key = SearchText.key(q)
+        val rows = App.db.query(
+            """SELECT $PRODUCT_COLS,
+                      (SELECT group_concat(v.variant_label, '|') FROM product_variants v WHERE v.product_id = p.uuid AND v.status = 'active') AS v_labels
+               FROM products p WHERE p.status = 'active' $inCategory""",
+            *catArgs,
+        )
+        return rows.asSequence()
+            .filter { SearchText.matches(it.str("name"), key) || SearchText.matches(it.strOrNull("v_labels"), key) }
+            .sortedWith(compareByDescending<Row> { SearchText.key(it.str("name")).startsWith(key) }.thenBy { SearchText.key(it.str("name")) })
+            .take(80)
+            .map { product(it, low) }
+            .toList()
+    }
+
+    /** What a cart line costs and has in stock now; null when the product (or variant) is gone or switched off. */
+    data class Fresh(val retail: Double, val optom: Double?, val stock: Double)
+
+    fun fresh(item: CartItem): Fresh? {
+        val p = App.db.queryOne("SELECT sell_price, wholesale_price, stock_qty, status FROM products WHERE uuid = ?", item.productUuid)
+            ?: return null
+        if (p.str("status") != "active") return null
+        if (item.variantUuid == null) return Fresh(p.dbl("sell_price"), p.dblOrNull("wholesale_price"), p.dbl("stock_qty"))
+        val v = App.db.queryOne("SELECT sell_price, wholesale_price, stock_qty, status FROM product_variants WHERE uuid = ?", item.variantUuid)
+            ?: return null
+        if (v.str("status") != "active") return null
+        return Fresh(v.dblOrNull("sell_price") ?: p.dbl("sell_price"), v.dblOrNull("wholesale_price") ?: p.dblOrNull("wholesale_price"), v.dbl("stock_qty"))
     }
 
     /** The exact product / variant with this barcode (active only). */
@@ -174,6 +219,12 @@ object TillData {
                 "SELECT c.uuid, c.full_name, c.phone, $BALANCE AS balance FROM customers c WHERE c.phone LIKE ? ORDER BY c.full_name COLLATE NOCASE LIMIT 60",
                 "%$digits%",
             )
+            SearchText.needsKotlin(q) -> {
+                val key = SearchText.key(q)
+                App.db.query("SELECT c.uuid, c.full_name, c.phone, $BALANCE AS balance FROM customers c ORDER BY c.full_name COLLATE NOCASE")
+                    .filter { SearchText.matches(it.str("full_name"), key) }
+                    .take(60)
+            }
             else -> App.db.query(
                 "SELECT c.uuid, c.full_name, c.phone, $BALANCE AS balance FROM customers c WHERE c.full_name LIKE ? ORDER BY c.full_name COLLATE NOCASE LIMIT 60",
                 "%$q%",
@@ -186,8 +237,12 @@ object TillData {
     )?.let(::customer)
 }
 
-/** The till's state: survives going to the receipt / another tab and back. */
-class TillViewModel : ViewModel() {
+/**
+ * The till's state: survives going to the receipt / another tab and back,
+ * and (the cart and the Chakana / Optom choice, through [saved]) Android
+ * closing the app in the background while the cashier is in a payment app.
+ */
+class TillViewModel(private val saved: SavedStateHandle = SavedStateHandle()) : ViewModel() {
     val cart = mutableStateListOf<CartItem>()
     var query by mutableStateOf("")
     /** The chosen category chip (its uuid), null = all; kept across rotation like the query. */
@@ -201,6 +256,66 @@ class TillViewModel : ViewModel() {
     fun setWholesaleMode(on: Boolean) {
         wholesale = on
         for (i in cart.indices) cart[i] = cart[i].priced(on)
+        persist()
+    }
+
+    init {
+        restore()
+    }
+
+    /**
+     * Brings the cart in line with the database after a sync or another
+     * screen's edit: the price the sale will charge, the stock, and whether
+     * the product can still be sold. [fresh] is [TillData.fresh] per line, in cart order.
+     */
+    fun applyFresh(fresh: List<Pair<String, TillData.Fresh?>>) {
+        var changed = false
+        for ((key, f) in fresh) {
+            val i = cart.indexOfFirst { it.key == key }
+            if (i < 0) continue
+            val old = cart[i]
+            val updated = if (f == null) old.copy(unavailable = true)
+                else old.copy(retail = f.retail, optom = f.optom, stock = f.stock, unavailable = old.qty > f.stock + 0.000001).priced(wholesale)
+            if (updated != old) { cart[i] = updated; changed = true }
+        }
+        if (changed) persist()
+    }
+
+    private fun persist() {
+        val arr = JSONArray()
+        for (c in cart) {
+            arr.put(
+                JSONObject().put("p", c.productUuid).put("v", c.variantUuid ?: JSONObject.NULL).put("n", c.name)
+                    .put("l", c.variantLabel ?: JSONObject.NULL).put("u", c.unit).put("s", c.stock).put("q", c.qty)
+                    .put("r", c.retail).put("o", c.optom ?: JSONObject.NULL),
+            )
+        }
+        saved[SAVED_CART] = arr.toString()
+        saved[SAVED_WHOLESALE] = wholesale
+    }
+
+    private fun restore() {
+        val json = saved.get<String>(SAVED_CART) ?: return
+        wholesale = saved.get<Boolean>(SAVED_WHOLESALE) ?: false
+        runCatching {
+            val arr = JSONArray(json)
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                val retail = o.getDouble("r")
+                cart += CartItem(
+                    productUuid = o.getString("p"),
+                    variantUuid = o.optString("v").takeIf { !o.isNull("v") && it.isNotEmpty() },
+                    name = o.getString("n"),
+                    variantLabel = o.optString("l").takeIf { !o.isNull("l") },
+                    unit = o.getString("u"),
+                    price = retail,
+                    stock = o.getDouble("s"),
+                    qty = o.getDouble("q"),
+                    retail = retail,
+                    optom = if (o.isNull("o")) null else o.getDouble("o"),
+                ).priced(wholesale)
+            }
+        }
     }
 
     // Payment.
@@ -243,6 +358,7 @@ class TillViewModel : ViewModel() {
                 CartItem(product.uuid, variant?.uuid, product.name, variant?.label, product.unit, retail, stock, qty, retail, optom).priced(wholesale),
             )
         }
+        persist()
         return AddResult.Added
     }
 
@@ -250,18 +366,25 @@ class TillViewModel : ViewModel() {
     fun setQty(key: String, qty: Double): Boolean {
         val index = cart.indexOfFirst { it.key == key }
         if (index < 0) return true
-        if (qty <= 0) { cart.removeAt(index); return true }
+        if (qty <= 0) { cart.removeAt(index); persist(); return true }
         if (qty > cart[index].stock + 0.000001) return false
-        cart[index] = cart[index].copy(qty = round3(qty))
+        cart[index] = cart[index].copy(qty = round3(qty), unavailable = false)
+        persist()
         return true
     }
 
-    fun remove(key: String) { cart.removeAll { it.key == key } }
+    fun remove(key: String) { cart.removeAll { it.key == key }; persist() }
 
     fun clear() {
         cart.clear()
         wholesale = false
         resetPayment()
+        persist()
+    }
+
+    private companion object {
+        const val SAVED_CART = "till_cart"
+        const val SAVED_WHOLESALE = "till_wholesale"
     }
 
     fun priceType(): String = if (wholesale) Wholesale.WHOLESALE else Wholesale.RETAIL

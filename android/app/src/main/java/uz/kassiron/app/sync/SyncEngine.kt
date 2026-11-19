@@ -4,6 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import uz.kassiron.app.core.Db
 import uz.kassiron.app.core.Keys
+import uz.kassiron.app.core.Time
 import uz.kassiron.app.core.Kv
 import uz.kassiron.app.core.Schema
 import kotlin.math.round
@@ -39,6 +40,9 @@ internal class SyncEngine(private val db: Db, private val kv: Kv, private val ap
     // ---------------------------------------------------------------- push
 
     /** Sends every local change; returns how many changes went. */
+    /** Refused changes reported by the last push call (folded into Kv with the outbox cleanup). */
+    private var rejected = 0L
+
     fun push(): Int {
         var total = 0
         while (true) {
@@ -87,13 +91,17 @@ internal class SyncEngine(private val db: Db, private val kv: Kv, private val ap
                 // entries there was nothing to send for.
                 val response = api.post("/api/sync/push", JSONObject().put("changes", changes), authOrThrow())
                 storeLicense(response)
+                rejected = response.optLong("rejected", 0)
             }
 
             val last = entries.last().long("seq")
             db.write {
                 exec("DELETE FROM sync_outbox WHERE seq <= ?", last)
                 kv.set(Keys.PUSHED_UPTO, last.toString())
+                // The server keeps what it couldn't take (sync_rejects); the owner must hear about it.
+                if (rejected > 0) kv.set(Keys.SYNC_REJECTED, (kv.long(Keys.SYNC_REJECTED) + rejected).toString())
             }
+            rejected = 0
             total += changes.length()
 
             if (entries.size < BATCH) return total
@@ -129,7 +137,13 @@ internal class SyncEngine(private val db: Db, private val kv: Kv, private val ap
             val response = api.post("/api/sync/pull", body, authOrThrow())
             val changes = response.optJSONArray("changes") ?: JSONArray()
 
-            db.write {
+            // An empty page (the usual minute-by-minute check) changes nothing
+            // on screen: write the cursor without making every list re-read.
+            val shopBefore = kv.get(Keys.SHOP) to kv.get(Keys.SHOP_SETTINGS)
+            val quiet = changes.length() == 0 &&
+                response.optJSONObject("shop")?.toString().let { it == null || it == shopBefore.first } &&
+                (!response.has("settings") || (response.optJSONObject("settings") ?: JSONObject()).toString() == shopBefore.second)
+            db.write(notify = !quiet) {
                 applyChanges(changes)
                 storeShopState(response)
                 kv.set(Keys.PULL_CURSOR, if (response.isNull("cursor")) null else response.optLong("cursor").toString())
@@ -267,6 +281,7 @@ internal class SyncEngine(private val db: Db, private val kv: Kv, private val ap
         if (response.has("server_time")) {
             val offset = response.optLong("server_time") - System.currentTimeMillis() / 1000
             kv.set(Keys.SERVER_TIME_OFFSET, offset.toString())
+            Time.setServerOffset(offset)
         }
     }
 

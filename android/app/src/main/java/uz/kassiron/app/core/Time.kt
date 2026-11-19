@@ -17,14 +17,39 @@ object Time {
         if (utc) timeZone = TimeZone.getTimeZone("UTC")
     }
 
+    /** Larger gaps than this are taken as a broken server answer and ignored. */
+    const val MAX_OFFSET_SECONDS = 30L * 86_400
+
+    /**
+     * Server time minus this phone's time, in ms (set from every sync's
+     * server_time): sales and edits are stamped with the server's clock, so a
+     * phone set a day behind still files its sales on the right day and an
+     * old edit can't win "last write wins" because the phone runs fast.
+     */
+    @Volatile
+    var offsetMillis: Long = 0L
+        private set
+
+    fun setServerOffset(seconds: Long) {
+        offsetMillis = if (kotlin.math.abs(seconds) <= MAX_OFFSET_SECONDS) seconds * 1000 else 0L
+    }
+
+    /** This moment by the server's clock, as epoch millis. */
+    fun clockMillis(): Long = System.currentTimeMillis() + offsetMillis
+
+    private fun nowDate() = Date(clockMillis())
+
     /** Now, UTC, for created_at. */
-    fun now(): String = fmt("yyyy-MM-dd HH:mm:ss", true).format(Date())
+    fun now(): String = fmt("yyyy-MM-dd HH:mm:ss", true).format(nowDate())
 
     /** Now with milliseconds, UTC, for sync_outbox.changed_at (last write wins on the server). */
-    fun nowMillis(): String = fmt("yyyy-MM-dd HH:mm:ss.SSS", true).format(Date())
+    fun nowMillis(): String = fmt("yyyy-MM-dd HH:mm:ss.SSS", true).format(nowDate())
+
+    /** The UTC created_at of [days] days ago (by the server's clock), for "last N days" queries. */
+    fun utcDaysAgo(days: Int): String = fmt("yyyy-MM-dd HH:mm:ss", true).format(Date(clockMillis() - days * 86_400_000L))
 
     /** Today's local date "yyyy-MM-dd". */
-    fun today(): String = fmt("yyyy-MM-dd", false).format(Date())
+    fun today(): String = fmt("yyyy-MM-dd", false).format(nowDate())
 
     /** A local date "yyyy-MM-dd" moved by [days]. */
     fun addDays(localDate: String, days: Int): String {
@@ -60,4 +85,24 @@ object Time {
 object Ids {
     /** A new row uuid: 32 lowercase hex characters, like the server's lower(hex(randomblob(16))). */
     fun new(): String = UUID.randomUUID().toString().replace("-", "")
+}
+
+/**
+ * Text compared the way a cashier means it: any letter case (Cyrillic too —
+ * SQLite's LIKE and LOWER only know ASCII) and any apostrophe (' ‘ ’ ʻ ʼ `),
+ * so "go'sht" finds "Go‘sht" and "али" finds "Али".
+ */
+object SearchText {
+    private val APOSTROPHES = charArrayOf('\u2018', '\u2019', '\u02BB', '\u02BC', '`', '\u00B4')
+
+    fun key(text: String): String {
+        val b = StringBuilder(text.length)
+        for (c in text.trim()) b.append(if (c in APOSTROPHES) '\'' else c)
+        return b.toString().lowercase(Locale.ROOT)
+    }
+
+    /** True when SQLite's LIKE can't be trusted with [query]: non-ASCII letters or an apostrophe. */
+    fun needsKotlin(query: String): Boolean = query.any { it.code > 127 || it == '\'' || it == '`' }
+
+    fun matches(text: String?, queryKey: String): Boolean = text != null && key(text).contains(queryKey)
 }
