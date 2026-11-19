@@ -13,7 +13,8 @@ use App\Models\User;
 
 class EmployeeController
 {
-    public const PERMISSIONS = ['sales', 'discount', 'products', 'prices', 'customers', 'expenses', 'reports'];
+    // 'wholesale': may switch a sale to Optom prices (only offered when the shop has "Optom savdo" on).
+    public const PERMISSIONS = ['sales', 'discount', 'wholesale', 'products', 'prices', 'customers', 'expenses', 'reports'];
 
     public function index(Request $request): void
     {

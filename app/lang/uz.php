@@ -1099,4 +1099,6 @@ return [
     'retail_price' => "Chakana narx",
     'quick_category_placeholder' => "Kategoriyasiz",
     'quick_category_hint' => "Shu yerda saqlanadigan barcha mahsulotlar shu kategoriyaga tushadi. Yangi nom yozsangiz, kategoriya ochiladi.",
+    'permission_wholesale' => "Optom narxda sotish",
+    'wholesale_not_allowed' => "Optom narxda sotishga ruxsatingiz yo'q. Do'kon egasidan so'rang.",
 ];

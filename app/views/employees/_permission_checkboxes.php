@@ -1,6 +1,6 @@
 <?php $checked = $checked ?? []; ?>
 <div class="permission-grid">
-    <?php foreach ($permissions as $permission): ?>
+    <?php foreach ($permissions as $permission): if ($permission === 'wholesale' && !wholesale_enabled()) { continue; } ?>
         <label class="permission-check">
             <input type="checkbox" name="permissions[]" value="<?= e($permission) ?>"
                    <?= in_array($permission, $checked, true) ? 'checked' : '' ?>>

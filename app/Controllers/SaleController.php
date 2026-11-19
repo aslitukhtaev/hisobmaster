@@ -195,7 +195,8 @@ class SaleController
             'shopName' => (string) (Shop::find($shopId)['name'] ?? ''),
             'productsJson' => json_encode($productsJson, JSON_UNESCAPED_UNICODE),
             'tillCategories' => $tillCategories,
-            'wholesaleEnabled' => Settings::wholesaleEnabled($shopId),
+            // The Chakana / Optom switch: shop setting on and the cashier allowed.
+            'wholesaleEnabled' => Settings::wholesaleEnabled($shopId) && Auth::can('wholesale'),
             'customersJson' => json_encode($customersJson, JSON_UNESCAPED_UNICODE),
             'hasProducts' => count($activeProducts) > 0,
             'canDiscount' => Auth::can('discount'),
@@ -221,7 +222,13 @@ class SaleController
         $customerIdInput = trim((string) $request->input('customer_id', ''));
         $customerName = trim((string) $request->input('customer_name', ''));
         $customerPhone = trim((string) $request->input('customer_phone', ''));
-        $priceType = $request->input('price_type') === 'wholesale' && wholesale_enabled() ? 'wholesale' : 'retail';
+        $priceType = $request->input('price_type') === 'wholesale' ? 'wholesale' : 'retail';
+        // Optom needs the shop setting and the user's own "wholesale" permission.
+        if ($priceType === 'wholesale' && (!wholesale_enabled() || !Auth::can('wholesale'))) {
+            flash('error', t('wholesale_not_allowed'));
+            keep_old(['cart' => (string) $request->input('cart', '[]')]);
+            redirect('/sales/new');
+        }
 
         // Kept across every redirect-back-with-error below so the cashier never
         // has to re-build the cart from scratch after a validation failure.
