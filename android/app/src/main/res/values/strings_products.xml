@@ -126,6 +126,32 @@
     <string name="categories_empty_text">Mahsulotlarni guruhlash uchun qo‘shing</string>
     <string name="categories_saved">Kategoriya saqlandi</string>
     <string name="categories_err_taken">Bu nomli kategoriya bor</string>
+    <string name="categories_tab_products">Mahsulotlar</string>
+    <string name="categories_tab_expenses">Xarajatlar</string>
+    <string name="categories_expenses_count">%1$d ta xarajat</string>
+    <string name="categories_empty_text_exp">Xarajatlarni guruhlash uchun qo‘shing</string>
+    <string name="categories_name_ph_exp">Masalan: Transport</string>
+    <string name="categories_action_rename">Qayta nomlash</string>
+    <string name="categories_action_merge">Boshqasiga qo‘shish</string>
+    <string name="categories_action_merge_sub">Hammasi tanlangan kategoriyaga o‘tadi</string>
+    <string name="categories_action_delete">O‘chirish</string>
+    <string name="categories_action_delete_sub">Mahsulotlar qoladi, faqat kategoriyasiz</string>
+    <string name="categories_action_delete_sub_exp">Xarajatlar qoladi, faqat kategoriyasiz</string>
+    <string name="categories_merge_pick">«%1$s» qaysi kategoriyaga qo‘shilsin?</string>
+    <string name="categories_merge_none">Qo‘shish uchun boshqa kategoriya yo‘q</string>
+    <string name="categories_merge_title">Kategoriyalarni birlashtirish</string>
+    <string name="categories_merge_text_products">«%1$s» dagi %2$d ta mahsulot «%3$s» ga o‘tadi, «%1$s» o‘chiriladi.</string>
+    <string name="categories_merge_text_expenses">«%1$s» dagi %2$d ta xarajat «%3$s» ga o‘tadi, «%1$s» o‘chiriladi.</string>
+    <string name="categories_merge_text_empty">«%1$s» bo‘sh — u o‘chiriladi, «%2$s» qoladi.</string>
+    <string name="categories_merge_confirm">Birlashtirish</string>
+    <string name="categories_merged">Kategoriyalar birlashtirildi</string>
+    <string name="categories_delete_title">«%1$s» o‘chirilsinmi?</string>
+    <string name="categories_delete_text_products">%1$d ta mahsulot o‘chmaydi, faqat kategoriyasiz qoladi.</string>
+    <string name="categories_delete_text_expenses">%1$d ta xarajat o‘chmaydi, faqat kategoriyasiz qoladi.</string>
+    <string name="categories_delete_text_empty">Bu kategoriyada hech narsa yo‘q.</string>
+    <string name="categories_deleted">Kategoriya o‘chirildi</string>
+    <string name="categories_taken_title">«%1$s» allaqachon bor</string>
+    <string name="categories_taken_text">Ikkalasini birlashtiraymi? «%2$s» dagi hammasi «%1$s» ga o‘tadi.</string>
 
     <!-- Suppliers -->
     <string name="suppliers_title">Ta’minotchilar</string>

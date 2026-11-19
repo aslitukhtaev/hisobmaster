@@ -499,12 +499,21 @@ object ProductService {
 
     // ---------- categories ----------
 
+    /** A category name as stored and compared: trimmed, inner whitespace collapsed (like the server). */
+    fun cleanCategoryName(name: String): String = name.trim().replace(Regex("\\s+"), " ")
+
+    /** The category of [type] whose name matches [name] (any case, Cyrillic too), other than [except]. */
+    fun categoryNamed(db: Db, name: String, type: String, except: String? = null): Row? {
+        val clean = cleanCategoryName(name)
+        return categories(db, type).firstOrNull { it.str("uuid") != except && cleanCategoryName(it.str("name")).equals(clean, ignoreCase = true) }
+    }
+
     /** Category::findOrCreate: the category with this name (any case), or a new one. Returns its uuid. */
     fun findOrCreateCategory(name: String, type: String = "product"): String {
-        val clean = name.trim()
+        val clean = cleanCategoryName(name)
         checkName(clean)
         val result = App.db.write {
-            categories(this, type).firstOrNull { it.str("name").equals(clean, ignoreCase = true) }?.str("uuid")
+            categoryNamed(this, clean, type)?.str("uuid")
                 ?: Ids.new().also { uuid ->
                     insert("categories", mapOf("uuid" to uuid, "name" to clean, "type" to type, "created_at" to Time.now()))
                     Outbox.upsert(this, "categories", uuid)
@@ -514,18 +523,66 @@ object ProductService {
         return result
     }
 
+    /** Renames a category; another one of the same type already called that → NAME_TAKEN with its uuid in [ProductException.arg]. */
     fun renameCategory(uuid: String, name: String) {
-        val clean = name.trim()
+        val clean = cleanCategoryName(name)
         checkName(clean)
         App.db.write {
             val row = queryOne("SELECT * FROM categories WHERE uuid = ?", uuid) ?: throw ProductException(ProductException.NOT_FOUND)
-            if (categories(this, row.str("type")).any { it.str("uuid") != uuid && it.str("name").equals(clean, ignoreCase = true) }) {
-                throw ProductException(ProductException.NAME_TAKEN)
-            }
+            categoryNamed(this, clean, row.str("type"), except = uuid)?.let { throw ProductException(ProductException.NAME_TAKEN, it.str("uuid")) }
             update("categories", uuid, mapOf("name" to clean))
             Outbox.upsert(this, "categories", uuid)
+            if (row.str("name") != clean) activity(this, App.session.user.value?.uuid, "category_renamed", mapOf("from" to row.str("name"), "to" to clean))
         }
         App.sync.requestSync()
+    }
+
+    /** How many products (or expenses, for an expense category) use the category. */
+    fun categoryUseCount(db: Db, uuid: String): Int =
+        (db.scalarLong("SELECT COUNT(*) FROM products WHERE category_id = ?", uuid) +
+            db.scalarLong("SELECT COUNT(*) FROM expenses WHERE category_id = ?", uuid)).toInt()
+
+    /**
+     * Deletes a category. Its products and expenses stay, without a category:
+     * here they are cleared locally; the server clears its own copies before
+     * deleting it, so they need no outbox entries.
+     */
+    fun deleteCategory(uuid: String) {
+        App.db.write {
+            val row = queryOne("SELECT * FROM categories WHERE uuid = ?", uuid) ?: return@write
+            exec("UPDATE products SET category_id = NULL WHERE category_id = ?", uuid)
+            exec("UPDATE expenses SET category_id = NULL WHERE category_id = ?", uuid)
+            delete("categories", uuid)
+            Outbox.delete(this, "categories", uuid)
+            activity(this, App.session.user.value?.uuid, "category_deleted", mapOf("name" to row.str("name")))
+        }
+        App.sync.requestSync()
+    }
+
+    /** Moves everything in [fromUuid] to [intoUuid] (same type) and deletes [fromUuid]. Returns how many rows moved. */
+    fun mergeCategory(fromUuid: String, intoUuid: String): Int {
+        if (fromUuid == intoUuid) throw ProductException(ProductException.NOT_FOUND)
+        val moved = App.db.write {
+            val from = queryOne("SELECT * FROM categories WHERE uuid = ?", fromUuid) ?: throw ProductException(ProductException.NOT_FOUND)
+            val into = queryOne("SELECT * FROM categories WHERE uuid = ?", intoUuid) ?: throw ProductException(ProductException.NOT_FOUND)
+            if (from.str("type") != into.str("type")) throw ProductException(ProductException.NOT_FOUND)
+            var count = 0
+            // The moved rows go to the server before the delete, so it never clears them.
+            for (table in listOf("products", "expenses")) {
+                val uuids = query("SELECT uuid FROM $table WHERE category_id = ?", fromUuid).map { it.str("uuid") }
+                for (u in uuids) {
+                    update(table, u, if (table == "products") mapOf("category_id" to intoUuid, "updated_at" to Time.now()) else mapOf("category_id" to intoUuid))
+                    Outbox.upsert(this, table, u)
+                }
+                count += uuids.size
+            }
+            delete("categories", fromUuid)
+            Outbox.delete(this, "categories", fromUuid)
+            activity(this, App.session.user.value?.uuid, "category_merged", mapOf("from" to from.str("name"), "into" to into.str("name"), "count" to count.toString()))
+            count
+        }
+        App.sync.requestSync()
+        return moved
     }
 
     // ---------- suppliers ----------

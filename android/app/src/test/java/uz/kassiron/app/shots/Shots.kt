@@ -75,6 +75,9 @@ object Shots {
             insert("users", mapOf("uuid" to cashier, "role" to "employee", "full_name" to "Sardor Karimov", "login" to "sardor", "password_hash" to hash, "lang" to "uz", "permissions_json" to "[\"sales\",\"customers\"]", "status" to "active", "created_at" to Time.now(), "password_set" to 1))
             val cat = Ids.new()
             insert("categories", mapOf("uuid" to cat, "name" to "Oziq-ovqat", "type" to "product", "created_at" to Time.now()))
+            // A second category, so the till shows its category chips.
+            val drinks = Ids.new()
+            insert("categories", mapOf("uuid" to drinks, "name" to "Ichimliklar", "type" to "product", "created_at" to Time.now()))
             listOf(
                 Triple("Non", "dona", doubleArrayOf(2500.0, 3500.0, 50.0)),
                 Triple("Sut 1L", "litr", doubleArrayOf(9000.0, 12000.0, 30.0)),
@@ -85,7 +88,8 @@ object Shots {
                 Triple("Tuxum (10 ta)", "dona", doubleArrayOf(14000.0, 17000.0, 0.0)),
             ).forEachIndexed { i, (name, unit, p) ->
                 val u = Ids.new(); products[name] = u
-                insert("products", mapOf("uuid" to u, "category_id" to cat, "name" to name, "unit" to unit, "cost_price" to p[0], "sell_price" to p[1], "stock_qty" to p[2], "barcode" to "478000${i + 1}", "status" to "active", "created_at" to Time.now(), "updated_at" to Time.now()))
+                val drink = name.startsWith("Coca-Cola") || name.startsWith("Sut") || name.startsWith("Choy")
+                insert("products", mapOf("uuid" to u, "category_id" to (if (drink) drinks else cat), "name" to name, "unit" to unit, "cost_price" to p[0], "sell_price" to p[1], "stock_qty" to p[2], "barcode" to "478000${i + 1}", "status" to "active", "created_at" to Time.now(), "updated_at" to Time.now()))
             }
             listOf("Vali aka" to "+998909998877", "Nodira Saidova" to "+998912345678", "Karim aka" to "+998901234567").forEach { (n, ph) ->
                 val u = Ids.new(); customers[n] = u

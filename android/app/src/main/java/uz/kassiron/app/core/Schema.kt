@@ -45,7 +45,8 @@ object Schema {
             ),
             pushable = false,
         ),
-        Table("categories", listOf(t("name", true), t("type", true, "'product'"), t("created_at", true))),
+        // Deletable: removing or merging a category (the server first takes it off its products and expenses).
+        Table("categories", listOf(t("name", true), t("type", true, "'product'"), t("created_at", true)), deletable = true),
         Table("suppliers", listOf(t("name", true), t("phone"), t("address"), t("note"), t("created_at", true))),
         Table(
             "customers",

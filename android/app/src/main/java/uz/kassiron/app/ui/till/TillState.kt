@@ -79,28 +79,41 @@ object TillData {
         variantCount = r.long("variant_count").toInt(),
     )
 
-    /** Name (LIKE) or barcode (exact, product or variant) search; best sellers first when [query] is empty. */
-    fun search(query: String): List<TillProduct> {
+    /** Product categories that have active products (the till's chips), by name. */
+    fun categories(): List<Pair<String, String>> = App.db.query(
+        """SELECT c.uuid, c.name FROM categories c
+           WHERE c.type = 'product' AND EXISTS (SELECT 1 FROM products p WHERE p.category_id = c.uuid AND p.status = 'active')
+           ORDER BY c.name COLLATE NOCASE""",
+    ).map { it.str("uuid") to it.str("name") }
+
+    /**
+     * Name (LIKE) or barcode (exact, product or variant) search; best sellers first when [query] is empty.
+     * [category]: only that category's products.
+     */
+    fun search(query: String, category: String? = null): List<TillProduct> {
         val q = query.trim()
         val low = shopLowDefault()
+        val inCategory = if (category != null) "AND p.category_id = ?" else ""
+        val catArgs = listOfNotNull(category).toTypedArray()
         if (q.isEmpty()) {
             return App.db.query(
-                """SELECT $PRODUCT_COLS FROM products p WHERE p.status = 'active'
+                """SELECT $PRODUCT_COLS FROM products p WHERE p.status = 'active' $inCategory
                    ORDER BY (SELECT COUNT(*) FROM sale_items si WHERE si.product_id = p.uuid) DESC, p.name COLLATE NOCASE
                    LIMIT 80""",
+                *catArgs,
             ).map { product(it, low) }
         }
         val like = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
         return App.db.query(
             """SELECT $PRODUCT_COLS FROM products p
-               WHERE p.status = 'active' AND (
+               WHERE p.status = 'active' $inCategory AND (
                    p.name LIKE ? ESCAPE '\' OR p.barcode = ?
                    OR EXISTS (SELECT 1 FROM product_variants v WHERE v.product_id = p.uuid AND v.status = 'active'
                               AND (v.barcode = ? OR v.variant_label LIKE ? ESCAPE '\'))
                )
                ORDER BY (p.barcode = ?) DESC, (p.name LIKE ? ESCAPE '\') DESC, p.name COLLATE NOCASE
                LIMIT 80""",
-            like, q, q, like, q, q.replace("%", "\\%").replace("_", "\\_") + "%",
+            *catArgs, like, q, q, like, q, q.replace("%", "\\%").replace("_", "\\_") + "%",
         ).map { product(it, low) }
     }
 
@@ -162,6 +175,8 @@ object TillData {
 class TillViewModel : ViewModel() {
     val cart = mutableStateListOf<CartItem>()
     var query by mutableStateOf("")
+    /** The chosen category chip (its uuid), null = all; kept across rotation like the query. */
+    var category by mutableStateOf<String?>(null)
     var lastSale by mutableStateOf<LastSale?>(null)
 
     // Payment.
