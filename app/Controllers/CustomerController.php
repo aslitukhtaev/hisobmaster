@@ -203,7 +203,15 @@ class CustomerController
             redirect("/customers/{$id}");
         }
 
-        DebtTransaction::record($shopId, (int) $id, null, 'tolov', $amount, (int) Auth::id());
+        try {
+            DebtTransaction::record($shopId, (int) $id, null, 'tolov', $amount, (int) Auth::id());
+        } catch (\RuntimeException $e) {
+            if ($e->getMessage() !== 'payment_exceeds_debt') {
+                throw $e;
+            }
+            flash('error', t('payment_exceeds_debt'));
+            redirect("/customers/{$id}");
+        }
 
         ActivityLog::record($shopId, (int) Auth::id(), 'debt_payment_recorded', [
             'amount' => money($amount),

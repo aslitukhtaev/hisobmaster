@@ -30,6 +30,7 @@ require BASE_PATH . '/app/views/products/_form.php';
                 <label class="field">
                     <span><?= e(t('stock_qty')) ?></span>
                     <input type="number" step="<?= unit_allows_fraction($product['unit']) ? 'any' : '1' ?>" min="0" inputmode="decimal" name="variant_stock_qty" value="<?= e((string) (float) $variant['stock_qty']) ?>" required>
+                    <input type="hidden" name="variant_stock_qty_original" value="<?= e((string) (float) $variant['stock_qty']) ?>">
                 </label>
             </div>
             <div class="field-row">

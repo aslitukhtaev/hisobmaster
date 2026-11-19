@@ -32,7 +32,12 @@ class Database
             // locked" instead of waiting — which would turn "concurrent writers
             // serialize" into "the second one just errors out". This makes it
             // wait (retrying internally) for up to 5s before giving up.
-            self::$pdo->exec('PRAGMA busy_timeout = 5000');
+            self::$pdo->exec('PRAGMA busy_timeout = 10000');
+            // WAL: readers (pages, reports, a backup) never block a sale, and
+            // a write waits only for another write. NORMAL is the safe pairing
+            // with WAL and saves an fsync per transaction.
+            self::$pdo->exec('PRAGMA journal_mode = WAL');
+            self::$pdo->exec('PRAGMA synchronous = NORMAL');
 
             // Deploys only reset the code, so a pending schema change is
             // applied by the first request that needs the database.

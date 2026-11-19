@@ -96,15 +96,14 @@ final class DeviceService
             throw new RuntimeException('invalid_request');
         }
 
+        // Every attempt is counted before the code is even looked at, under
+        // the write lock, so parallel requests can't all slip under the limit:
+        // 10 per address (an IPv6 /64 counts as one) and 100 for the whole
+        // server per 10 minutes, against guessing a 6-digit code.
+        self::countPairAttempt('pair_fail_' . substr(hash('sha256', self::clientNetwork($clientIp)), 0, 32), 10);
+        self::countPairAttempt('pair_fail_all', 100);
+
         $pdo = Database::connect();
-        $limitKey = 'pair_fail_' . substr(hash('sha256', $clientIp), 0, 32);
-        $stmt = $pdo->prepare('SELECT value FROM server_keys WHERE name = ?');
-        $stmt->execute([$limitKey]);
-        $fails = json_decode((string) $stmt->fetchColumn(), true);
-        $window = is_array($fails) && ($fails['since'] ?? 0) > time() - 600 ? $fails : ['since' => time(), 'count' => 0];
-        if ($window['count'] >= 10) {
-            throw new RuntimeException('login_locked');
-        }
 
         $code = preg_replace('/\D/', '', $code) ?? '';
         $row = null;
@@ -128,15 +127,55 @@ final class DeviceService
         }
 
         if ($user === null) {
-            $window['count']++;
-            $pdo->prepare('INSERT INTO server_keys (name, value) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET value = excluded.value')
-                ->execute([$limitKey, json_encode($window)]);
             throw new RuntimeException('code_invalid');
         }
 
-        $pdo->prepare("UPDATE device_pair_codes SET used_at = datetime('now') WHERE id = ?")->execute([(int) $row['id']]);
+        // One use only, even for two requests carrying the same code at once.
+        $use = $pdo->prepare("UPDATE device_pair_codes SET used_at = datetime('now') WHERE id = ? AND used_at IS NULL");
+        $use->execute([(int) $row['id']]);
+        if ($use->rowCount() === 0) {
+            throw new RuntimeException('code_invalid');
+        }
 
         return self::register($user, $deviceUuid, $fingerprint, $name, $appVersion);
+    }
+
+    /** Counts one pairing attempt under $key; refuses once $limit is reached within 10 minutes. */
+    private static function countPairAttempt(string $key, int $limit): void
+    {
+        $pdo = Database::beginImmediate();
+        try {
+            $stmt = $pdo->prepare('SELECT value FROM server_keys WHERE name = ?');
+            $stmt->execute([$key]);
+            $saved = json_decode((string) $stmt->fetchColumn(), true);
+            $window = is_array($saved) && ($saved['since'] ?? 0) > time() - 600 ? $saved : ['since' => time(), 'count' => 0];
+            if ($window['count'] >= $limit) {
+                Database::commit($pdo);
+                throw new RuntimeException('login_locked');
+            }
+            $window['count']++;
+            $pdo->prepare('INSERT INTO server_keys (name, value) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET value = excluded.value')
+                ->execute([$key, json_encode($window)]);
+            Database::commit($pdo);
+        } catch (\Throwable $e) {
+            if ($e->getMessage() !== 'login_locked') {
+                Database::rollback($pdo);
+            }
+            throw $e;
+        }
+    }
+
+    /** The address a limit applies to: the IPv4 address, or the /64 network of an IPv6 one. */
+    private static function clientNetwork(string $ip): string
+    {
+        if (str_contains($ip, ':')) {
+            $packed = @inet_pton($ip);
+            if ($packed !== false && strlen($packed) === 16) {
+                return bin2hex(substr($packed, 0, 8)) . '::/64';
+            }
+        }
+
+        return $ip;
     }
 
     private static function register(array $user, string $deviceUuid, string $fingerprint, string $name, string $appVersion): array

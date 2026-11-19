@@ -78,6 +78,10 @@ $parentLeftover = $hasActiveVariants ? (float) ($product['stock_qty'] ?? 0) : 0.
                 <span><?= e(t('stock_qty')) ?></span>
                 <input type="number" step="any" min="0" inputmode="decimal" name="stock_qty" id="product-stock-input" required
                        value="<?= e(old('stock_qty', isset($product['stock_qty']) ? (string) $product['stock_qty'] : '')) ?>">
+                <?php if (isset($product['id'])): ?>
+                    <!-- The stock when the form opened: saving applies only the change the user made, so sales made meanwhile aren't undone. -->
+                    <input type="hidden" name="stock_qty_original" value="<?= e(old('stock_qty_original', (string) $product['stock_qty'])) ?>">
+                <?php endif; ?>
                 <span class="field-warning" id="stock-whole-hint" hidden></span>
             </label>
             <?php endif; ?>

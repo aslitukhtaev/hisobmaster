@@ -426,29 +426,67 @@ final class SyncService
             return 0;
         }
 
-        $pdo = Database::beginImmediate();
-        try {
-            $horizon = gmdate('Y-m-d H:i:s', $now - self::JOURNAL_KEEP_DAYS * 86400);
-            $stmt = $pdo->prepare('SELECT MAX(id) FROM sync_changes WHERE changed_at < ?');
-            $stmt->execute([$horizon]);
-            $upto = (int) $stmt->fetchColumn();
+        $horizon = gmdate('Y-m-d H:i:s', $now - self::JOURNAL_KEEP_DAYS * 86400);
+        $upto = self::lastIdBefore($pdo, $horizon);
 
-            $deleted = 0;
-            if ($upto > 0) {
-                $delete = $pdo->prepare('DELETE FROM sync_changes WHERE id <= ?');
-                $delete->execute([$upto]);
-                $deleted = $delete->rowCount();
-                self::setKey($pdo, self::PRUNED_UPTO_KEY, (string) max($upto, self::prunedUpto($pdo)));
+        // Small chunks, each its own short transaction, within a time budget:
+        // the write lock is never held for more than a moment, so sales keep
+        // going while years of journal are cleared over several calls.
+        $deleted = 0;
+        $minId = (int) $pdo->query('SELECT COALESCE(MIN(id), 0) FROM sync_changes')->fetchColumn();
+        $from = max(self::prunedUpto($pdo), $minId - 1);
+        $started = microtime(true);
+        while ($from < $upto && microtime(true) - $started < 2.0) {
+            $to = min($upto, $from + 5000);
+            $pdo = Database::beginImmediate();
+            try {
+                $delete = $pdo->prepare('DELETE FROM sync_changes WHERE id > ? AND id <= ?');
+                $delete->execute([$from, $to]);
+                $deleted += $delete->rowCount();
+                self::setKey($pdo, self::PRUNED_UPTO_KEY, (string) $to);
+                Database::commit($pdo);
+            } catch (Throwable $e) {
+                Database::rollback($pdo);
+                throw $e;
             }
-            self::setKey($pdo, self::PRUNED_AT_KEY, (string) $now);
-
-            Database::commit($pdo);
-
-            return $deleted;
-        } catch (Throwable $e) {
-            Database::rollback($pdo);
-            throw $e;
+            $from = $to;
         }
+
+        // Done for today only once caught up; otherwise the next call goes on.
+        if ($from >= $upto) {
+            self::setKey(Database::connect(), self::PRUNED_AT_KEY, (string) $now);
+        }
+
+        return $deleted;
+    }
+
+    /**
+     * The highest journal id older than $horizon, by binary search on id:
+     * journal times only grow with id (they're stamped on insert), so this
+     * takes a few point lookups instead of a scan of millions of rows.
+     */
+    private static function lastIdBefore(PDO $pdo, string $horizon): int
+    {
+        $lo = (int) $pdo->query('SELECT COALESCE(MIN(id), 0) FROM sync_changes')->fetchColumn();
+        $hi = (int) $pdo->query('SELECT COALESCE(MAX(id), 0) FROM sync_changes')->fetchColumn();
+        if ($hi === 0) {
+            return 0;
+        }
+        $at = $pdo->prepare('SELECT changed_at FROM sync_changes WHERE id >= ? ORDER BY id LIMIT 1');
+        $answer = $lo - 1;
+        while ($lo <= $hi) {
+            $mid = intdiv($lo + $hi, 2);
+            $at->execute([$mid]);
+            $changedAt = $at->fetchColumn();
+            if ($changedAt !== false && (string) $changedAt < $horizon) {
+                $answer = $mid;
+                $lo = $mid + 1;
+            } else {
+                $hi = $mid - 1;
+            }
+        }
+
+        return max(0, $answer);
     }
 
     /** pruneJournal() for request handlers: housekeeping never fails a request. */

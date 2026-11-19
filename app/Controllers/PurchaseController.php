@@ -38,18 +38,20 @@ class PurchaseController
         // A product with active variants keeps its stock per variant (see
         // Sale::create()), so a purchase of it has to name the variant —
         // purchase.js offers those products only through their variants.
-        $productsJson = array_map(static function (array $p) use ($variantsByProduct): array {
+        // Without "prices" the current cost isn't shown (the field starts empty).
+        $showCost = Auth::can('prices');
+        $productsJson = array_map(static function (array $p) use ($variantsByProduct, $showCost): array {
             return [
                 'id' => (int) $p['id'],
                 'name' => $p['name'],
                 'unit' => $p['unit'],
-                'cost_price' => (float) $p['cost_price'],
+                'cost_price' => $showCost ? (float) $p['cost_price'] : null,
                 'pack_size' => $p['pack_size'] !== null ? (int) $p['pack_size'] : null,
                 'fractional' => unit_allows_fraction($p['unit']),
                 'variants' => array_map(static fn (array $v): array => [
                     'id' => (int) $v['id'],
                     'label' => $v['variant_label'],
-                    'cost_price' => $v['cost_price'] !== null ? (float) $v['cost_price'] : (float) $p['cost_price'],
+                    'cost_price' => !$showCost ? null : ($v['cost_price'] !== null ? (float) $v['cost_price'] : (float) $p['cost_price']),
                 ], $variantsByProduct[(int) $p['id']] ?? []),
             ];
         }, $products);
@@ -68,8 +70,13 @@ class PurchaseController
 
         $supplierIdRaw = trim((string) $request->input('supplier_id', ''));
         $supplierId = $supplierIdRaw !== '' ? (int) $supplierIdRaw : null;
+        // Only one of this shop's own suppliers.
+        if ($supplierId !== null && Supplier::find($supplierId, $shopId) === null) {
+            $supplierId = null;
+        }
         $note = trim((string) $request->input('note', ''));
-        $updateCostPrice = $request->input('update_cost_price') === '1';
+        // Overwriting the products' cost price needs the "prices" permission.
+        $updateCostPrice = $request->input('update_cost_price') === '1' && Auth::can('prices');
 
         $rowsRaw = (string) $request->input('items', '[]');
         $rows = json_decode($rowsRaw, true);

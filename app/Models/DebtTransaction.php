@@ -69,6 +69,12 @@ class DebtTransaction
 
         try {
             $current = self::currentBalance($customerId);
+            // Checked here, under the write lock: two payments sent at the same
+            // moment (two tabs, a double click, the web and a phone) can't both
+            // pass and take the balance below zero.
+            if ($type === 'tolov' && $amount > round($current, 2) + 0.004) {
+                throw new \RuntimeException('payment_exceeds_debt');
+            }
             $balanceAfter = $type === 'qarz' ? $current + $amount : $current - $amount;
 
             $pdo->prepare(

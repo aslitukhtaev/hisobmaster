@@ -145,26 +145,52 @@ class ProductController
             Product::setWholesalePrice((int) $id, $shopId, $data['wholesale_price']);
         }
 
-        Product::update((int) $id, $shopId, [
-            'category_id' => $categoryId,
-            'name' => $data['name'],
-            'unit' => $data['unit'],
-            'cost_price' => $data['cost_price'],
-            'sell_price' => $data['sell_price'],
-            'stock_qty' => $data['stock_qty'],
-            'barcode' => $data['barcode'] !== '' ? $data['barcode'] : null,
-            'low_stock_threshold' => $data['low_stock_threshold'],
-            'pack_size' => $data['pack_size'],
-            'mxik' => $data['mxik'],
-            'package_code' => $data['package_code'],
-            'vat_rate' => $data['vat_rate'],
-        ]);
+        // Sales (here, on the shop's computers, on phones) may have changed the
+        // stock since the form was opened: only the user's own change to the
+        // number is applied, on top of the stock as it is now.
+        $pdo = Database::beginImmediate();
+        try {
+            $current = Product::find((int) $id, $shopId);
+            $data['stock_qty'] = self::stockAfterEdit((float) $current['stock_qty'], $data['stock_qty'], $request->input('stock_qty_original'));
+            Product::update((int) $id, $shopId, [
+                'category_id' => $categoryId,
+                'name' => $data['name'],
+                'unit' => $data['unit'],
+                'cost_price' => $data['cost_price'],
+                'sell_price' => $data['sell_price'],
+                'stock_qty' => $data['stock_qty'],
+                'barcode' => $data['barcode'] !== '' ? $data['barcode'] : null,
+                'low_stock_threshold' => $data['low_stock_threshold'],
+                'pack_size' => $data['pack_size'],
+                'mxik' => $data['mxik'],
+                'package_code' => $data['package_code'],
+                'vat_rate' => $data['vat_rate'],
+            ]);
+            Database::commit($pdo);
+        } catch (\Throwable $e) {
+            Database::rollback($pdo);
+            throw $e;
+        }
 
         $this->logProductChanges($shopId, $product, $data);
 
         flash('success', t('product_updated'));
         $this->warnIfBelowCost($data['sell_price'], $data['cost_price'], $data['name']);
         redirect('/products');
+    }
+
+    /**
+     * The stock to save from an edit form: the stock now plus what the user
+     * changed in the field (typed minus what the form showed). Without the
+     * original (an old form), the typed number as before.
+     */
+    private static function stockAfterEdit(float $current, float $typed, mixed $originalRaw): float
+    {
+        if (!is_numeric($originalRaw)) {
+            return $typed;
+        }
+
+        return max(0.0, round($current + ($typed - (float) $originalRaw), 3));
     }
 
     public function toggleStatus(Request $request, string $id): void
@@ -236,6 +262,7 @@ class ProductController
             'package_code' => $packageCodeRaw,
             'vat_rate' => $vatRateRaw,
             'wholesale_price' => (string) $wholesaleRaw,
+            'stock_qty_original' => (string) $request->input('stock_qty_original', ''),
         ];
 
         $fail = static function (string $message) use ($old): ?array {
@@ -478,6 +505,9 @@ class ProductController
             redirect("/products/{$id}/edit");
         }
 
+        // As for products: apply the user's change on top of the stock now.
+        $currentVariant = ProductVariant::find((int) $variantId, $shopId);
+        $data['stock_qty'] = self::stockAfterEdit((float) $currentVariant['stock_qty'], $data['stock_qty'], $request->input('variant_stock_qty_original'));
         ProductVariant::update((int) $variantId, $shopId, [
             'variant_label' => $data['variant_label'],
             'stock_qty' => $data['stock_qty'],
@@ -723,7 +753,7 @@ class ProductController
                         'category_id' => $existing['category_id'],
                         'name' => $clean['name'],
                         'unit' => $clean['unit'],
-                        'cost_price' => $clean['cost_price'],
+                        'cost_price' => Auth::can('prices') ? $clean['cost_price'] : (float) $existing['cost_price'],
                         'sell_price' => $clean['sell_price'],
                         'stock_qty' => $clean['stock_qty'],
                         'barcode' => $barcode,
@@ -740,7 +770,7 @@ class ProductController
                         'category_id' => null,
                         'name' => $clean['name'],
                         'unit' => $clean['unit'],
-                        'cost_price' => $clean['cost_price'],
+                        'cost_price' => Auth::can('prices') ? $clean['cost_price'] : 0.0,
                         'sell_price' => $clean['sell_price'],
                         'stock_qty' => $clean['stock_qty'],
                         'barcode' => $barcode !== '' ? $barcode : null,

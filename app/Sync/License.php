@@ -36,6 +36,17 @@ final class License
         $now ??= time();
         $offlineDays = max(1, (int) ($shop['offline_days'] ?? 7));
 
+        // Offline work lasts offline_days, but never past the end of a paid
+        // period or trial (shops.access_until): an expired shop can't keep
+        // selling by simply staying offline.
+        $validUntil = $now + $offlineDays * 86400;
+        if (!empty($shop['access_until'])) {
+            $accessEnd = strtotime((string) $shop['access_until'] . ' UTC');
+            if ($accessEnd !== false) {
+                $validUntil = min($validUntil, max($now, $accessEnd));
+            }
+        }
+
         $payload = [
             'v' => 1,
             'license' => 'lifetime',
@@ -45,7 +56,7 @@ final class License
             'device_code' => (string) $device['code'],
             'fingerprint' => (string) $device['fingerprint'],
             'issued_at' => $now,
-            'valid_until' => $now + $offlineDays * 86400,
+            'valid_until' => $validUntil,
         ];
 
         $body = self::base64url(json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));

@@ -50,9 +50,16 @@ class SuperAdminController
 
     public function downloadBackup(Request $request): void
     {
-        $path = BASE_PATH . '/' . env('DB_PATH', 'database/kassiron.db');
+        // A consistent snapshot (VACUUM INTO): with WAL the .db file alone can
+        // miss the latest changes.
+        try {
+            $path = (string) \App\Models\Backup::path(\App\Models\Backup::create()['filename']);
+        } catch (\Throwable $e) {
+            log_exception($e);
+            $path = '';
+        }
 
-        if (!is_file($path)) {
+        if ($path === '' || !is_file($path)) {
             flash('error', t('backup_not_found'));
             redirect('/superadmin/shops');
         }

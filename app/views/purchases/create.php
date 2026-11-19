@@ -47,10 +47,12 @@
         </div>
         <button type="button" id="add-purchase-item-btn" class="btn btn-ghost btn-sm"><?= e(t('add_item_row')) ?></button>
 
+        <?php if (can('prices')): ?>
         <label class="permission-check">
             <input type="checkbox" name="update_cost_price_checkbox" id="update-cost-price-checkbox">
             <span><?= e(t('update_cost_price_label')) ?></span>
         </label>
+        <?php endif; ?>
         <input type="hidden" name="update_cost_price" id="update-cost-price-field" value="0">
 
         <div class="cart-total-row">
