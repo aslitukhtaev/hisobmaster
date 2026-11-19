@@ -106,8 +106,8 @@ final class SyncSchema
         'expenses', 'attendance', 'activity_log',
     ];
 
-    /** The only rows the app ever deletes. */
-    public const DELETABLE = ['expenses'];
+    /** The only rows the app ever deletes (a category's products and expenses stay, without it). */
+    public const DELETABLE = ['expenses', 'categories'];
 
     public static function hasShopColumn(string $table): bool
     {

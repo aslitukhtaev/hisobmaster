@@ -80,6 +80,14 @@ $posIcon = static function (string $name): string {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M20 8V5a1 1 0 0 0-1-1h-3M4 16v3a1 1 0 0 0 1 1h3M20 16v3a1 1 0 0 1-1 1h-3M6 8v8M10 8v8M14 8v8M18 8v8"/></svg>
             </button>
         </div>
+        <?php if (!empty($tillCategories)): ?>
+            <div class="pos-categories" id="pos-categories" role="group" aria-label="<?= e(t('categories')) ?>">
+                <button type="button" class="pos-category active" data-category="" aria-pressed="true"><?= e(t('till_all_categories')) ?></button>
+                <?php foreach ($tillCategories as $catId => $catName): ?>
+                    <button type="button" class="pos-category" data-category="<?= (int) $catId ?>" aria-pressed="false"><?= e($catName) ?></button>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
         <div id="product-list" class="pos-product-list"></div>
     </div>
 

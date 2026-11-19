@@ -440,6 +440,13 @@ function send_security_headers(): void
  * doesn't exist (or belongs to another shop), instead of a redirect that
  * answers 200 and hides the problem.
  */
+function abort_403(): never
+{
+    http_response_code(403);
+    \App\Core\View::render('errors/403', [], 'layouts/app');
+    exit;
+}
+
 function abort_404(): never
 {
     http_response_code(404);

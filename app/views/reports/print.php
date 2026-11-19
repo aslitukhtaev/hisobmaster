@@ -94,6 +94,34 @@ $expenseTotal = array_sum(array_column($expenseBreakdown, 'total')) ?: 1;
         <?php endif; ?>
     </div>
 
+    <?php if (!empty($categorySales)): ?>
+    <div class="card table-card">
+        <h2 style="padding:8px 12px 0;"><?= e(t('report_category_sales_title')) ?></h2>
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th><?= e(t('category')) ?></th>
+                        <th><?= e(t('report_category_revenue')) ?></th>
+                        <th><?= e(t('report_category_profit')) ?></th>
+                        <th><?= e(t('report_category_share')) ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($categorySales as $row): ?>
+                    <tr>
+                        <td><?= e($row['category_name'] ?? t('no_category')) ?></td>
+                        <td><?= money((float) $row['revenue']) ?></td>
+                        <td><?= money((float) $row['profit']) ?></td>
+                        <td><?= e(rtrim(rtrim(number_format((float) $row['share'], 1, ',', ''), '0'), ',')) ?>%</td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <div class="card table-card">
         <h2 style="padding:8px 12px 0;"><?= e(t('top_products_title')) ?></h2>
         <?php if (empty($topProducts)): ?>

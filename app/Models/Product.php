@@ -24,7 +24,8 @@ class Product
              THEN (SELECT COALESCE(SUM(pv.stock_qty), 0) FROM product_variants pv WHERE pv.product_id = p.id AND pv.status = 'active')
              ELSE p.stock_qty END";
 
-    public static function allByShop(int $shopId, ?string $search = null): array
+    /** $categoryId: null = every product, 0 = only those without a category. */
+    public static function allByShop(int $shopId, ?string $search = null, ?int $categoryId = null): array
     {
         $sql = 'SELECT p.*, c.name AS category_name, ' . self::VARIANT_AGGREGATES . ', ' . self::EFFECTIVE_STOCK . ' AS effective_stock
                 FROM products p
@@ -39,6 +40,13 @@ class Product
                           WHERE pv.product_id = p.id AND (pv.barcode LIKE ? OR pv.variant_label LIKE ?)))';
             $like = '%' . $search . '%';
             array_push($params, $like, $like, $like, $like);
+        }
+
+        if ($categoryId === 0) {
+            $sql .= ' AND p.category_id IS NULL';
+        } elseif ($categoryId !== null) {
+            $sql .= ' AND p.category_id = ?';
+            $params[] = $categoryId;
         }
 
         $sql .= ' ORDER BY p.name';

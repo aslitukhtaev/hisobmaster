@@ -206,6 +206,9 @@ final class SyncService
         // Already gone is fine — the result is the same.
         $id = self::idForUuid($pdo, $table, $uuid, $shopId, mustExist: false);
         if ($id !== null) {
+            if ($table === 'categories') {
+                \App\Models\Category::detach($pdo, $id);
+            }
             $pdo->prepare("DELETE FROM $table WHERE id = ?")->execute([$id]);
         }
     }

@@ -104,6 +104,19 @@ class SaleController
             }
         ));
 
+        // The till's category buttons: only categories something can be sold
+        // from right now, and only when there are two or more of them.
+        $tillCategories = [];
+        foreach ($activeProducts as $p) {
+            if ($p['category_id'] !== null && $p['category_name'] !== null) {
+                $tillCategories[(int) $p['category_id']] = $p['category_name'];
+            }
+        }
+        uasort($tillCategories, static fn (string $a, string $b): int => strnatcasecmp($a, $b));
+        if (count($tillCategories) < 2) {
+            $tillCategories = [];
+        }
+
         $productsJson = array_map(static function (array $p) use ($variantsByProduct): array {
             $variants = $variantsByProduct[(int) $p['id']] ?? [];
 
@@ -114,6 +127,7 @@ class SaleController
                 'price' => (float) $p['sell_price'],
                 'stock' => (float) $p['stock_qty'],
                 'barcode' => $p['barcode'],
+                'category' => $p['category_id'] !== null ? (int) $p['category_id'] : null,
                 'fractional' => unit_allows_fraction($p['unit']),
                 'variants' => array_map(static function (array $v) use ($p): array {
                     return [
@@ -177,6 +191,7 @@ class SaleController
             'isDesktop' => Desktop::enabled(),
             'shopName' => (string) (Shop::find($shopId)['name'] ?? ''),
             'productsJson' => json_encode($productsJson, JSON_UNESCAPED_UNICODE),
+            'tillCategories' => $tillCategories,
             'customersJson' => json_encode($customersJson, JSON_UNESCAPED_UNICODE),
             'hasProducts' => count($activeProducts) > 0,
             'canDiscount' => Auth::can('discount'),

@@ -36,6 +36,7 @@ class ReportController
         View::render('reports/index', [
             'summary' => Report::summary($shopId, $from, $to),
             'topProducts' => Report::topProducts($shopId, $from, $to),
+            'categorySales' => Report::categorySales($shopId, $from, $to),
             'paymentBreakdown' => Report::paymentBreakdown($shopId, $from, $to),
             'dailyRevenue' => Report::dailyRevenue($shopId, $from, $to),
             'expenseBreakdown' => Expense::categoryBreakdown($shopId, $from, $to),
@@ -65,6 +66,7 @@ class ReportController
         View::render('reports/print', [
             'summary' => Report::summary($shopId, $from, $to),
             'topProducts' => Report::topProducts($shopId, $from, $to),
+            'categorySales' => Report::categorySales($shopId, $from, $to),
             'paymentBreakdown' => Report::paymentBreakdown($shopId, $from, $to),
             'expenseBreakdown' => Expense::categoryBreakdown($shopId, $from, $to),
             'shop' => Shop::find($shopId),
@@ -91,6 +93,7 @@ class ReportController
         $paymentBreakdown = Report::paymentBreakdown($shopId, $from, $to);
         $expenseBreakdown = Expense::categoryBreakdown($shopId, $from, $to);
         $topProducts = Report::topProducts($shopId, $from, $to, 100);
+        $categorySales = Report::categorySales($shopId, $from, $to);
         $dailyRevenue = Report::dailyRevenue($shopId, $from, $to);
 
         $filename = 'hisobot_' . $from . '_' . $to . '.csv';
@@ -132,6 +135,15 @@ class ReportController
             csv_row($out, [$row['category_name'] ?? t('no_category'), $num($row['total'])]);
         }
         csv_row($out, []);
+
+        if (!empty($categorySales)) {
+            csv_row($out, [t('report_category_sales_title')]);
+            csv_row($out, [t('category'), t('report_category_revenue'), t('report_category_profit'), t('report_category_share') . ' %']);
+            foreach ($categorySales as $row) {
+                csv_row($out, [$row['category_name'] ?? t('no_category'), $num($row['revenue']), $num($row['profit']), number_format($row['share'], 1, '.', '')]);
+            }
+            csv_row($out, []);
+        }
 
         csv_row($out, [t('top_products_title')]);
         csv_row($out, [t('product_name'), t('qty_sold'), t('revenue')]);

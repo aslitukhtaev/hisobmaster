@@ -6,6 +6,14 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+// A filter <select data-autosubmit> applies as soon as it is changed.
+document.addEventListener('change', function (e) {
+    var el = e.target;
+    if (el && el.hasAttribute && el.hasAttribute('data-autosubmit') && el.form) {
+        el.form.submit();
+    }
+});
+
 // Forms that need a confirmation carry it as data-confirm (inline onsubmit
 // handlers are blocked by the Content-Security-Policy).
 // Inside the Telegram WebApp the question is Telegram's own dialog (the

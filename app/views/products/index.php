@@ -8,6 +8,7 @@
         </p>
     </div>
     <div class="row-actions">
+        <a href="/categories" class="btn btn-ghost"><?= e(t('categories')) ?></a>
         <a href="/products/import" class="btn btn-ghost"><?= e(t('import_products')) ?></a>
         <a href="/products/create" class="btn btn-ghost"><?= e(t('add_product')) ?></a>
         <a href="/products/quick" class="btn btn-primary"><?= e(t('quick_products_title')) ?></a>
@@ -34,13 +35,23 @@
 <form method="get" action="/products" class="search-bar">
     <label class="sr-only" for="product-search-q"><?= e(t('search_products_placeholder')) ?></label>
     <input type="text" id="product-search-q" name="q" placeholder="<?= e(t('search_products_placeholder')) ?>" value="<?= e($search) ?>">
+    <?php if (!empty($categories)): ?>
+        <label class="sr-only" for="product-category-filter"><?= e(t('category')) ?></label>
+        <select id="product-category-filter" name="category" class="category-filter" data-autosubmit>
+            <option value=""><?= e(t('all_categories')) ?></option>
+            <?php foreach ($categories as $cat): ?>
+                <option value="<?= (int) $cat['id'] ?>" <?= $categoryFilter === (string) $cat['id'] ? 'selected' : '' ?>><?= e($cat['name']) ?></option>
+            <?php endforeach; ?>
+            <option value="none" <?= $categoryFilter === 'none' ? 'selected' : '' ?>><?= e(t('no_category')) ?></option>
+        </select>
+    <?php endif; ?>
     <button type="submit" class="btn btn-ghost btn-sm"><?= e(t('search')) ?></button>
 </form>
 <?php endif; ?>
 
 <?php if (empty($products)): ?>
     <div class="card">
-        <p class="muted"><?= e($lowStockOnly ? t('no_low_stock_products') : ($search !== '' ? t('no_products_found') : t('no_products_yet'))) ?></p>
+        <p class="muted"><?= e($lowStockOnly ? t('no_low_stock_products') : ($search !== '' || $categoryFilter !== '' ? t('no_products_found') : t('no_products_yet'))) ?></p>
     </div>
 <?php else: ?>
     <div class="card table-card">

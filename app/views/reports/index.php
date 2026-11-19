@@ -212,6 +212,35 @@ $comparisonMetrics = [
     <?php endif; ?>
 </div>
 
+<?php if (!empty($categorySales)): ?>
+<h2 style="margin-top:20px;"><?= e(t('report_category_sales_title')) ?></h2>
+<p class="muted" style="margin:-4px 0 10px;"><?= e(t('report_category_sales_hint')) ?></p>
+<div class="card table-card">
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th><?= e(t('category')) ?></th>
+                    <th><?= e(t('report_category_revenue')) ?></th>
+                    <th><?= e(t('report_category_profit')) ?></th>
+                    <th><?= e(t('report_category_share')) ?></th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($categorySales as $row): ?>
+                <tr>
+                    <td class="cell-wrap"><?= e($row['category_name'] ?? t('no_category')) ?></td>
+                    <td data-label="<?= e(t('report_category_revenue')) ?>"><?= money((float) $row['revenue']) ?></td>
+                    <td data-label="<?= e(t('report_category_profit')) ?>"><?= money((float) $row['profit']) ?></td>
+                    <td data-label="<?= e(t('report_category_share')) ?>"><?= e(rtrim(rtrim(number_format((float) $row['share'], 1, ',', ''), '0'), ',')) ?>%</td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+<?php endif; ?>
+
 <h2 style="margin-top:20px;"><?= e(t('top_products_title')) ?></h2>
 <?php if (empty($topProducts)): ?>
     <div class="card"><p class="muted"><?= e(t('no_sales_in_period')) ?></p></div>

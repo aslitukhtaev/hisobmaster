@@ -201,6 +201,87 @@ class Report
     }
 
     /**
+     * Revenue and profit per product category for the period, the same way
+     * topProducts() counts revenue: the receipt's discount is spread over its
+     * lines and refunds are taken off. A sale counts under the category its
+     * product is in now. Empty when no sold product has a category (the
+     * section would only say "Kategoriyasiz").
+     *
+     * @return list<array{category_id: ?int, category_name: ?string, revenue: float, profit: float, share: float}>
+     */
+    public static function categorySales(int $shopId, string $from, string $to): array
+    {
+        [$startUtc, $endUtc] = tashkent_day_bounds_utc($from, $to);
+        $pdo = Database::connect();
+
+        $stmt = $pdo->prepare(
+            "SELECT p.category_id, MAX(c.name) AS category_name,
+                    SUM(CASE WHEN (s.total + s.discount) > 0
+                             THEN si.subtotal * s.total / (s.total + s.discount)
+                             ELSE 0 END) AS revenue,
+                    SUM(si.qty * si.cost_price_snapshot) AS cost
+             FROM sale_items si
+             INNER JOIN sales s ON s.id = si.sale_id
+             LEFT JOIN products p ON p.id = si.product_id
+             LEFT JOIN categories c ON c.id = p.category_id
+             WHERE s.shop_id = ? AND s.status = 'completed' AND s.created_at >= ? AND s.created_at < ?
+             GROUP BY p.category_id"
+        );
+        $stmt->execute([$shopId, $startUtc, $endUtc]);
+
+        $byCategory = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $key = $row['category_id'] === null ? 0 : (int) $row['category_id'];
+            $byCategory[$key] = [
+                'category_id' => $key ?: null,
+                'category_name' => $row['category_name'],
+                'revenue' => (float) $row['revenue'],
+                'cost' => (float) $row['cost'],
+            ];
+        }
+
+        $stmt = $pdo->prepare(
+            'SELECT p.category_id, MAX(c.name) AS category_name, SUM(ri.amount) AS amount, SUM(ri.qty * si.cost_price_snapshot) AS cost
+             FROM refund_items ri
+             INNER JOIN refunds r ON r.id = ri.refund_id
+             INNER JOIN sale_items si ON si.id = ri.sale_item_id
+             LEFT JOIN products p ON p.id = si.product_id
+             LEFT JOIN categories c ON c.id = p.category_id
+             WHERE r.shop_id = ? AND r.created_at >= ? AND r.created_at < ?
+             GROUP BY p.category_id'
+        );
+        $stmt->execute([$shopId, $startUtc, $endUtc]);
+        foreach ($stmt->fetchAll() as $row) {
+            $key = $row['category_id'] === null ? 0 : (int) $row['category_id'];
+            $byCategory[$key] ??= ['category_id' => $key ?: null, 'category_name' => $row['category_name'], 'revenue' => 0.0, 'cost' => 0.0];
+            $byCategory[$key]['revenue'] -= (float) $row['amount'];
+            $byCategory[$key]['cost'] -= (float) $row['cost'];
+        }
+
+        if (!array_filter($byCategory, static fn (array $row): bool => $row['category_id'] !== null)) {
+            return [];
+        }
+
+        $total = array_sum(array_map(static fn (array $row): float => max(0.0, $row['revenue']), $byCategory));
+        $rows = [];
+        foreach ($byCategory as $row) {
+            if (abs($row['revenue']) < 0.005 && abs($row['cost']) < 0.005) {
+                continue;
+            }
+            $rows[] = [
+                'category_id' => $row['category_id'],
+                'category_name' => $row['category_name'],
+                'revenue' => round($row['revenue'], 2),
+                'profit' => round($row['revenue'] - $row['cost'], 2),
+                'share' => $total > 0 ? round(max(0.0, $row['revenue']) / $total * 100, 1) : 0.0,
+            ];
+        }
+        usort($rows, static fn (array $a, array $b): int => $b['revenue'] <=> $a['revenue']);
+
+        return $rows;
+    }
+
+    /**
      * Splits completed-sales revenue into naqd/karta/qarz totals.
      *
      * A sale's total can now be split across several payment methods at once

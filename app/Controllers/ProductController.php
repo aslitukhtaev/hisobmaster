@@ -23,12 +23,23 @@ class ProductController
         $lowStockOnly = $request->input('filter') === 'low_stock';
         $shopDefaultThreshold = Settings::lowStockThresholdDefault($shopId);
 
+        $categories = Category::allByShop($shopId);
+        $categoryParam = (string) $request->input('category', '');
+        $categoryId = null;
+        if ($categoryParam === 'none') {
+            $categoryId = 0;
+        } elseif (ctype_digit($categoryParam) && in_array((int) $categoryParam, array_map('intval', array_column($categories, 'id')), true)) {
+            $categoryId = (int) $categoryParam;
+        }
+
         $products = $lowStockOnly
             ? Product::lowStock($shopId, $shopDefaultThreshold)
-            : Product::allByShop($shopId, $search);
+            : Product::allByShop($shopId, $search, $categoryId);
 
         View::render('products/index', [
             'products' => $products,
+            'categories' => $categories,
+            'categoryFilter' => $categoryId === null ? '' : ($categoryId === 0 ? 'none' : (string) $categoryId),
             'counts' => Product::counts($shopId),
             'search' => $search,
             'lowStockOnly' => $lowStockOnly,

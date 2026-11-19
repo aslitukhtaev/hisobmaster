@@ -158,15 +158,22 @@
         };
     }
 
-    function filterProducts(query) {
+    // The category button picked above the list (null = all). Typing and
+    // scanning still look through every product when asked to (Enter).
+    var activeCategory = null;
+
+    function filterProducts(query, everyCategory) {
         var q = (query || '').trim().toLowerCase();
+        var pool = everyCategory || activeCategory === null
+            ? products
+            : products.filter(function (p) { return p.category === activeCategory; });
         if (!q) {
-            return products;
+            return pool;
         }
         function has(value) {
             return value !== null && value !== undefined && String(value).toLowerCase().indexOf(q) !== -1;
         }
-        return products.filter(function (p) {
+        return pool.filter(function (p) {
             return has(p.name) || has(p.barcode) || (p.variants || []).some(function (v) {
                 return has(v.label) || has(v.barcode);
             });
@@ -218,7 +225,7 @@
         var target = findByExactBarcode(query);
 
         if (!target) {
-            var matches = filterProducts(query);
+            var matches = filterProducts(query, true);
             if (matches.length === 1) {
                 var only = matches[0];
                 var vs = only.variants || [];
@@ -769,6 +776,27 @@
     });
 
     searchEl.addEventListener('input', renderProducts);
+
+    var categoriesEl = document.getElementById('pos-categories');
+    if (categoriesEl) {
+        categoriesEl.addEventListener('click', function (e) {
+            var chip = e.target.closest('.pos-category');
+            if (!chip) {
+                return;
+            }
+            var value = chip.getAttribute('data-category');
+            var picked = value === '' ? null : parseInt(value, 10);
+            // Pressing the chosen one again goes back to every product.
+            activeCategory = picked === activeCategory ? null : picked;
+            categoriesEl.querySelectorAll('.pos-category').forEach(function (b) {
+                var on = (b.getAttribute('data-category') === '' && activeCategory === null)
+                    || parseInt(b.getAttribute('data-category'), 10) === activeCategory;
+                b.classList.toggle('active', on);
+                b.setAttribute('aria-pressed', on ? 'true' : 'false');
+            });
+            renderProducts();
+        });
+    }
     searchEl.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') {
             e.preventDefault();

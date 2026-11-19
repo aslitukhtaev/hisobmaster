@@ -6,6 +6,7 @@ use App\Controllers\ActivityLogController;
 use App\Controllers\ApiController;
 use App\Controllers\AttendanceController;
 use App\Controllers\AuthController;
+use App\Controllers\CategoryController;
 use App\Controllers\CustomerController;
 use App\Controllers\DashboardController;
 use App\Controllers\DesktopController;
@@ -99,6 +100,13 @@ $router->post('/products/{id}/toggle-status', [ProductController::class, 'toggle
 $router->post('/products/{id}/variants', [ProductController::class, 'variantStore'], ['auth', 'permission:products', 'csrf']);
 $router->post('/products/{id}/variants/{variantId}', [ProductController::class, 'variantUpdate'], ['auth', 'permission:products', 'csrf']);
 $router->post('/products/{id}/variants/{variantId}/toggle-status', [ProductController::class, 'variantToggleStatus'], ['auth', 'permission:products', 'csrf']);
+
+// Product categories need "products", expense ones "expenses" — checked in the controller.
+$router->get('/categories', [CategoryController::class, 'index'], ['auth']);
+$router->post('/categories', [CategoryController::class, 'store'], ['auth', 'csrf']);
+$router->post('/categories/{id}', [CategoryController::class, 'update'], ['auth', 'csrf']);
+$router->post('/categories/{id}/merge', [CategoryController::class, 'merge'], ['auth', 'csrf']);
+$router->post('/categories/{id}/delete', [CategoryController::class, 'delete'], ['auth', 'csrf']);
 
 $router->get('/suppliers', [SupplierController::class, 'index'], ['auth', 'permission:products']);
 $router->get('/suppliers/create', [SupplierController::class, 'createForm'], ['auth', 'permission:products']);

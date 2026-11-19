@@ -7,7 +7,10 @@ $categoryTotal = array_sum(array_column($categoryBreakdown, 'total')) ?: 1;
         <h1><?= e(t('expenses')) ?></h1>
         <p class="muted"><?= e(count_label(count($expenses), 'expenses_count_label')) ?></p>
     </div>
-    <a href="/expenses/create" class="btn btn-primary"><?= e(t('add_expense')) ?></a>
+    <div class="row-actions">
+        <a href="/categories?type=expense" class="btn btn-ghost"><?= e(t('categories')) ?></a>
+        <a href="/expenses/create" class="btn btn-primary"><?= e(t('add_expense')) ?></a>
+    </div>
 </section>
 
 <section class="stat-tile stock-value-tile">
