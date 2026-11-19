@@ -65,8 +65,7 @@ object Customers {
     }
 
     /** Creates a customer; returns its uuid. Call inside db.write { }. */
-    fun create(db: Db, fullName: String, phone: String?, note: String? = null): String {
-        val uuid = Ids.new()
+    fun create(db: Db, fullName: String, phone: String?, note: String? = null, uuid: String = Ids.new()): String {
         db.insert(
             "customers",
             mapOf(

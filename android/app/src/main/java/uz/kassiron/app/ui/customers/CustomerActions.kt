@@ -8,6 +8,7 @@ import uz.kassiron.app.core.Outbox
 import uz.kassiron.app.domain.Customers
 import uz.kassiron.app.domain.Debts
 import uz.kassiron.app.domain.ExpenseService
+import uz.kassiron.app.core.Ids
 
 /**
  * Customer writes (server: CustomerController.php, QuickEntryController::debtsStore).
@@ -54,8 +55,11 @@ object CustomerActions {
         data class Error(val res: Int, val arg: String? = null) : SaveResult()
     }
 
-    /** CustomerController::store / update. [uuid] null = new customer. */
-    fun save(uuid: String?, fullName: String, phoneRaw: String, note: String, creditLimitRaw: String, dueDate: String?): SaveResult {
+    /**
+     * CustomerController::store / update. [uuid] null = new customer, whose id
+     * is [draftUuid] when given: the same form saved twice stays one customer.
+     */
+    fun save(uuid: String?, fullName: String, phoneRaw: String, note: String, creditLimitRaw: String, dueDate: String?, draftUuid: String? = null): SaveResult {
         val name = fullName.trim()
         if (name.isEmpty()) return SaveResult.Error(R.string.cust_err_name)
         val phone = normalize(phoneRaw) ?: return SaveResult.Error(R.string.cust_err_phone)
@@ -65,8 +69,12 @@ object CustomerActions {
             Money.round2(v)
         }
         val result = App.db.write<SaveResult> {
-            if (phone.isNotEmpty()) phoneOwner(this, phone, uuid)?.let { return@write SaveResult.Error(R.string.cust_err_phone_taken, it) }
-            val id = if (uuid == null) Customers.create(this, name, phone.ifEmpty { null }, note.trim().ifEmpty { null }) else uuid
+            if (phone.isNotEmpty()) phoneOwner(this, phone, uuid ?: draftUuid)?.let { return@write SaveResult.Error(R.string.cust_err_phone_taken, it) }
+            val id = when {
+                uuid != null -> uuid
+                draftUuid != null && scalar("SELECT 1 FROM customers WHERE uuid = ?", draftUuid) != null -> draftUuid
+                else -> Customers.create(this, name, phone.ifEmpty { null }, note.trim().ifEmpty { null }, draftUuid ?: Ids.new())
+            }
             update(
                 "customers", id,
                 mapOf(

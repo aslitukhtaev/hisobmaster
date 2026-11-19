@@ -84,6 +84,7 @@ import uz.kassiron.app.ui.kit.KSub
 import uz.kassiron.app.ui.kit.KSwitch
 import uz.kassiron.app.ui.kit.KTopBar
 import uz.kassiron.app.ui.theme.K
+import uz.kassiron.app.core.Ids
 
 // ====================================================================
 // Purchases list ("Kirimlar"), grouped by day
@@ -251,6 +252,7 @@ internal fun PurchaseNew(nav: NavHostController, prefill: List<Pair<String, Doub
     var updateCost by rememberSaveable { mutableStateOf(true) }
     var scanning by remember { mutableStateOf(false) }
     var saving by remember { mutableStateOf(false) }
+    val purchaseDraftUuid = rememberSaveable { Ids.new() }
     var supplierSheet by remember { mutableStateOf(false) }
     var noteSheet by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<LineState?>(null) }
@@ -325,11 +327,11 @@ internal fun PurchaseNew(nav: NavHostController, prefill: List<Pair<String, Doub
         val input = lines.reversed().map { PurchaseLine(it.target.productUuid, it.target.variantUuid, it.qtyValue!!, it.costValue!!) }
         saving = true
         scope.launch {
-            val r = runCatching { io { PurchaseService.create(supplierId, input, note, updateCost) } }
-            saving = false
+            val r = runCatching { io { PurchaseService.create(supplierId, input, note, updateCost, purchaseDraftUuid) } }
+            // On success the button stays off while the screen is replaced.
             r.onSuccess { id ->
                 nav.navigate(Routes.purchase(id)) { popUpTo(Routes.PURCHASE_NEW) { inclusive = true } }
-            }.onFailure { snackbar.showSnackbar(ctx.productError(it)) }
+            }.onFailure { saving = false; snackbar.showSnackbar(ctx.productError(it)) }
         }
     }
 
@@ -445,6 +447,7 @@ internal fun PurchaseNew(nav: NavHostController, prefill: List<Pair<String, Doub
     }
 
     if (supplierSheet) {
+        val newSupplierUuid = remember { Ids.new() }
         PickSheet(
             title = stringResource(R.string.purchases_supplier),
             items = listOf(PickItem(null, stringResource(R.string.purchases_no_supplier))) +
@@ -456,7 +459,7 @@ internal fun PurchaseNew(nav: NavHostController, prefill: List<Pair<String, Doub
             onPick = { supplierId = it; supplierSheet = false },
             onCreate = { name ->
                 scope.launch {
-                    runCatching { io { ProductService.saveSupplier(null, name, "", "", "") } }
+                    runCatching { io { ProductService.saveSupplier(null, name, "", "", "", newSupplierUuid) } }
                         .onSuccess { id -> supplierId = id; supplierSheet = false }
                         .onFailure { snackbar.showSnackbar(ctx.productError(it)) }
                 }

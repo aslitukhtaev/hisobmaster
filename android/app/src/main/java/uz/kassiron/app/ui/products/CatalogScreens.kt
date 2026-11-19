@@ -69,6 +69,7 @@ import uz.kassiron.app.ui.kit.KSub
 import uz.kassiron.app.ui.kit.KTag
 import uz.kassiron.app.ui.kit.KTagKind
 import uz.kassiron.app.ui.kit.KTopBar
+import uz.kassiron.app.core.Ids
 
 // ====================================================================
 // Categories
@@ -289,7 +290,8 @@ private fun ActionRow(icon: ImageVector, title: String, sub: String?, danger: Bo
 // Suppliers
 // ====================================================================
 
-private data class SupplierDraft(val uuid: String?, val name: String = "", val phone: String = "", val address: String = "", val note: String = "")
+// draftId: a new supplier's id, fixed when the sheet opens (saving twice stays one supplier).
+private data class SupplierDraft(val uuid: String?, val name: String = "", val phone: String = "", val address: String = "", val note: String = "", val draftId: String = Ids.new())
 
 @Composable
 fun SuppliersScreen(nav: NavHostController) {
@@ -361,7 +363,7 @@ fun SuppliersScreen(nav: NavHostController) {
                     stringResource(R.string.common_save),
                     {
                         scope.launch {
-                            runCatching { io { ProductService.saveSupplier(d.uuid, d.name, d.phone, d.address, d.note) } }
+                            runCatching { io { ProductService.saveSupplier(d.uuid, d.name, d.phone, d.address, d.note, d.draftId) } }
                                 .onSuccess { draft = null; snackbar.showSnackbar(ctx.getString(if (d.uuid == null) R.string.suppliers_created else R.string.suppliers_updated)) }
                                 .onFailure { error = ctx.productError(it) }
                         }

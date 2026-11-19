@@ -32,10 +32,12 @@ object PurchaseService {
      * in one transaction. Returns the new purchase's uuid.
      * @throws ProductException
      */
-    fun create(supplierUuid: String?, lines: List<PurchaseLine>, note: String?, updateCostPrice: Boolean): String {
+    fun create(supplierUuid: String?, lines: List<PurchaseLine>, note: String?, updateCostPrice: Boolean, draftUuid: String? = null): String {
         if (lines.isEmpty()) throw ProductException(ProductException.NO_ITEMS)
         val user = App.session.current()
         val uuid = App.db.write {
+            // The same purchase form sent twice: it is already in, stock was added once.
+            if (draftUuid != null && scalar("SELECT 1 FROM purchases WHERE uuid = ?", draftUuid) != null) return@write draftUuid
             data class Resolved(val line: PurchaseLine, val variantLabel: String?, val qty: Double, val unitCost: Double, val subtotal: Double)
 
             val resolved = ArrayList<Resolved>(lines.size)
@@ -71,7 +73,7 @@ object PurchaseService {
             if (total > ProductService.MONEY_MAX) throw ProductException(ProductException.TOO_LARGE)
 
             val supplier = supplierUuid?.takeIf { queryOne("SELECT uuid FROM suppliers WHERE uuid = ?", it) != null }
-            val purchaseUuid = Ids.new()
+            val purchaseUuid = draftUuid ?: Ids.new()
             insert(
                 "purchases",
                 mapOf(

@@ -106,6 +106,7 @@ import uz.kassiron.app.ui.reports.receiptLabel
 import uz.kassiron.app.ui.theme.K
 import uz.kassiron.app.ui.theme.Onest
 import uz.kassiron.app.ui.theme.Tone
+import uz.kassiron.app.core.Ids
 
 private const val BALANCE_SQL = "SELECT customer_id, SUM(CASE WHEN type = 'qarz' THEN amount ELSE -amount END) AS balance FROM debt_transactions GROUP BY customer_id"
 
@@ -438,6 +439,7 @@ fun CustomerEditScreen(nav: NavHostController, uuid: String) {
     var errField by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
+    val draftUuid = rememberSaveable { Ids.new() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -452,16 +454,18 @@ fun CustomerEditScreen(nav: NavHostController, uuid: String) {
     }
 
     fun save() {
+        if (saving) return
         saving = true
         scope.launch {
-            val r = io { CustomerActions.save(if (isNew) null else uuid, name, phone, note, limit, due) }
-            saving = false
+            val r = io { CustomerActions.save(if (isNew) null else uuid, name, phone, note, limit, due, draftUuid) }
             when (r) {
                 is CustomerActions.SaveResult.Ok -> {
+                    // The button stays off: the screen is closing, and its fade-out still takes taps.
                     nav.popBackStack()
                     if (isNew) nav.navigate(Routes.customer(r.uuid))
                 }
                 is CustomerActions.SaveResult.Error -> {
+                    saving = false
                     error = if (r.arg != null) context.getString(r.res, r.arg) else context.getString(r.res)
                     errField = when (r.res) {
                         R.string.cust_err_name -> "name"

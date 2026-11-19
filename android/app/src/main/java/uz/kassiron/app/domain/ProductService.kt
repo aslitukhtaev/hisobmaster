@@ -264,11 +264,16 @@ object ProductService {
      * Creates ([uuid] null) or updates a product, validated like
      * ProductController::validate(). Without [canPrices] the cost price is
      * kept (and on an existing product the sell price too). Returns the uuid.
+     *
+     * [draftUuid]: the id the new-product form picked when it opened. Saving
+     * the same form again (a second tap while the screen closes) finds that
+     * product and updates it instead of creating a twin.
      */
-    fun save(form: ProductForm, uuid: String?, canPrices: Boolean): String {
+    fun save(form: ProductForm, uuid: String?, canPrices: Boolean, draftUuid: String? = null): String {
         val userUuid = App.session.user.value?.uuid
         val result = App.db.write {
-            val existing = uuid?.let { find(this, it) ?: throw ProductException(ProductException.NOT_FOUND) }
+            val existing = if (uuid != null) find(this, uuid) ?: throw ProductException(ProductException.NOT_FOUND)
+                else draftUuid?.let { find(this, it) }
             val name = form.name.trim()
             val unit = form.unit.trim().ifEmpty { "dona" }
             val barcode = form.barcode.trim()
@@ -331,7 +336,7 @@ object ProductService {
                 "updated_at" to Time.now(),
             )
             if (existing == null) {
-                val newUuid = Ids.new()
+                val newUuid = draftUuid ?: Ids.new()
                 insert("products", values + mapOf("uuid" to newUuid, "stock_qty" to 0.0, "created_at" to Time.now()))
                 Outbox.upsert(this, "products", newUuid)
                 addStock(this, "products", newUuid, stock)
@@ -588,7 +593,8 @@ object ProductService {
     // ---------- suppliers ----------
 
     /** Creates or updates a supplier (SupplierController::validate). Returns its uuid. */
-    fun saveSupplier(uuid: String?, name: String, phone: String, address: String, note: String): String {
+    /** [draftUuid]: see [save] — the same new-supplier form saved twice stays one supplier. */
+    fun saveSupplier(uuid: String?, name: String, phone: String, address: String, note: String, draftUuid: String? = null): String {
         val cleanName = name.trim()
         if (cleanName.isEmpty()) throw ProductException(ProductException.FILL_REQUIRED)
         if (looksLikeFormula(cleanName)) throw ProductException(ProductException.NAME_FORMULA)
@@ -603,10 +609,11 @@ object ProductService {
         )
         val result = App.db.write {
             if (uuid == null) {
-                Ids.new().also { id ->
-                    insert("suppliers", values + mapOf("uuid" to id, "created_at" to Time.now()))
-                    Outbox.upsert(this, "suppliers", id)
-                }
+                val id = draftUuid ?: Ids.new()
+                if (queryOne("SELECT uuid FROM suppliers WHERE uuid = ?", id) != null) update("suppliers", id, values)
+                else insert("suppliers", values + mapOf("uuid" to id, "created_at" to Time.now()))
+                Outbox.upsert(this, "suppliers", id)
+                id
             } else {
                 queryOne("SELECT uuid FROM suppliers WHERE uuid = ?", uuid) ?: throw ProductException(ProductException.NOT_FOUND)
                 update("suppliers", uuid, values)

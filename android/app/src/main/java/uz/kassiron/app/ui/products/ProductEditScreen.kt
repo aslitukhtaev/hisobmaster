@@ -75,6 +75,7 @@ import uz.kassiron.app.ui.kit.KTagKind
 import uz.kassiron.app.ui.kit.KTopBar
 import uz.kassiron.app.ui.kit.KValueChip
 import uz.kassiron.app.ui.theme.K
+import uz.kassiron.app.core.Ids
 
 // Add / edit a product (mockup 16).
 
@@ -149,6 +150,8 @@ internal fun ProductEdit(
 
     var errors by remember { mutableStateOf(presetErrors) }
     var saving by remember { mutableStateOf(false) }
+    // The new product's id, fixed when the form opens: a second save is the same product.
+    val draftUuid = rememberSaveable { Ids.new() }
     var scanTarget by remember { mutableStateOf<ScanTarget?>(null) }
     var variantDraft by remember { mutableStateOf<VariantDraft?>(null) }
     var categorySheet by remember { mutableStateOf(false) }
@@ -183,9 +186,11 @@ internal fun ProductEdit(
         if (check.any) return
         saving = true
         scope.launch {
-            val result = runCatching { io { ProductService.save(current, if (isNew) null else uuid, canPrices) } }
-            saving = false
+            val result = runCatching { io { ProductService.save(current, if (isNew) null else uuid, canPrices, draftUuid) } }
+            // On success the button stays off: the screen is closing, and its
+            // fade-out still takes taps.
             result.onSuccess { nav.popBackStack() }.onFailure { e ->
+                saving = false
                 val msg = ctx.productError(e)
                 errors = when ((e as? ProductException)?.code) {
                     ProductException.FILL_REQUIRED, ProductException.NAME_FORMULA, ProductException.NAME_TOO_LONG -> FieldErrors(name = msg)

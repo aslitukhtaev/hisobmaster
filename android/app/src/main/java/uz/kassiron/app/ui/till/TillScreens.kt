@@ -268,23 +268,33 @@ internal fun TillContent(
         }
     }
 
+    // One Enter at a time: scanners that end a code with CR+LF, and keyboards
+    // that send both the IME action and an Enter key, would otherwise add the
+    // item twice before the first lookup has cleared the field.
+    val submitting = remember { java.util.concurrent.atomic.AtomicBoolean(false) }
+
     // Enter in the search field: a scanner's code (keyboard wedge) or a single match.
     fun submitSearch() {
         val text = vm.query.trim()
         if (text.isEmpty()) return
+        if (!submitting.compareAndSet(false, true)) return
         scope.launch {
-            val hit = io { TillData.byBarcode(text) }
-            when {
-                hit is BarcodeHit.Variant -> { vm.query = ""; add(hit.product, hit.variant) }
-                hit is BarcodeHit.Product -> { vm.query = ""; add(hit.product, null) }
-                else -> {
-                    val found = io { TillData.search(text) }
-                    if (found.size == 1) { vm.query = ""; add(found[0], null) }
-                    else if (text.length >= 4 && text.all(Char::isLetterOrDigit) && text.any(Char::isDigit) && found.isEmpty()) {
-                        vm.query = ""
-                        unknownCode(text)
+            try {
+                val hit = io { TillData.byBarcode(text) }
+                when {
+                    hit is BarcodeHit.Variant -> { vm.query = ""; add(hit.product, hit.variant) }
+                    hit is BarcodeHit.Product -> { vm.query = ""; add(hit.product, null) }
+                    else -> {
+                        val found = io { TillData.search(text) }
+                        if (found.size == 1) { vm.query = ""; add(found[0], null) }
+                        else if (text.length >= 4 && text.all(Char::isLetterOrDigit) && text.any(Char::isDigit) && found.isEmpty()) {
+                            vm.query = ""
+                            unknownCode(text)
+                        }
                     }
                 }
+            } finally {
+                submitting.set(false)
             }
         }
     }

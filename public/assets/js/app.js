@@ -52,6 +52,41 @@ document.addEventListener('submit', function (e) {
     }
 }, true);
 
+// A form is sent once: a second click (or Enter) while the page is still
+// loading would otherwise create a second product, customer, payment...
+// Runs last (bubble phase), so forms a page's own checks stopped stay usable.
+document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (e.defaultPrevented || !form || (form.getAttribute('method') || 'get').toLowerCase() !== 'post') {
+        return;
+    }
+    if (form.getAttribute('data-sending') === '1') {
+        e.preventDefault();
+        return;
+    }
+    form.setAttribute('data-sending', '1');
+    // Disabled after this tick: a disabled button's name/value would not be sent.
+    setTimeout(function () {
+        form.querySelectorAll('button[type="submit"], button:not([type]), input[type="submit"]').forEach(function (b) {
+            b.disabled = true;
+        });
+    }, 0);
+    // A form that didn't leave the page (a file download, a slow network) can be sent again later.
+    setTimeout(function () { releaseForm(form); }, 8000);
+});
+function releaseForm(form) {
+    form.removeAttribute('data-sending');
+    form.querySelectorAll('button[type="submit"], button:not([type]), input[type="submit"]').forEach(function (b) {
+        b.disabled = false;
+    });
+}
+// Back to a page from the browser's cache: its forms work again.
+window.addEventListener('pageshow', function (e) {
+    if (e.persisted) {
+        document.querySelectorAll('form[data-sending="1"]').forEach(releaseForm);
+    }
+});
+
 document.addEventListener('DOMContentLoaded', function () {
     // Only a success message fades away on its own; an error or warning stays
     // until the user moves on, and page-level alerts (not flash messages)

@@ -93,7 +93,8 @@ class SaleMathTest {
     }
 
     @Test fun quickCashChips() {
-        assertEquals(listOf(23_400.0, 24_000.0, 25_000.0, 30_000.0, 50_000.0, 100_000.0), quickCash(23_400.0))
+        // The pay sheet shows at most four amounts: the exact sum and the next round notes.
+        assertEquals(listOf(23_400.0, 24_000.0, 25_000.0, 30_000.0), quickCash(23_400.0))
         assertEquals(listOf(50_000.0, 100_000.0, 200_000.0), quickCash(50_000.0))
         assertEquals(emptyList<Double>(), quickCash(0.0))
     }

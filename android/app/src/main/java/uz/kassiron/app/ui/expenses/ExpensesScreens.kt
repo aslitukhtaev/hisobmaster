@@ -85,6 +85,7 @@ import uz.kassiron.app.ui.reports.rangeLabel
 import uz.kassiron.app.ui.reports.shortDate
 import uz.kassiron.app.ui.theme.K
 import uz.kassiron.app.ui.theme.Tone
+import uz.kassiron.app.core.Ids
 
 private data class ExpenseItem(val uuid: String, val amount: Double, val category: String?, val description: String?, val date: String)
 private data class ExpensesData(val items: List<ExpenseItem>, val total: Double, val byCategory: List<Pair<String?, Double>>)
@@ -226,6 +227,7 @@ fun ExpenseEditScreen(nav: NavHostController, uuid: String) {
     var askDelete by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<Pair<String, String>?>(null) } // field to message
     var saving by remember { mutableStateOf(false) }
+    val draftUuid = rememberSaveable { Ids.new() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -241,11 +243,13 @@ fun ExpenseEditScreen(nav: NavHostController, uuid: String) {
     }
 
     fun save() {
+        if (saving) return
         saving = true
         scope.launch {
             val err = io<Pair<String, Int>?> {
                 try {
-                    ExpenseService.save(if (isNew) null else uuid, Money.parse(amount), category, description, date, App.session.current().uuid)
+                    // A new expense keeps the id picked when the form opened: saving twice stays one expense.
+                    ExpenseService.save(if (isNew) draftUuid else uuid, Money.parse(amount), category, description, date, App.session.current().uuid)
                     App.sync.requestSync()
                     null
                 } catch (e: ExpenseException) {
@@ -257,11 +261,14 @@ fun ExpenseEditScreen(nav: NavHostController, uuid: String) {
                     }
                 }
             }
-            saving = false
             if (err == null) {
+                // The button stays off: the screen is closing, and its fade-out still takes taps.
                 Toast.makeText(context, R.string.exp_saved, Toast.LENGTH_SHORT).show()
                 nav.popBackStack()
-            } else error = err.first to context.getString(err.second)
+            } else {
+                saving = false
+                error = err.first to context.getString(err.second)
+            }
         }
     }
 
