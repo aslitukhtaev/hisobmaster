@@ -10,6 +10,7 @@ import uz.kassiron.app.core.Row
 import uz.kassiron.app.core.Time
 import uz.kassiron.app.core.Units
 import kotlin.math.abs
+import uz.kassiron.app.core.SearchText
 
 /**
  * A rule broken while saving products, categories, suppliers or purchases.
@@ -169,7 +170,7 @@ object ProductService {
                 categoryName = r.strOrNull("category_name"),
                 variantCount = r.long("variant_count").toInt(),
                 variantStock = r.dbl("variant_stock"),
-                searchText = (r.str("name") + " " + r.str("barcode") + (variantText[uuid] ?: "")).lowercase(),
+                searchText = SearchText.key(r.str("name") + " " + r.str("barcode") + (variantText[uuid] ?: "")),
                 wholesalePrice = r.dblOrNull("wholesale_price"),
             )
         }

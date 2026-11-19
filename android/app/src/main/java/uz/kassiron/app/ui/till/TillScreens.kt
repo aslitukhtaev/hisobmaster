@@ -111,6 +111,8 @@ import uz.kassiron.app.ui.kit.KTopBar
 import uz.kassiron.app.ui.kit.kShadow
 import uz.kassiron.app.ui.switchTab
 import uz.kassiron.app.ui.theme.K
+import androidx.compose.material.icons.outlined.ErrorOutline
+import uz.kassiron.app.ui.kit.KCardTone
 
 internal fun haptic(view: View, confirm: Boolean = false) {
     view.performHapticFeedback(if (confirm) HapticFeedbackConstants.LONG_PRESS else HapticFeedbackConstants.KEYBOARD_TAP)
@@ -346,9 +348,32 @@ internal fun TillContent(
 
     val focus = remember { FocusRequester() }
     val hardwareKeyboard = LocalConfiguration.current.keyboard != Configuration.KEYBOARD_NOKEYS
-    LaunchedEffect(hardwareKeyboard) { if (hardwareKeyboard) runCatching { focus.requestFocus() } }
+    // With a scanner or keyboard attached, the search field takes focus back
+    // after a sale and whenever a sheet closes, so the next scan isn't lost.
+    val sheetOpen = showPay || showCustomer || showScanner || variantFor != null || qtyFor != null || confirmClear
+    LaunchedEffect(hardwareKeyboard, sheetOpen, vm.lastSale) {
+        if (hardwareKeyboard && !sheetOpen) {
+            kotlinx.coroutines.delay(120)
+            runCatching { focus.requestFocus() }
+        }
+    }
 
-    val pending = offlinePending ?: if (sync.error == "network") sync.pendingSales else 0L
+    // Unsent sales are shown whenever sending is stuck: any sync error, or no
+    // successful sync for a few minutes (not only "no internet").
+    val stale = sync.lastSyncAt > 0 && System.currentTimeMillis() - sync.lastSyncAt > 5 * 60_000L
+    val pending = offlinePending ?: if (sync.pendingSales > 0 && (sync.error != null || stale)) sync.pendingSales else 0L
+    val offlineText = if (offlinePending != null || sync.error == "network") R.string.till_offline else R.string.till_unsent
+
+    // Prices and stock of the cart lines follow the database (a price changed
+    // on the website and synced while the cart is open): the pay sheet then
+    // shows exactly what the sale will charge.
+    val dbTick by App.db.changes.collectAsState()
+    LaunchedEffect(dbTick) {
+        if (vm.cart.isEmpty()) return@LaunchedEffect
+        val items = vm.cart.toList()
+        val fresh = io { items.map { it.key to TillData.fresh(it) } }
+        vm.applyFresh(fresh)
+    }
     val cartEmpty = vm.cart.isEmpty()
 
     KScreen(
@@ -369,7 +394,11 @@ internal fun TillContent(
     ) {
         Spacer(Modifier.height(6.dp))
         if (pending > 0) {
-            KAlert(stringResource(R.string.till_offline, pending), Icons.Outlined.CloudOff)
+            KAlert(stringResource(offlineText, pending), Icons.Outlined.CloudOff)
+            Spacer(Modifier.height(10.dp))
+        }
+        if (sync.rejected > 0) {
+            KAlert(stringResource(R.string.sync_rejected, sync.rejected.toInt()), Icons.Outlined.ErrorOutline, tone = KCardTone.Red)
             Spacer(Modifier.height(10.dp))
         }
         KSearch(
@@ -536,7 +565,15 @@ private fun CartLineRow(item: CartItem, optom: Boolean, onPlus: () -> Unit, onMi
         subtitle = {
             // In an optom sale, a line with no optom price goes at the ordinary price: say so.
             val note = if (optom && item.optom == null) " · " + stringResource(R.string.till_no_wholesale_price) else ""
-            KSub(Money.format(item.price) + note)
+            if (item.unavailable) {
+                KTag(
+                    if (item.stock > 0) stringResource(R.string.till_line_short, Money.qty(item.stock) + " " + item.unit)
+                    else stringResource(R.string.till_line_unavailable),
+                    KTagKind.Red,
+                )
+            } else {
+                KSub(Money.format(item.price) + note)
+            }
         },
         trailing = { KStepper(Money.qty(item.qty), onMinus = onMinus, onPlus = onPlus, onQtyClick = onQty) },
         selected = true,

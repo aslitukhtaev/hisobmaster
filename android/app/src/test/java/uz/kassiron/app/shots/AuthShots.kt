@@ -93,4 +93,18 @@ class AuthShots {
         Shots.seed()
         Shots.capture("auth_settings") { nav -> SettingsScreen(nav) }
     }
+
+    /** Changes the server refused: said on the sync card and above the till. */
+    @Test fun sync_rejected() {
+        Shots.seed()
+        App.kv.set(uz.kassiron.app.core.Keys.SYNC_REJECTED, "3")
+        App.sync.refreshState()
+        try {
+            Shots.capture("settings_sync_rejected") { nav -> SettingsScreen(nav) }
+            Shots.capture("till_sync_rejected") { nav -> uz.kassiron.app.ui.till.TillContent(nav, uz.kassiron.app.ui.till.TillViewModel()) }
+        } finally {
+            App.kv.set(uz.kassiron.app.core.Keys.SYNC_REJECTED, null)
+            App.sync.refreshState()
+        }
+    }
 }

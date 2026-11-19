@@ -81,6 +81,10 @@ import uz.kassiron.app.ui.kit.KTag
 import uz.kassiron.app.ui.kit.KTagKind
 import uz.kassiron.app.ui.kit.KTopBar
 import uz.kassiron.app.ui.theme.K
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import org.json.JSONArray
+import org.json.JSONObject
 
 // Quick entry of many products (mockup 17, the website's /products/quick).
 
@@ -124,8 +128,9 @@ internal fun QuickEntry(
     val user by App.session.user.collectAsState()
     val canPrices = user?.can("prices") == true
 
-    var nextId by remember { mutableLongStateOf(0L) }
-    val rows = remember { mutableStateListOf<QuickRowState>() }
+    // Saveable: a half-filled table survives the screen being recreated.
+    var nextId by rememberSaveable { mutableLongStateOf(0L) }
+    val rows = rememberSaveable(saver = QuickRowsSaver) { mutableStateListOf<QuickRowState>() }
     fun addRow(): QuickRowState = QuickRowState(nextId++).also { rows += it }
     var focusedRow by remember { mutableStateOf<Long?>(null) }
     var showAll by remember { mutableStateOf(showErrors) }
@@ -397,3 +402,27 @@ private fun RowScope.QuickCell(
         },
     )
 }
+
+/** The quick-entry rows as JSON for rememberSaveable. */
+private val QuickRowsSaver = Saver<SnapshotStateList<QuickRowState>, String>(
+    save = { list ->
+        val arr = JSONArray()
+        for (r in list) {
+            arr.put(JSONObject().put("id", r.id).put("n", r.name).put("p", r.price).put("o", r.optom).put("q", r.qty).put("b", r.barcode))
+        }
+        arr.toString()
+    },
+    restore = { s ->
+        val out = mutableStateListOf<QuickRowState>()
+        runCatching {
+            val arr = JSONArray(s)
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                out += QuickRowState(o.getLong("id")).apply {
+                    name = o.optString("n"); price = o.optString("p"); optom = o.optString("o"); qty = o.optString("q"); barcode = o.optString("b")
+                }
+            }
+        }
+        out
+    },
+)

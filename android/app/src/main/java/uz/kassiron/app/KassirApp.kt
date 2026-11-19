@@ -33,6 +33,7 @@ object App {
         app = application
         db = Db(application)
         kv = Kv(db)
+        uz.kassiron.app.core.Time.setServerOffset(kv.long(uz.kassiron.app.core.Keys.SERVER_TIME_OFFSET))
         session = Session(db, kv)
         uz.kassiron.app.ui.theme.ThemeMode.set(kv.get("theme") ?: "system")
         session.restore()

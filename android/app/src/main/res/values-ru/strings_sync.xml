@@ -115,4 +115,7 @@
     <string name="settings_disconnect_confirm_text">Данные магазина будут удалены с этого телефона. Чтобы подключить снова, нужен логин и пароль владельца или код.</string>
     <string name="settings_disconnect_pending">Не отправлено продаж: %1$d — они пропадут. Сначала подключитесь к интернету и отправьте их.</string>
     <string name="settings_disconnect_yes">Отключить</string>
+    <string name="sync_rejected">Сервер не принял изменений: %1$d. Обратитесь в поддержку KassirON.</string>
+    <string name="settings_disconnect_pending_other">Есть неотправленные изменения (оплата долга, приход, товары) — они пропадут. Сначала подключитесь к интернету и отправьте их.</string>
+    <string name="sync_rejected_title">Часть изменений не принята</string>
 </resources>

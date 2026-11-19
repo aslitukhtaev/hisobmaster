@@ -45,7 +45,8 @@ object CustomerActions {
     /** Another customer that already has this phone (last 9 digits), as the server's UNIQUE(shop_id, phone). */
     fun phoneOwner(db: Db, phone: String, exceptUuid: String?): String? {
         val last9 = phone.filter(Char::isDigit).takeLast(9)
-        return db.query("SELECT uuid, full_name, phone FROM customers WHERE phone IS NOT NULL AND phone != ''")
+        if (last9.isEmpty()) return null
+        return db.query("SELECT uuid, full_name, phone FROM customers WHERE phone LIKE ?", "%$last9")
             .firstOrNull { it.str("uuid") != exceptUuid && it.str("phone").filter(Char::isDigit).takeLast(9) == last9 }
             ?.str("full_name")
     }

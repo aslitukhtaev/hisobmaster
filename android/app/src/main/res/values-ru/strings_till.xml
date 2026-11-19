@@ -131,4 +131,7 @@
     <string name="till_wholesale_prices">По оптовой цене</string>
     <string name="till_no_wholesale_price">без опта</string>
     <string name="till_err_wholesale_not_allowed">У вас нет права продавать по оптовой цене</string>
+    <string name="till_unsent">Не отправлено на сервер продаж: %1$d</string>
+    <string name="till_line_unavailable">Нет в продаже</string>
+    <string name="till_line_short">Остаток: %1$s</string>
 </resources>

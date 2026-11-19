@@ -85,6 +85,11 @@ import uz.kassiron.app.ui.kit.KSwitch
 import uz.kassiron.app.ui.kit.KTopBar
 import uz.kassiron.app.ui.theme.K
 import uz.kassiron.app.core.Ids
+import uz.kassiron.app.core.SearchText
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import org.json.JSONArray
+import org.json.JSONObject
 
 // ====================================================================
 // Purchases list ("Kirimlar"), grouped by day
@@ -215,7 +220,7 @@ private fun loadTargets(): List<PurchaseTarget> {
         if (variants.isNullOrEmpty()) {
             out += PurchaseTarget(
                 uuid, null, p.str("name"), null, unit, p.dbl("cost_price"), pack, p.strOrNull("barcode"), active,
-                (p.str("name") + " " + p.str("barcode")).lowercase(),
+                SearchText.key(p.str("name") + " " + p.str("barcode")),
             )
         } else {
             // Stock of a product with active variants lives on them: it is bought per variant.
@@ -223,7 +228,7 @@ private fun loadTargets(): List<PurchaseTarget> {
                 out += PurchaseTarget(
                     uuid, v.str("uuid"), p.str("name"), v.str("variant_label"), unit,
                     v.dblOrNull("cost_price") ?: p.dbl("cost_price"), pack, v.strOrNull("barcode"), active,
-                    (p.str("name") + " " + v.str("variant_label") + " " + v.str("barcode") + " " + p.str("barcode")).lowercase(),
+                    SearchText.key(p.str("name") + " " + v.str("variant_label") + " " + v.str("barcode") + " " + p.str("barcode")),
                 )
             }
         }
@@ -245,7 +250,8 @@ internal fun PurchaseNew(nav: NavHostController, prefill: List<Pair<String, Doub
     val suppliers by dbState(emptyList<DbRow>()) { ProductService.suppliers(App.db) }
 
     var query by remember { mutableStateOf("") }
-    val lines = remember { mutableStateListOf<LineState>() }
+    // Saveable: a long kirim survives the screen being recreated.
+    val lines = rememberSaveable(saver = PurchaseLinesSaver) { mutableStateListOf<LineState>() }
     var supplierId by rememberSaveable { mutableStateOf(prefillSupplier) }
     var note by rememberSaveable { mutableStateOf("") }
     // The approved design has it on: most shops want the cost price of the last purchase.
@@ -256,7 +262,7 @@ internal fun PurchaseNew(nav: NavHostController, prefill: List<Pair<String, Doub
     var supplierSheet by remember { mutableStateOf(false) }
     var noteSheet by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<LineState?>(null) }
-    var prefilled by remember { mutableStateOf(false) }
+    var prefilled by rememberSaveable { mutableStateOf(false) }
 
     if (!prefilled && prefill.isNotEmpty() && targets.isNotEmpty()) {
         prefilled = true
@@ -266,7 +272,7 @@ internal fun PurchaseNew(nav: NavHostController, prefill: List<Pair<String, Doub
     }
 
     val results = remember(targets, query) {
-        val q = query.trim().lowercase()
+        val q = SearchText.key(query)
         if (q.isEmpty()) emptyList()
         else targets.filter { it.searchText.contains(q) }.sortedByDescending { it.barcode?.lowercase() == q }.take(30)
     }
@@ -589,3 +595,36 @@ fun PurchaseDetailScreen(nav: NavHostController, uuid: String) {
 private fun Value(text: String) {
     Text(text, style = K.t.body.copy(fontSize = 14.sp), color = K.c.tx, maxLines = 2)
 }
+
+/** The kirim lines as JSON for rememberSaveable. */
+private val PurchaseLinesSaver = Saver<SnapshotStateList<LineState>, String>(
+    save = { list ->
+        val arr = JSONArray()
+        for (l in list) {
+            val t = l.target
+            arr.put(
+                JSONObject().put("qty", l.qty).put("cost", l.cost).put("p", t.productUuid).put("v", t.variantUuid ?: JSONObject.NULL)
+                    .put("n", t.name).put("l", t.variantLabel ?: JSONObject.NULL).put("u", t.unit).put("c", t.cost)
+                    .put("pk", t.packSize ?: JSONObject.NULL).put("b", t.barcode ?: JSONObject.NULL).put("a", t.active).put("s", t.searchText),
+            )
+        }
+        arr.toString()
+    },
+    restore = { s ->
+        val out = mutableStateListOf<LineState>()
+        runCatching {
+            val arr = JSONArray(s)
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                val t = PurchaseTarget(
+                    productUuid = o.getString("p"), variantUuid = if (o.isNull("v")) null else o.getString("v"),
+                    name = o.getString("n"), variantLabel = if (o.isNull("l")) null else o.getString("l"), unit = o.getString("u"),
+                    cost = o.getDouble("c"), packSize = if (o.isNull("pk")) null else o.getLong("pk"),
+                    barcode = if (o.isNull("b")) null else o.getString("b"), active = o.getBoolean("a"), searchText = o.getString("s"),
+                )
+                out += LineState(t, o.getString("qty"), o.getString("cost"))
+            }
+        }
+        out
+    },
+)

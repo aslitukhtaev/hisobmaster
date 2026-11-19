@@ -22,9 +22,9 @@
 
     <!-- Bosh -->
     <string name="dash_more">Ko‘proq</string>
-    <string name="dash_greet_morning">Xayrli tong, %1$s!</string>
-    <string name="dash_greet_day">Xayrli kun, %1$s!</string>
-    <string name="dash_greet_evening">Xayrli kech, %1$s!</string>
+    <string name="dash_greet_morning">Xayrli tong, %1$s</string>
+    <string name="dash_greet_day">Xayrli kun, %1$s</string>
+    <string name="dash_greet_evening">Xayrli kech, %1$s</string>
     <string name="dash_hero_today">Bugun %1$d ta sotuv · %2$s</string>
     <string name="dash_hero_none">Bugun hali sotuv yo‘q</string>
     <string name="dash_open_till">Kassani ochish</string>

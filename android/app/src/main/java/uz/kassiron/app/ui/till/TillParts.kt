@@ -87,6 +87,8 @@ import uz.kassiron.app.ui.kit.KTag
 import uz.kassiron.app.ui.kit.KTagKind
 import uz.kassiron.app.ui.kit.KValueChip
 import uz.kassiron.app.ui.theme.K
+import androidx.compose.runtime.saveable.rememberSaveable
+import uz.kassiron.app.core.Ids
 
 // ---------------------------------------------------------------------------------------------
 // Small private building blocks (made from K.c / K.t; the shared kit has no equivalent)
@@ -343,6 +345,9 @@ internal fun CustomerPickerContent(initialQuery: String, onPick: (TillCustomer) 
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    // A second tap while the first save runs must not make a second customer.
+    var busy by remember { mutableStateOf(false) }
+    val draftUuid = rememberSaveable { Ids.new() }
     val customers by dbState<List<TillCustomer>?>(null, query) { TillData.customers(query) }
     val nameRequired = stringResource(R.string.till_customer_name_required)
     val phoneInvalid = stringResource(R.string.till_phone_invalid)
@@ -350,12 +355,19 @@ internal fun CustomerPickerContent(initialQuery: String, onPick: (TillCustomer) 
     fun create(n: String, p: String) {
         if (n.isBlank()) { error = nameRequired; return }
         if (p.isNotBlank() && Customers.normalizePhone(p) == null) { error = phoneInvalid; return }
+        if (busy) return
+        busy = true
         scope.launch {
             val c = io {
-                val uuid = App.db.write { Customers.findOrCreate(this, n.trim(), p.trim().ifEmpty { null }) }
+                val uuid = App.db.write {
+                    // Already made by an earlier tap of this form: that customer.
+                    if (scalar("SELECT 1 FROM customers WHERE uuid = ?", draftUuid) != null) draftUuid
+                    else Customers.findOrCreate(this, n.trim(), p.trim().ifEmpty { null }, draftUuid)
+                }
                 TillData.customer(uuid)
             }
             App.sync.requestSync()
+            busy = false
             if (c != null) onPick(c)
         }
     }

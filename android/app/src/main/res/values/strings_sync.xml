@@ -118,4 +118,7 @@
     <string name="settings_disconnect_confirm_text">Do‘kon ma’lumotlari bu telefondan o‘chadi. Qayta ulash uchun egasining login va paroli yoki kod kerak bo‘ladi.</string>
     <string name="settings_disconnect_pending">%1$d ta sotuv hali yuborilmagan va o‘chib ketadi. Avval internetga ulanib, ularni yuboring.</string>
     <string name="settings_disconnect_yes">Uzish</string>
+    <string name="sync_rejected">Server %1$d ta o‘zgarishni qabul qilmadi. KassirON yordamiga murojaat qiling.</string>
+    <string name="settings_disconnect_pending_other">Hali yuborilmagan o‘zgarishlar bor (qarz to‘lovi, kirim, mahsulot) va ular o‘chib ketadi. Avval internetga ulanib, ularni yuboring.</string>
+    <string name="sync_rejected_title">Ba‘zi o‘zgarishlar qabul qilinmadi</string>
 </resources>

@@ -131,4 +131,7 @@
     <string name="till_wholesale_prices">Optom narxda</string>
     <string name="till_no_wholesale_price">optom yo‘q</string>
     <string name="till_err_wholesale_not_allowed">Sizda optom narxda sotish huquqi yo‘q</string>
+    <string name="till_unsent">%1$d ta sotuv hali serverga yuborilmagan</string>
+    <string name="till_line_unavailable">Sotuvda yo‘q</string>
+    <string name="till_line_short">Qoldiq: %1$s</string>
 </resources>

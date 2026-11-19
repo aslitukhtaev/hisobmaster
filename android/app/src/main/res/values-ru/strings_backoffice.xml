@@ -22,9 +22,9 @@
 
     <!-- Главная -->
     <string name="dash_more">Ещё</string>
-    <string name="dash_greet_morning">Доброе утро, %1$s!</string>
-    <string name="dash_greet_day">Добрый день, %1$s!</string>
-    <string name="dash_greet_evening">Добрый вечер, %1$s!</string>
+    <string name="dash_greet_morning">Доброе утро, %1$s</string>
+    <string name="dash_greet_day">Добрый день, %1$s</string>
+    <string name="dash_greet_evening">Добрый вечер, %1$s</string>
     <string name="dash_hero_today">Сегодня продаж: %1$d · %2$s</string>
     <string name="dash_hero_none">Сегодня продаж пока нет</string>
     <string name="dash_open_till">Открыть кассу</string>
