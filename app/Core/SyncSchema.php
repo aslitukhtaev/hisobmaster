@@ -106,6 +106,18 @@ final class SyncSchema
         'expenses', 'attendance', 'activity_log',
     ];
 
+    /**
+     * References that may be dropped when their row is gone on the server
+     * (a category deleted or merged on the website while a device was
+     * offline): the row is saved without it instead of being rejected,
+     * which would take every sale of that product down with it.
+     */
+    public const OPTIONAL_REFS = [
+        'products' => ['category_id'],
+        'expenses' => ['category_id'],
+        'purchases' => ['supplier_id'],
+    ];
+
     /** The only rows the app ever deletes (a category's products and expenses stay, without it). */
     public const DELETABLE = ['expenses', 'categories'];
 

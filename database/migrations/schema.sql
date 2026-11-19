@@ -433,6 +433,20 @@ CREATE TABLE IF NOT EXISTS sync_rejects (
     error TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE INDEX IF NOT EXISTS idx_sync_rejects_device ON sync_rejects(device_id, id);
+
+-- A row a device created offline that turned out to be one the server
+-- already has (a customer with the same phone number): the device's uuid
+-- points at the server's row, so the device's sales and debts that refer to
+-- it still arrive instead of being rejected. Server only, never synced.
+CREATE TABLE IF NOT EXISTS sync_uuid_aliases (
+    shop_id INTEGER NOT NULL,
+    tbl TEXT NOT NULL,
+    uuid TEXT NOT NULL,
+    target_id INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (tbl, uuid)
+);
 
 -- The desktop app's own bookkeeping (device credentials, license token, sync
 -- cursor, receipt counter...), key => value. Empty on the server.

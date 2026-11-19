@@ -191,6 +191,8 @@ final class Desktop
             'pending' => self::isActivated() ? self::pending() : ['sales' => 0, 'other' => false],
             'last_sync_at' => self::get('last_sync_at'),
             'last_error' => self::get('last_sync_error'),
+            // Changes the server refused (kept in its sync_rejects for the owner to look into).
+            'rejected' => (int) (self::get('sync_rejected_total') ?? 0),
             'device_code' => self::get('device_code'),
             'app_version' => self::appVersion(),
         ];

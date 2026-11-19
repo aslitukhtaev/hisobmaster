@@ -44,6 +44,9 @@ final class SyncService
     /** @var array<string, array<string, string>> */
     private static array $columnCache = [];
 
+    /** True on the last pass of a push: a missing optional reference is saved as NULL. */
+    private static bool $lenientRefs = false;
+
     /**
      * Applies a computer's changes in order, in one transaction, and returns
      * ['applied_seq' => highest seq now applied, 'rejected' => count].
@@ -69,25 +72,62 @@ final class SyncService
 
             $pdo->prepare('UPDATE sync_context SET source = ? WHERE id = 1')->execute([$deviceId]);
 
+            // A change whose parent row comes later in the same batch (a
+            // product moved into a category created after it) is retried
+            // once the rest is in, rather than rejected with its sales.
+            $deferred = [];
             foreach ($changes as $change) {
                 $seq = is_array($change) ? (int) ($change['seq'] ?? 0) : 0;
                 if ($seq <= $applied) {
                     continue;
                 }
 
-                $pdo->exec('SAVEPOINT sync_change');
-                try {
-                    self::applyChange($pdo, $shopId, $deviceId, $change);
-                    $pdo->exec('RELEASE sync_change');
-                } catch (Throwable $e) {
-                    $pdo->exec('ROLLBACK TO sync_change');
-                    $pdo->exec('RELEASE sync_change');
-                    $pdo->prepare('INSERT INTO sync_rejects (device_id, seq, change_json, error) VALUES (?, ?, ?, ?)')
-                        ->execute([$deviceId, $seq, json_encode($change, JSON_UNESCAPED_UNICODE), mb_substr($e->getMessage(), 0, 500)]);
-                    $rejected++;
+                $error = self::tryChange($pdo, $shopId, $deviceId, $change);
+                if ($error !== null) {
+                    if (str_starts_with($error, 'missing_reference')) {
+                        $deferred[] = [$seq, $change, $error];
+                    } else {
+                        self::reject($pdo, $deviceId, $seq, $change, $error);
+                        $rejected++;
+                    }
                 }
 
                 $applied = $seq;
+            }
+
+            while ($deferred !== []) {
+                $still = [];
+                foreach ($deferred as [$seq, $change]) {
+                    $error = self::tryChange($pdo, $shopId, $deviceId, $change);
+                    if ($error !== null) {
+                        $still[] = [$seq, $change, $error];
+                    }
+                }
+                if (count($still) === count($deferred)) {
+                    // No more progress: what is left either points at a row the
+                    // server really doesn't have (an optional one is dropped) or is rejected.
+                    self::$lenientRefs = true;
+                    try {
+                        $retry = $still;
+                        $still = [];
+                        foreach ($retry as [$seq, $change]) {
+                            $error = self::tryChange($pdo, $shopId, $deviceId, $change);
+                            if ($error !== null) {
+                                $still[] = [$seq, $change, $error];
+                            }
+                        }
+                    } finally {
+                        self::$lenientRefs = false;
+                    }
+                    if (count($still) === count($retry)) {
+                        foreach ($still as [$seq, $change, $error]) {
+                            self::reject($pdo, $deviceId, $seq, $change, $error);
+                            $rejected++;
+                        }
+                        break;
+                    }
+                }
+                $deferred = $still;
             }
 
             $pdo->prepare('UPDATE sync_context SET source = NULL WHERE id = 1')->execute();
@@ -101,6 +141,29 @@ final class SyncService
         }
 
         return ['applied_seq' => $applied, 'rejected' => $rejected];
+    }
+
+    /** Applies one change in its own savepoint; returns the error, or null when it went in. */
+    private static function tryChange(PDO $pdo, int $shopId, int $deviceId, mixed $change): ?string
+    {
+        $pdo->exec('SAVEPOINT sync_change');
+        try {
+            self::applyChange($pdo, $shopId, $deviceId, $change);
+            $pdo->exec('RELEASE sync_change');
+
+            return null;
+        } catch (Throwable $e) {
+            $pdo->exec('ROLLBACK TO sync_change');
+            $pdo->exec('RELEASE sync_change');
+
+            return $e->getMessage() !== '' ? $e->getMessage() : get_class($e);
+        }
+    }
+
+    private static function reject(PDO $pdo, int $deviceId, int $seq, mixed $change, string $error): void
+    {
+        $pdo->prepare('INSERT INTO sync_rejects (device_id, seq, change_json, error) VALUES (?, ?, ?, ?)')
+            ->execute([$deviceId, $seq, json_encode($change, JSON_UNESCAPED_UNICODE), mb_substr($error, 0, 500)]);
     }
 
     private static function applyChange(PDO $pdo, int $shopId, int $deviceId, mixed $change): void
@@ -143,15 +206,31 @@ final class SyncService
 
             $value = $row[$column];
             if (isset($foreignKeys[$column])) {
+                $optional = self::$lenientRefs && in_array($column, SyncSchema::OPTIONAL_REFS[$table] ?? [], true);
                 $values[$column] = $value === null || $value === ''
                     ? null
-                    : self::idForUuid($pdo, $foreignKeys[$column], (string) $value, $shopId);
+                    : self::idForUuid($pdo, $foreignKeys[$column], (string) $value, $shopId, mustExist: !$optional);
             } else {
                 $values[$column] = self::cast($value, $type);
             }
         }
 
         $existingId = self::idForUuid($pdo, $table, $uuid, $shopId, mustExist: false);
+
+        // A customer added offline whose phone the shop already has: the
+        // device's uuid becomes another name for that customer, so its sales
+        // and debts land on them instead of failing on the unique phone.
+        if ($existingId === null && $table === 'customers' && !empty($values['phone'])) {
+            $same = $pdo->prepare('SELECT id FROM customers WHERE shop_id = ? AND phone = ?');
+            $same->execute([$shopId, $values['phone']]);
+            $sameId = $same->fetchColumn();
+            if ($sameId !== false) {
+                $pdo->prepare('INSERT OR REPLACE INTO sync_uuid_aliases (shop_id, tbl, uuid, target_id) VALUES (?, ?, ?, ?)')
+                    ->execute([$shopId, $table, $uuid, (int) $sameId]);
+
+                return;
+            }
+        }
 
         if ($existingId === null) {
             if (SyncSchema::hasShopColumn($table)) {
@@ -453,6 +532,12 @@ final class SyncService
         $id = $stmt->fetchColumn();
 
         if ($id === false) {
+            $alias = $pdo->prepare('SELECT target_id FROM sync_uuid_aliases WHERE shop_id = ? AND tbl = ? AND uuid = ?');
+            $alias->execute([$shopId, $table, $uuid]);
+            $aliasId = $alias->fetchColumn();
+            if ($aliasId !== false) {
+                return (int) $aliasId;
+            }
             if ($mustExist) {
                 throw new RuntimeException("missing_reference: $table $uuid");
             }

@@ -179,7 +179,13 @@ final class DesktopSync
                 // The server applies the whole batch or answers with an error
                 // (thrown here), so on success everything read is done —
                 // including entries there was nothing to send for.
-                self::storeLicense(self::request('/api/sync/push', ['changes' => $changes]));
+                $response = self::request('/api/sync/push', ['changes' => $changes]);
+                self::storeLicense($response);
+                // Changes the server could not take: counted so the status bar can say so.
+                $rejected = (int) ($response['rejected'] ?? 0);
+                if ($rejected > 0) {
+                    Desktop::set('sync_rejected_total', (string) ((int) (Desktop::get('sync_rejected_total') ?? 0) + $rejected));
+                }
             }
 
             Desktop::set('pushed_upto', (string) (int) end($entries)['id']);
@@ -343,6 +349,22 @@ final class DesktopSync
                 $pending = (float) $stmt->fetchColumn();
             }
             $counters[$column] = round((float) ($row[$column] ?? 0) + $pending, 6);
+        }
+
+        // The server's copy of a customer this computer also created offline
+        // (same phone): adopt the server's uuid on the local row instead of
+        // inserting a second one, which the unique phone index would refuse
+        // and leave every later pull stuck on this page.
+        if ($id === false && $table === 'customers' && !empty($values['phone'])) {
+            $same = $pdo->prepare('SELECT id FROM customers WHERE phone = ?');
+            $same->execute([$values['phone']]);
+            $sameId = $same->fetchColumn();
+            if ($sameId !== false) {
+                $assignments = implode(', ', array_map(static fn (string $column): string => "$column = ?", array_keys($values)));
+                $pdo->prepare("UPDATE customers SET $assignments WHERE id = ?")->execute([...array_values($values), (int) $sameId]);
+
+                return true;
+            }
         }
 
         if ($id === false) {

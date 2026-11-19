@@ -1101,4 +1101,5 @@ return [
     'quick_category_hint' => "Shu yerda saqlanadigan barcha mahsulotlar shu kategoriyaga tushadi. Yangi nom yozsangiz, kategoriya ochiladi.",
     'permission_wholesale' => "Optom narxda sotish",
     'wholesale_not_allowed' => "Optom narxda sotishga ruxsatingiz yo'q. Do'kon egasidan so'rang.",
+    'desktop_sync_rejected' => "Server :count ta o'zgarishni qabul qilmadi. Ular yo'qolmasligi uchun KassirON yordamiga murojaat qiling.",
 ];

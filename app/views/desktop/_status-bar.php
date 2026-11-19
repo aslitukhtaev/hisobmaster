@@ -28,6 +28,9 @@ $lastSync = $desktopStatus['last_sync_at'] ? t('desktop_status_last_sync', ['tim
         <button type="submit" class="btn btn-ghost btn-sm"><?= e(t('desktop_sync_now')) ?></button>
     </form>
 </div>
+<?php if (($desktopStatus['rejected'] ?? 0) > 0): ?>
+    <div class="alert alert-warning" role="status"><?= e(t('desktop_sync_rejected', ['count' => (int) $desktopStatus['rejected']])) ?></div>
+<?php endif; ?>
 <?php if ($licenseState !== 'ok'): ?>
     <div class="alert alert-error" role="alert"><?= e(t('desktop_locked_' . $licenseState)) ?></div>
 <?php elseif ($daysLeft !== null && $daysLeft <= Desktop::WARN_DAYS): ?>
