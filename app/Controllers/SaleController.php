@@ -15,6 +15,7 @@ use App\Models\ProductVariant;
 use App\Models\Refund;
 use App\Models\Report;
 use App\Models\Sale;
+use App\Models\Settings;
 use App\Models\Shop;
 use PDOException;
 use RuntimeException;
@@ -127,6 +128,7 @@ class SaleController
                 'price' => (float) $p['sell_price'],
                 'stock' => (float) $p['stock_qty'],
                 'barcode' => $p['barcode'],
+                'wholesale' => ($p['wholesale_price'] ?? null) !== null ? (float) $p['wholesale_price'] : null,
                 'category' => $p['category_id'] !== null ? (int) $p['category_id'] : null,
                 'fractional' => unit_allows_fraction($p['unit']),
                 'variants' => array_map(static function (array $v) use ($p): array {
@@ -136,6 +138,7 @@ class SaleController
                         'price' => $v['sell_price'] !== null ? (float) $v['sell_price'] : (float) $p['sell_price'],
                         'stock' => (float) $v['stock_qty'],
                         'barcode' => $v['barcode'],
+                        'wholesale' => ($v['wholesale_price'] ?? null) !== null ? (float) $v['wholesale_price'] : null,
                     ];
                 }, $variants),
             ];
@@ -192,6 +195,7 @@ class SaleController
             'shopName' => (string) (Shop::find($shopId)['name'] ?? ''),
             'productsJson' => json_encode($productsJson, JSON_UNESCAPED_UNICODE),
             'tillCategories' => $tillCategories,
+            'wholesaleEnabled' => Settings::wholesaleEnabled($shopId),
             'customersJson' => json_encode($customersJson, JSON_UNESCAPED_UNICODE),
             'hasProducts' => count($activeProducts) > 0,
             'canDiscount' => Auth::can('discount'),
@@ -217,6 +221,7 @@ class SaleController
         $customerIdInput = trim((string) $request->input('customer_id', ''));
         $customerName = trim((string) $request->input('customer_name', ''));
         $customerPhone = trim((string) $request->input('customer_phone', ''));
+        $priceType = $request->input('price_type') === 'wholesale' && wholesale_enabled() ? 'wholesale' : 'retail';
 
         // Kept across every redirect-back-with-error below so the cashier never
         // has to re-build the cart from scratch after a validation failure.
@@ -229,6 +234,7 @@ class SaleController
             'customer_id' => $customerIdInput,
             'customer_name' => $customerName,
             'customer_phone' => $customerPhone,
+            'price_type' => $priceType,
         ];
 
         if (!is_array($cart) || empty($cart)) {
@@ -286,7 +292,7 @@ class SaleController
         }
 
         try {
-            $saleId = Sale::create($shopId, $cashierId, $items, $naqdAmount, $kartaAmount, $discount, $customerId, $qrAmount);
+            $saleId = Sale::create($shopId, $cashierId, $items, $naqdAmount, $kartaAmount, $discount, $customerId, $qrAmount, $priceType);
         } catch (PDOException $e) {
             // A raw driver-level failure (e.g. a lock-contention edge case) —
             // never shown to the user verbatim, since PDOException extends

@@ -37,6 +37,12 @@ class Settings
             ->execute([$shopId, $key, $value]);
     }
 
+    /** "Optom savdo": products get a wholesale price and the till a Chakana / Optom switch. */
+    public static function wholesaleEnabled(int $shopId): bool
+    {
+        return self::get($shopId, 'wholesale_enabled') === '1';
+    }
+
     public static function lowStockThresholdDefault(int $shopId): ?float
     {
         $value = self::get($shopId, 'low_stock_threshold_default');

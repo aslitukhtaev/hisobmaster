@@ -16,6 +16,9 @@ $debtAmount = round((float) $sale['total'] - (float) $sale['paid_amount'], 2);
         <?php if (!empty($shop['phone'])): ?><div class="receipt-meta"><?= e($shop['phone']) ?></div><?php endif; ?>
         <div class="receipt-meta">№<?= e(receipt_number($sale)) ?> · <?= e(local_datetime($sale['created_at'])) ?></div>
         <div class="receipt-meta"><?= e(t('cashier')) ?>: <?= e($sale['cashier_name'] ?? '') ?></div>
+        <?php if (($sale['price_type'] ?? 'retail') === 'wholesale'): ?>
+            <div class="receipt-meta receipt-wholesale"><?= e(t('receipt_wholesale')) ?></div>
+        <?php endif; ?>
     </div>
 
     <hr class="receipt-divider">

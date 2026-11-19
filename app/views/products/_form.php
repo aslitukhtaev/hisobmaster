@@ -49,6 +49,14 @@ $parentLeftover = $hasActiveVariants ? (float) ($product['stock_qty'] ?? 0) : 0.
                        value="<?= e(old('sell_price', isset($product['sell_price']) ? (string) $product['sell_price'] : '')) ?>">
                 <span class="field-warning" id="sell-below-cost-hint" hidden><?= e(t('sell_below_cost_hint')) ?></span>
             </label>
+            <?php if (wholesale_enabled()): ?>
+                <label class="field">
+                    <span><?= e(t('wholesale_price')) ?> (<?= e(t('optional')) ?>)</span>
+                    <input type="number" step="0.01" min="0" max="<?= MONEY_MAX ?>" inputmode="decimal" name="wholesale_price"
+                           placeholder="<?= e(t('wholesale_price_placeholder')) ?>"
+                           value="<?= e(old('wholesale_price', isset($product['wholesale_price']) && $product['wholesale_price'] !== null ? (string) $product['wholesale_price'] : '')) ?>">
+                </label>
+            <?php endif; ?>
         </div>
 
         <div class="field-row">

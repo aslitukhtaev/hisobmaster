@@ -49,6 +49,12 @@ require BASE_PATH . '/app/views/products/_form.php';
                     <span><?= e(t('sell_price')) ?> (<?= e(t('optional')) ?>)</span>
                     <input type="number" step="0.01" min="0" inputmode="decimal" name="variant_sell_price" placeholder="<?= e(t('same_as_product')) ?>" value="<?= e($variant['sell_price'] !== null ? (string) $variant['sell_price'] : '') ?>">
                 </label>
+                <?php if (wholesale_enabled()): ?>
+                <label class="field">
+                    <span><?= e(t('wholesale_price')) ?> (<?= e(t('optional')) ?>)</span>
+                    <input type="number" step="0.01" min="0" inputmode="decimal" name="variant_wholesale_price" placeholder="<?= e(t('same_as_product')) ?>" value="<?= e(($variant['wholesale_price'] ?? null) !== null ? (string) $variant['wholesale_price'] : '') ?>">
+                </label>
+                <?php endif; ?>
                 <div class="field">
                     <span><?= e(t('status')) ?></span>
                     <span class="status-pill <?= $variant['status'] === 'active' ? 'status-active' : 'status-blocked' ?>" style="width:fit-content;">
@@ -110,6 +116,12 @@ require BASE_PATH . '/app/views/products/_form.php';
                 <span><?= e(t('sell_price')) ?> (<?= e(t('optional')) ?>)</span>
                 <input type="number" step="0.01" min="0" inputmode="decimal" name="variant_sell_price" placeholder="<?= e(t('same_as_product')) ?>">
             </label>
+            <?php if (wholesale_enabled()): ?>
+            <label class="field">
+                <span><?= e(t('wholesale_price')) ?> (<?= e(t('optional')) ?>)</span>
+                <input type="number" step="0.01" min="0" inputmode="decimal" name="variant_wholesale_price" placeholder="<?= e(t('same_as_product')) ?>">
+            </label>
+            <?php endif; ?>
         </div>
         <button type="submit" class="btn btn-primary btn-block"><?= e(t('add_variant')) ?></button>
     </form>

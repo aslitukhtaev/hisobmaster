@@ -1087,4 +1087,13 @@ return [
     'activity_action_category_merged' => "Категории объединены",
     'activity_category_deleted' => "Удалена категория: :name",
     'activity_action_category_deleted' => "Категория удалена",
+    'wholesale_setting_label' => "Оптовая торговля",
+    'wholesale_setting_hint' => "Если включено, у товаров появляется оптовая цена, а в кассе — переключатель «Розница / Опт». В приложении для телефона тоже.",
+    'wholesale_price' => "Оптовая цена",
+    'wholesale_price_placeholder' => "Если пусто — цена продажи",
+    'wholesale_short' => "Опт",
+    'price_mode_label' => "Тип цены",
+    'price_mode_retail' => "Розница",
+    'price_mode_wholesale' => "Опт",
+    'receipt_wholesale' => "По оптовой цене",
 ];

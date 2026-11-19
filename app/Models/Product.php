@@ -57,6 +57,13 @@ class Product
         return $stmt->fetchAll();
     }
 
+    /** Kept apart from update(): only the product form sets it, an import never wipes it. */
+    public static function setWholesalePrice(int $id, int $shopId, ?float $price): void
+    {
+        Database::connect()->prepare('UPDATE products SET wholesale_price = ?, updated_at = datetime(\'now\') WHERE id = ? AND shop_id = ?')
+            ->execute([$price, $id, $shopId]);
+    }
+
     public static function find(int $id, int $shopId): ?array
     {
         $stmt = Database::connect()->prepare('SELECT * FROM products WHERE id = ? AND shop_id = ?');

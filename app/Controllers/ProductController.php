@@ -70,7 +70,7 @@ class ProductController
             ? Category::findOrCreate($shopId, $data['category'])
             : null;
 
-        Product::create([
+        $newId = Product::create([
             'shop_id' => $shopId,
             'category_id' => $categoryId,
             'name' => $data['name'],
@@ -85,6 +85,10 @@ class ProductController
             'package_code' => $data['package_code'],
             'vat_rate' => $data['vat_rate'],
         ]);
+
+        if ($data['wholesale_price'] !== false) {
+            Product::setWholesalePrice($newId, $shopId, $data['wholesale_price']);
+        }
 
         ActivityLog::record($shopId, (int) Auth::id(), 'product_created', [
             'name' => $data['name'],
@@ -136,6 +140,10 @@ class ProductController
         $categoryId = $data['category'] !== ''
             ? Category::findOrCreate($shopId, $data['category'])
             : null;
+
+        if ($data['wholesale_price'] !== false) {
+            Product::setWholesalePrice((int) $id, $shopId, $data['wholesale_price']);
+        }
 
         Product::update((int) $id, $shopId, [
             'category_id' => $categoryId,
@@ -195,6 +203,8 @@ class ProductController
         $mxikRaw = trim((string) $request->input('mxik', ''));
         $packageCodeRaw = trim((string) $request->input('package_code', ''));
         $vatRateRaw = trim((string) $request->input('vat_rate', ''));
+        // Only on a shop with "Optom savdo" on; otherwise the field isn't shown and the price is left alone.
+        $wholesaleRaw = wholesale_enabled() ? trim((string) $request->input('wholesale_price', '')) : null;
 
         // A product sold through variants keeps its stock on the variants;
         // its own stock_qty can only be brought down (to clear a leftover
@@ -225,6 +235,7 @@ class ProductController
             'mxik' => $mxikRaw,
             'package_code' => $packageCodeRaw,
             'vat_rate' => $vatRateRaw,
+            'wholesale_price' => (string) $wholesaleRaw,
         ];
 
         $fail = static function (string $message) use ($old): ?array {
@@ -293,6 +304,10 @@ class ProductController
             return $fail(t('vat_rate_invalid'));
         }
 
+        if ($wholesaleRaw !== null && $wholesaleRaw !== '' && !valid_money($wholesaleRaw)) {
+            return $fail(is_numeric($wholesaleRaw) && (float) $wholesaleRaw > 0 ? t('amount_too_large') : t('values_must_be_positive'));
+        }
+
         return [
             'name' => $name,
             'category' => $category,
@@ -306,6 +321,8 @@ class ProductController
             'mxik' => $mxikRaw !== '' ? $mxikRaw : null,
             'package_code' => $packageCodeRaw !== '' ? $packageCodeRaw : null,
             'vat_rate' => $vatRateRaw !== '' ? (float) $vatRateRaw : null,
+            // false = leave the stored wholesale price as it is.
+            'wholesale_price' => $wholesaleRaw === null ? false : ($wholesaleRaw !== '' ? (float) $wholesaleRaw : null),
         ];
     }
 
@@ -404,7 +421,7 @@ class ProductController
 
         $isFirstVariant = empty(ProductVariant::activeByProduct((int) $id, $shopId));
 
-        ProductVariant::create([
+        $newVariantId = ProductVariant::create([
             'product_id' => (int) $id,
             'shop_id' => $shopId,
             'variant_label' => $data['variant_label'],
@@ -413,6 +430,9 @@ class ProductController
             'sell_price' => $data['sell_price'],
             'cost_price' => $data['cost_price'],
         ]);
+        if ($data['wholesale_price'] !== false) {
+            ProductVariant::setWholesalePrice($newVariantId, $shopId, $data['wholesale_price']);
+        }
 
         $label = $product['name'] . ' — ' . $data['variant_label'];
         ActivityLog::record($shopId, (int) Auth::id(), 'product_created', [
@@ -465,6 +485,9 @@ class ProductController
             'sell_price' => $data['sell_price'],
             'cost_price' => $data['cost_price'],
         ]);
+        if ($data['wholesale_price'] !== false) {
+            ProductVariant::setWholesalePrice((int) $variantId, $shopId, $data['wholesale_price']);
+        }
 
         $label = $product['name'] . ' — ' . $data['variant_label'];
         $userId = (int) Auth::id();
@@ -535,6 +558,7 @@ class ProductController
         $stockQty = $request->input('variant_stock_qty', '');
         $barcode = trim((string) $request->input('variant_barcode', ''));
         $sellPriceRaw = trim((string) $request->input('variant_sell_price', ''));
+        $wholesaleRaw = wholesale_enabled() ? trim((string) $request->input('variant_wholesale_price', '')) : null;
 
         // Without the "prices" permission the cost field isn't shown, so an
         // edit keeps the variant's existing cost instead of wiping it.
@@ -574,6 +598,11 @@ class ProductController
             return null;
         }
 
+        if ($wholesaleRaw !== null && $wholesaleRaw !== '' && !valid_money($wholesaleRaw)) {
+            flash('error', is_numeric($wholesaleRaw) && (float) $wholesaleRaw > 0 ? t('amount_too_large') : t('values_must_be_positive'));
+            return null;
+        }
+
         if ($barcode !== '') {
             if (mb_strlen($barcode) > 64) {
                 flash('error', t('barcode_too_long'));
@@ -586,6 +615,8 @@ class ProductController
         }
 
         return [
+            // false = leave the stored wholesale price as it is.
+            'wholesale_price' => $wholesaleRaw === null ? false : ($wholesaleRaw !== '' ? (float) $wholesaleRaw : null),
             'variant_label' => $label,
             'stock_qty' => (float) $stockQty,
             'barcode' => $barcode,

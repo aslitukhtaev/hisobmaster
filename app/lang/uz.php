@@ -1087,4 +1087,13 @@ return [
     'activity_action_category_merged' => "Kategoriyalar birlashtirildi",
     'activity_category_deleted' => "Kategoriya o'chirildi: :name",
     'activity_action_category_deleted' => "Kategoriya o'chirildi",
+    'wholesale_setting_label' => "Optom savdo",
+    'wholesale_setting_hint' => "Yoqilsa, mahsulotlarga optom narx yoziladi va kassada «Chakana / Optom» tugmasi chiqadi. Telefon ilovasida ham.",
+    'wholesale_price' => "Optom narx",
+    'wholesale_price_placeholder' => "Bo'sh bo'lsa, sotish narxi",
+    'wholesale_short' => "Optom",
+    'price_mode_label' => "Narx turi",
+    'price_mode_retail' => "Chakana",
+    'price_mode_wholesale' => "Optom",
+    'receipt_wholesale' => "Optom narxda",
 ];

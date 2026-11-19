@@ -60,6 +60,9 @@
                         <td data-label="<?= e(t('total')) ?>"><?= money((float) $sale['total']) ?></td>
                         <td data-label="<?= e(t('payment_type')) ?>">
                             <span class="status-pill <?= $pillClass ?>"><?= e(t('payment_' . $sale['payment_type'])) ?></span>
+                            <?php if (($sale['price_type'] ?? 'retail') === 'wholesale'): ?>
+                                <span class="status-pill wholesale-pill"><?= e(t('wholesale_short')) ?></span>
+                            <?php endif; ?>
                         </td>
                         <td data-label="<?= e(t('actions')) ?>">
                             <a href="/sales/<?= (int) $sale['id'] ?>" class="btn btn-ghost btn-sm"><?= e(t('view_receipt')) ?></a>

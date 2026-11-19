@@ -153,9 +153,27 @@
             name: variant ? (product.name + ' — ' + variant.label) : product.name,
             unit: product.unit,
             fractional: isFractionalProduct(product),
-            price: variant ? variant.price : product.price,
+            price: priceOf(product, variant),
             stock: variant ? variant.stock : product.stock
         };
+    }
+
+    // "Chakana" (retail) or "Optom" (wholesale), picked by the cashier for the
+    // whole sale. The server prices the lines the same way (Sale::create()):
+    // the variant's wholesale price, else the product's, else the retail one.
+    var priceMode = 'retail';
+    function priceOf(product, variant) {
+        var retail = variant ? variant.price : product.price;
+        if (priceMode !== 'wholesale') {
+            return retail;
+        }
+        if (variant && variant.wholesale !== null && variant.wholesale !== undefined) {
+            return variant.wholesale;
+        }
+        if (product.wholesale !== null && product.wholesale !== undefined) {
+            return product.wholesale;
+        }
+        return retail;
     }
 
     // The category button picked above the list (null = all). Typing and
@@ -271,7 +289,7 @@
             if (!p.variants || p.variants.length === 0) {
                 return '<button type="button" class="pos-product" data-id="' + p.id + '">' +
                     '<span class="pos-product-name">' + escapeHtml(p.name) + '</span>' +
-                    '<span class="pos-product-meta">' + escapeHtml(formatMoney(p.price)) + '<span class="pos-stock"> · ' + escapeHtml(formatQty(p.stock)) + ' ' + escapeHtml(p.unit) + '</span></span>' +
+                    '<span class="pos-product-meta">' + escapeHtml(formatMoney(priceOf(p, null))) + '<span class="pos-stock"> · ' + escapeHtml(formatQty(p.stock)) + ' ' + escapeHtml(p.unit) + '</span></span>' +
                     '</button>';
             }
 
@@ -282,7 +300,7 @@
                 var disabled = v.stock <= 0;
                 return '<button type="button" class="pos-variant-btn" data-id="' + p.id + '" data-variant="' + v.id + '"' + (disabled ? ' disabled' : '') + '>' +
                     '<span>' + escapeHtml(v.label) + '</span>' +
-                    '<span class="pos-product-meta">' + escapeHtml(formatMoney(v.price)) + '<span class="pos-stock"> · ' + escapeHtml(formatQty(v.stock)) + ' ' + escapeHtml(p.unit) + '</span></span>' +
+                    '<span class="pos-product-meta">' + escapeHtml(formatMoney(priceOf(p, v))) + '<span class="pos-stock"> · ' + escapeHtml(formatQty(v.stock)) + ' ' + escapeHtml(p.unit) + '</span></span>' +
                     '</button>';
             }).join('');
 
@@ -777,6 +795,30 @@
 
     searchEl.addEventListener('input', renderProducts);
 
+    var priceTypeFieldEl = document.getElementById('price-type-field');
+    var wholesaleBadgeEl = document.getElementById('wholesale-badge');
+    var priceModeBtns = document.querySelectorAll('.price-mode-btn');
+    function setPriceMode(mode) {
+        priceMode = mode === 'wholesale' && priceModeBtns.length ? 'wholesale' : 'retail';
+        priceModeBtns.forEach(function (b) {
+            var on = b.getAttribute('data-price-mode') === priceMode;
+            b.classList.toggle('active', on);
+            b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+        if (priceTypeFieldEl) {
+            priceTypeFieldEl.value = priceMode;
+        }
+        if (wholesaleBadgeEl) {
+            wholesaleBadgeEl.hidden = priceMode !== 'wholesale';
+        }
+        document.documentElement.classList.toggle('till-wholesale', priceMode === 'wholesale');
+        renderProducts();
+        renderCart();
+    }
+    priceModeBtns.forEach(function (b) {
+        b.addEventListener('click', function () { setPriceMode(b.getAttribute('data-price-mode')); });
+    });
+
     var categoriesEl = document.getElementById('pos-categories');
     if (categoriesEl) {
         categoriesEl.addEventListener('click', function (e) {
@@ -1019,6 +1061,13 @@
                 }
             });
         }
+
+        if (oldSale.priceType === 'wholesale' && priceModeBtns.length) {
+
+            setPriceMode('wholesale');
+
+        }
+
 
         if (oldSale.discount !== undefined && oldSale.discount !== '') {
             var restoredDiscount = parseFloat(oldSale.discount);

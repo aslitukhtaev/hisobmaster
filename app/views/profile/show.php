@@ -164,6 +164,11 @@
                    value="<?= e(old('low_stock_threshold_default', $lowStockThresholdDefault ?? '')) ?>">
         </label>
         <p class="muted"><?= e(t('low_stock_threshold_default_hint')) ?></p>
+        <label class="permission-check">
+            <input type="checkbox" name="wholesale_enabled" value="1" <?= !empty($wholesaleEnabled) ? 'checked' : '' ?>>
+            <span><?= e(t('wholesale_setting_label')) ?></span>
+        </label>
+        <p class="muted"><?= e(t('wholesale_setting_hint')) ?></p>
         <button type="submit" class="btn btn-primary btn-block"><?= e(t('save')) ?></button>
     </form>
 </div>

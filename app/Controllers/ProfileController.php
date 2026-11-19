@@ -26,6 +26,7 @@ class ProfileController
         View::render('profile/show', [
             'shop' => $shop,
             'lowStockThresholdDefault' => $lowStockThresholdDefault,
+            'wholesaleEnabled' => $shop ? Settings::wholesaleEnabled((int) Auth::shopId()) : false,
             // Where this account stays signed in (website only: the desktop
             // app has its own, local sign-ins).
             'devices' => Desktop::enabled() ? null : RememberMe::forUser($userId),
@@ -174,6 +175,7 @@ class ProfileController
 
         Shop::updateSettings($shopId, $name, $address !== '' ? $address : null, $printerWidth);
         Settings::set($shopId, 'low_stock_threshold_default', $lowStockDefaultRaw !== '' ? $lowStockDefaultRaw : null);
+        Settings::set($shopId, 'wholesale_enabled', $request->input('wholesale_enabled') === '1' ? '1' : null);
 
         flash('success', t('shop_settings_updated'));
         redirect('/profile');

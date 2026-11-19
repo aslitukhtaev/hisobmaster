@@ -88,6 +88,13 @@ class ProductVariant
         ]);
     }
 
+    public static function setWholesalePrice(int $id, int $shopId, ?float $price): void
+    {
+        Database::connect()
+            ->prepare('UPDATE product_variants SET wholesale_price = ? WHERE id = ? AND shop_id = ?')
+            ->execute([$price, $id, $shopId]);
+    }
+
     /** Purchase flow's "update cost price" for a variant line (see Purchase::create()). */
     public static function updateCostPrice(int $id, int $shopId, float $costPrice): void
     {

@@ -551,3 +551,11 @@ function current_shop(): ?array
 
     return $cache[$shopId] ??= App\Models\Shop::find($shopId);
 }
+
+/** Whether the signed-in user's shop sells at wholesale prices too (Settings: "Optom savdo"). */
+function wholesale_enabled(): bool
+{
+    $shopId = \App\Core\Auth::shopId();
+
+    return $shopId !== null && \App\Models\Settings::wholesaleEnabled((int) $shopId);
+}

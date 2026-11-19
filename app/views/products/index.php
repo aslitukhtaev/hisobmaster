@@ -83,7 +83,12 @@
                         <?php if (can('prices')): ?>
                             <td data-label="<?= e(t('cost_price')) ?>"><?= money((float) $product['cost_price']) ?></td>
                         <?php endif; ?>
-                        <td data-label="<?= e(t('sell_price')) ?>"><?= money((float) $product['sell_price']) ?></td>
+                        <td data-label="<?= e(t('sell_price')) ?>">
+                            <?= money((float) $product['sell_price']) ?>
+                            <?php if (wholesale_enabled() && ($product['wholesale_price'] ?? null) !== null): ?>
+                                <span class="muted wholesale-note"><?= e(t('wholesale_short')) ?>: <?= money((float) $product['wholesale_price']) ?></span>
+                            <?php endif; ?>
+                        </td>
                         <td data-label="<?= e(t('stock_qty')) ?>">
                             <?= e(format_qty($stock)) ?> <?= e($product['unit']) ?>
                             <?php if ($variantCount > 0): ?>

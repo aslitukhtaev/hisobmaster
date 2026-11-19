@@ -1025,6 +1025,26 @@ img.logo-for-dark-theme { display: none; }
     .print-report .net-profit-tile { box-shadow: none; border: 1px solid #d1d5db; }
 }
 
+/* ---------- Optom (wholesale) prices ---------- */
+.wholesale-note { display: block; font-size: .75rem; }
+.price-mode-toggle {
+    display: flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 10px;
+}
+.price-mode-btn {
+    flex: 1; border: none; background: var(--surface); color: var(--muted); font: inherit; font-weight: 700;
+    font-size: .9rem; padding: 9px 12px; cursor: pointer;
+}
+.price-mode-btn + .price-mode-btn { border-left: 1px solid var(--border); }
+.price-mode-btn.active { background: var(--primary); color: var(--on-primary); }
+.price-mode-btn[data-price-mode="wholesale"].active { background: var(--warning, #d97706); color: #fff; }
+.wholesale-badge {
+    display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; vertical-align: middle;
+    background: var(--warning, #d97706); color: #fff; font-size: .72rem; font-weight: 700; letter-spacing: .02em;
+}
+.wholesale-pill { background: var(--warning-bg, #fef3c7); color: var(--warning, #b45309); margin-left: 4px; }
+.receipt-wholesale { font-weight: 700; }
+@media (pointer: coarse) { .price-mode-btn { padding: 12px; } }
+
 /* ---------- Categories ---------- */
 .category-filter {
     min-width: 0; max-width: 220px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);

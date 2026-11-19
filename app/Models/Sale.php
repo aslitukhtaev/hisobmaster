@@ -25,8 +25,11 @@ class Sale
         float $kartaAmount,
         float $discount,
         ?int $customerId,
-        float $qrAmount = 0.0
+        float $qrAmount = 0.0,
+        string $priceType = 'retail'
     ): int {
+        // 'wholesale' only when the shop has "Optom savdo" on (checked by the caller).
+        $wholesale = $priceType === 'wholesale';
         if (empty($items)) {
             throw new RuntimeException('empty_cart');
         }
@@ -79,6 +82,15 @@ class Sale
                 $unitPrice = $variant !== null && $variant['sell_price'] !== null
                     ? (float) $variant['sell_price']
                     : (float) $product['sell_price'];
+                // Optom: the variant's wholesale price, else the product's, else the retail price above.
+                if ($wholesale) {
+                    $wholesalePrice = $variant !== null && ($variant['wholesale_price'] ?? null) !== null
+                        ? (float) $variant['wholesale_price']
+                        : (($product['wholesale_price'] ?? null) !== null ? (float) $product['wholesale_price'] : null);
+                    if ($wholesalePrice !== null) {
+                        $unitPrice = $wholesalePrice;
+                    }
+                }
                 $costPrice = $variant !== null && $variant['cost_price'] !== null
                     ? (float) $variant['cost_price']
                     : (float) $product['cost_price'];
@@ -137,13 +149,13 @@ class Sale
             $status = 'completed';
 
             $stmt = $pdo->prepare(
-                'INSERT INTO sales (shop_id, cashier_id, customer_id, total, discount, payment_type, paid_amount, status, cash_received, receipt_no)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO sales (shop_id, cashier_id, customer_id, total, discount, payment_type, paid_amount, status, cash_received, receipt_no, price_type)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
             // On a shop's computer the receipt gets that computer's own
             // number ("K2-000145"), which stays the same on the server.
             $receiptNo = Desktop::enabled() ? Desktop::nextReceiptNo() : null;
-            $stmt->execute([$shopId, $cashierId, $customerId, $total, $discount, $paymentType, $paidAmount, $status, $cashReceived, $receiptNo]);
+            $stmt->execute([$shopId, $cashierId, $customerId, $total, $discount, $paymentType, $paidAmount, $status, $cashReceived, $receiptNo, $wholesale ? 'wholesale' : 'retail']);
             $saleId = (int) $pdo->lastInsertId();
 
             $paymentStmt = $pdo->prepare(

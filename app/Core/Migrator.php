@@ -22,7 +22,7 @@ use Throwable;
  */
 final class Migrator
 {
-    public const VERSION = 10;
+    public const VERSION = 11;
 
     public static function ensureUpToDate(PDO $pdo): void
     {
@@ -142,6 +142,13 @@ final class Migrator
             // "current password" (there is none they know).
             'password_set' => 'INTEGER NOT NULL DEFAULT 1',
         ]);
+
+        // Optom savdo (a shop setting, wholesale_enabled): a second, lower
+        // price per product / variant that the cashier switches the whole
+        // sale to. NULL = no wholesale price (the retail one is used).
+        self::addColumns($pdo, $log, 'products', ['wholesale_price' => 'REAL']);
+        self::addColumns($pdo, $log, 'product_variants', ['wholesale_price' => 'REAL']);
+        self::addColumns($pdo, $log, 'sales', ['price_type' => "TEXT NOT NULL DEFAULT 'retail'"]);
 
         // Last, so rows inserted by the steps above get their uuid too.
         self::addSyncIdentity($pdo, $log);

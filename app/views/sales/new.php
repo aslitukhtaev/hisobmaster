@@ -105,6 +105,7 @@ $posIcon = static function (string $name): string {
         <form id="sale-form" method="post" action="/sales">
             <?= csrf_field() ?>
             <input type="hidden" name="cart" id="cart-field">
+            <input type="hidden" name="price_type" id="price-type-field" value="retail">
 
             <div class="cart-totals">
                 <label class="field"<?= $canDiscount ? '' : ' hidden' ?>>
@@ -119,8 +120,14 @@ $posIcon = static function (string $name): string {
                     <span class="muted" id="discount-computed-label" style="display:none;"></span>
                     <span class="field-error" id="discount-error" hidden><?= e(t('discount_too_large')) ?></span>
                 </label>
+                <?php if ($wholesaleEnabled): ?>
+                    <div class="price-mode-toggle" role="group" aria-label="<?= e(t('price_mode_label')) ?>">
+                        <button type="button" class="price-mode-btn active" data-price-mode="retail" aria-pressed="true"><?= e(t('price_mode_retail')) ?></button>
+                        <button type="button" class="price-mode-btn" data-price-mode="wholesale" aria-pressed="false"><?= e(t('price_mode_wholesale')) ?></button>
+                    </div>
+                <?php endif; ?>
                 <div class="cart-total-row">
-                    <span><?= e(t('total')) ?></span>
+                    <span><?= e(t('total')) ?><span class="wholesale-badge" id="wholesale-badge" hidden><?= e(t('wholesale_short')) ?></span></span>
                     <strong id="cart-total">0 <?= e(t('currency_symbol')) ?></strong>
                 </div>
             </div>
@@ -233,7 +240,8 @@ if (!is_array($oldCart)) {
         qrAmount: <?= json_encode(old('qr_amount', ''), JSON_UNESCAPED_UNICODE) ?>,
         customerId: <?= json_encode(old('customer_id', ''), JSON_UNESCAPED_UNICODE) ?>,
         customerName: <?= json_encode(old('customer_name', ''), JSON_UNESCAPED_UNICODE) ?>,
-        customerPhone: <?= json_encode(old('customer_phone', ''), JSON_UNESCAPED_UNICODE) ?>
+        customerPhone: <?= json_encode(old('customer_phone', ''), JSON_UNESCAPED_UNICODE) ?>,
+        priceType: <?= json_encode($wholesaleEnabled ? old('price_type', 'retail') : 'retail', JSON_UNESCAPED_UNICODE) ?>
     };
 </script>
 <script src="<?= asset('js/sale.js') ?>" defer></script>
