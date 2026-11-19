@@ -91,7 +91,14 @@ $posIcon = static function (string $name): string {
         <div id="product-list" class="pos-product-list"></div>
     </div>
 
-    <div class="pos-cart card">
+    <!-- Phones: the cart is far below the list, so its total and "To'lash" ride above the bottom menu. -->
+    <div class="pos-mobile-bar" id="pos-mobile-bar" hidden>
+        <span class="pos-mobile-count" id="pos-mobile-count"></span>
+        <strong class="pos-mobile-total" id="pos-mobile-total"></strong>
+        <button type="button" class="btn btn-primary" id="pos-mobile-pay"><?= e(t('pay_now')) ?></button>
+    </div>
+
+    <div class="pos-cart card" id="pos-cart">
         <div class="cart-head">
             <h2 class="cart-title"><?= e(t('cart')) ?><span class="cart-count" id="cart-count" hidden></span></h2>
             <button type="button" class="cart-clear" id="cart-clear" hidden><?= $posIcon('trash') ?><?= e(t('clear_cart')) ?></button>
@@ -145,6 +152,7 @@ $posIcon = static function (string $name): string {
                 <label class="field">
                     <span><?= e(t('payment_naqd')) ?></span>
                     <input type="number" id="naqd-amount-input" min="0" max="<?= MONEY_MAX ?>" step="0.01" value="0" inputmode="decimal">
+                    <span class="quick-cash" id="quick-cash" aria-label="<?= e(t('quick_cash_label')) ?>"></span>
                 </label>
                 <label class="field">
                     <span><?= e(t('payment_karta')) ?></span>
@@ -223,6 +231,7 @@ if (!is_array($oldCart)) {
         discountEqualsLabel: <?= json_encode(t('discount_equals_label'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
         pickVariantHint: <?= json_encode(t('pick_variant_hint'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
         scanNotFound: <?= json_encode(t('scan_not_found'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        itemsCount: <?= json_encode(t('pos_items_count'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
         scanOutOfStock: <?= json_encode(t('scan_out_of_stock'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
         scanRecordPurchase: <?= json_encode(t('record_purchase'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
         scanAddProduct: <?= json_encode(t('scan_add_product'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,

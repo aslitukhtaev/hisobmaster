@@ -1,3 +1,4 @@
+<?php $pageTitle = $customer['full_name']; ?>
 <section class="page-head page-head-row">
     <div>
         <h1><?= e($customer['full_name']) ?></h1>
@@ -10,6 +11,24 @@
     <span class="stat-label"><?= e(t('current_balance')) ?></span>
     <span class="stat-value stock-value-amount"><?= money((float) $balance) ?></span>
 </section>
+
+<?php if ((float) $balance > 0): ?>
+<!-- The page's main job: taking a payment, right under the balance. -->
+<div class="card form-card debt-pay-card">
+    <h2><?= e(t('record_payment')) ?></h2>
+    <form method="post" action="/customers/<?= (int) $customer['id'] ?>/payment" class="stack">
+        <?= csrf_field() ?>
+        <label class="field">
+            <span><?= e(t('payment_amount')) ?></span>
+            <div class="debt-pay-row">
+                <input type="number" name="amount" id="debt-pay-amount" min="0.01" step="0.01" max="<?= (float) $balance ?>" required inputmode="decimal">
+                <button type="button" class="btn btn-ghost" data-fill-target="#debt-pay-amount" data-fill-value="<?= e((string) round((float) $balance, 2)) ?>"><?= e(t('pay_in_full')) ?></button>
+            </div>
+        </label>
+        <button type="submit" class="btn btn-primary btn-block"><?= e(t('record_payment')) ?></button>
+    </form>
+</div>
+<?php endif; ?>
 
 <?php
 $creditLimit = $customer['credit_limit'] !== null ? (float) $customer['credit_limit'] : null;
@@ -71,19 +90,6 @@ $isOverdue = $dueDate !== null && $dueDate !== '' && $dueDate < date('Y-m-d') &&
 <script src="<?= asset('js/debt-reminder.js') ?>" defer></script>
 <?php endif; ?>
 
-<?php if ((float) $balance > 0): ?>
-<div class="card form-card">
-    <h2><?= e(t('record_payment')) ?></h2>
-    <form method="post" action="/customers/<?= (int) $customer['id'] ?>/payment" class="stack">
-        <?= csrf_field() ?>
-        <label class="field">
-            <span><?= e(t('payment_amount')) ?></span>
-            <input type="number" name="amount" min="0.01" step="0.01" max="<?= (float) $balance ?>" required inputmode="decimal">
-        </label>
-        <button type="submit" class="btn btn-primary btn-block"><?= e(t('record_payment')) ?></button>
-    </form>
-</div>
-<?php endif; ?>
 
 <?php if (!empty($customer['note'])): ?>
 <div class="card" style="margin-bottom:16px;">

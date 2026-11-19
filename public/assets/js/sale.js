@@ -432,6 +432,58 @@
         }
     }
 
+    // Phones: "N ta · 51 250 so'm · To'lash" above the bottom menu while the cart has items.
+    var mobileBarEl = document.getElementById('pos-mobile-bar');
+    function renderMobileBar(total) {
+        if (!mobileBarEl) {
+            return;
+        }
+        mobileBarEl.hidden = cart.size === 0;
+        document.getElementById('pos-mobile-count').textContent = (i18n.itemsCount || ':count').replace(':count', cart.size);
+        document.getElementById('pos-mobile-total').textContent = formatMoney(total);
+    }
+    var mobilePayEl = document.getElementById('pos-mobile-pay');
+    if (mobilePayEl) {
+        mobilePayEl.addEventListener('click', function () {
+            var cartEl = document.getElementById('pos-cart');
+            if (cartEl) {
+                cartEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    }
+
+    // One tap for the cash the customer hands over: the exact sum and the next round notes.
+    var quickCashEl = document.getElementById('quick-cash');
+    function renderQuickCash(total) {
+        if (!quickCashEl) {
+            return;
+        }
+        var amounts = [];
+        if (total > 0) {
+            amounts.push(total);
+            [1000, 5000, 10000, 20000, 50000, 100000, 200000].forEach(function (note) {
+                var v = Math.ceil(total / note - 1e-9) * note;
+                if (v > total + 0.005 && amounts.indexOf(v) === -1) {
+                    amounts.push(v);
+                }
+            });
+        }
+        quickCashEl.innerHTML = amounts.slice(0, 4).map(function (v) {
+            return '<button type="button" class="quick-cash-btn" data-cash="' + v + '">' + escapeHtml(formatMoney(v)) + '</button>';
+        }).join('');
+    }
+    if (quickCashEl) {
+        quickCashEl.addEventListener('click', function (e) {
+            var btn = e.target.closest('.quick-cash-btn');
+            if (!btn) {
+                return;
+            }
+            e.preventDefault();
+            naqdAmountInputEl.value = btn.getAttribute('data-cash');
+            naqdAmountInputEl.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+    }
+
     function cartSubtotal() {
         var subtotal = 0;
         cart.forEach(function (entry) {
@@ -510,6 +562,8 @@
         }
         var total = Math.max(0, Math.round((subtotal - discount) * 100) / 100);
         cartTotalEl.textContent = formatMoney(total);
+        renderMobileBar(total);
+        renderQuickCash(total);
         document.getElementById('discount-field').value = discount;
 
         if (discountMode === 'percent') {
@@ -1049,9 +1103,24 @@
                 chooseNewCustomer(customerSearchEl.value);
             }
         }
-        if (creditLimitExceeded && !confirm(i18n.confirmExceedCreditLimit || 'This sale exceeds the customer\'s credit limit. Continue?')) {
-            e.preventDefault();
-            return;
+        if (creditLimitExceeded && saleFormEl.getAttribute('data-limit-ok') !== '1') {
+            var question = i18n.confirmExceedCreditLimit || 'This sale exceeds the customer\'s credit limit. Continue?';
+            var tg = window.Telegram && window.Telegram.WebApp;
+            // Inside Telegram the browser's confirm() may never show: use Telegram's own dialog.
+            if (tg && tg.initData && tg.isVersionAtLeast && tg.isVersionAtLeast('6.2')) {
+                e.preventDefault();
+                tg.showConfirm(question, function (ok) {
+                    if (ok) {
+                        saleFormEl.setAttribute('data-limit-ok', '1');
+                        saleFormEl.requestSubmit ? saleFormEl.requestSubmit() : saleFormEl.submit();
+                    }
+                });
+                return;
+            }
+            if (!confirm(question)) {
+                e.preventDefault();
+                return;
+            }
         }
         completeBtnEl.disabled = true;
     });

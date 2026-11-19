@@ -1110,4 +1110,8 @@ return [
     'pager_page' => "Страница :page",
     'sales_range_summary' => "Продаж за период: :count",
     'customer_phone_taken' => "Покупатель с этим номером телефона уже есть. Найдите его в списке.",
+    'pay_in_full' => "Полностью",
+    'quick_cash_label' => "Быстрая сумма",
+    'pay_now' => "Оплатить",
+    'pos_items_count' => ":count поз.",
 ];

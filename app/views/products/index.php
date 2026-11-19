@@ -8,6 +8,7 @@
         </p>
     </div>
     <div class="row-actions">
+        <a href="/purchases/create" class="btn btn-ghost"><?= e(t('record_purchase')) ?></a>
         <a href="/categories" class="btn btn-ghost"><?= e(t('categories')) ?></a>
         <a href="/products/import" class="btn btn-ghost"><?= e(t('import_products')) ?></a>
         <a href="/products/create" class="btn btn-ghost"><?= e(t('add_product')) ?></a>

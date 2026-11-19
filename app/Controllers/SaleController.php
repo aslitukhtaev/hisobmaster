@@ -117,6 +117,9 @@ class SaleController
             }
         ));
 
+        // Natural order for the till list: "Tovar 2" before "Tovar 10".
+        usort($activeProducts, static fn (array $a, array $b): int => strnatcasecmp((string) $a['name'], (string) $b['name']));
+
         // Barcodes of products that exist but have nothing left: a scan of one
         // says "qolmagan" instead of "not found, add it as a new product".
         $emptyBarcodes = [];

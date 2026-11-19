@@ -1110,4 +1110,8 @@ return [
     'pager_page' => ":page-sahifa",
     'sales_range_summary' => "Davrda :count ta sotuv",
     'customer_phone_taken' => "Bu telefon raqamli mijoz allaqachon bor. Uni ro'yxatdan qidirib toping.",
+    'pay_in_full' => "To'liq",
+    'quick_cash_label' => "Tez summa",
+    'pay_now' => "To'lash",
+    'pos_items_count' => ":count ta",
 ];

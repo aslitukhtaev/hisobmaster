@@ -1059,6 +1059,31 @@ img.logo-for-dark-theme { display: none; }
 
 .pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0 6px; }
 
+/* ---------- Till: quick cash, phone pay bar; debt payment ---------- */
+.quick-cash { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.quick-cash:empty { display: none; }
+.quick-cash-btn {
+    border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 999px;
+    padding: 6px 10px; font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer;
+}
+.quick-cash-btn:hover { border-color: var(--primary-ink); }
+@media (pointer: coarse) { .quick-cash-btn { padding: 9px 12px; } }
+.pos-mobile-bar { display: none; }
+@media (max-width: 899px) {
+    .pos-mobile-bar:not([hidden]) {
+        display: flex; align-items: center; gap: 10px;
+        position: fixed; left: 8px; right: 8px; z-index: 19;
+        bottom: calc(var(--bottom-nav-h) + var(--sa-bottom) + 8px);
+        padding: 10px 10px 10px 14px; border-radius: 16px;
+        background: var(--surface); border: 1px solid var(--border); box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+    }
+    .pos-mobile-count { color: var(--muted); font-size: .85rem; }
+    .pos-mobile-total { flex: 1; font-size: 1.1rem; }
+    .content:has(.pos-mobile-bar:not([hidden])) { padding-bottom: calc(var(--bottom-nav-h) + 96px); }
+}
+.debt-pay-row { display: flex; gap: 8px; }
+.debt-pay-row input { flex: 1; min-width: 0; }
+
 /* ---------- Categories ---------- */
 .category-filter {
     min-width: 0; max-width: 220px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);

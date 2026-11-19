@@ -36,6 +36,20 @@ document.addEventListener('input', function (e) {
     }
 });
 
+// <button data-fill-target="#input" data-fill-value="123">: puts the value in (e.g. "To'liq" on a debt payment).
+document.addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('[data-fill-target]') : null;
+    if (!btn) {
+        return;
+    }
+    var input = document.querySelector(btn.getAttribute('data-fill-target'));
+    if (input) {
+        input.value = btn.getAttribute('data-fill-value') || '';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.focus();
+    }
+});
+
 // A filter <select data-autosubmit> applies as soon as it is changed.
 document.addEventListener('change', function (e) {
     var el = e.target;
