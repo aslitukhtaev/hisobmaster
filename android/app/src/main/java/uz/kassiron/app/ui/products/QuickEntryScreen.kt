@@ -61,8 +61,12 @@ import kotlinx.coroutines.launch
 import uz.kassiron.app.App
 import uz.kassiron.app.R
 import uz.kassiron.app.core.Money
+import uz.kassiron.app.core.Row as DbRow
 import uz.kassiron.app.domain.ProductService
 import uz.kassiron.app.domain.QuickRow
+import uz.kassiron.app.domain.Wholesale
+import uz.kassiron.app.ui.common.dbState
+import androidx.compose.runtime.saveable.rememberSaveable
 import uz.kassiron.app.ui.common.BarcodeScannerDialog
 import uz.kassiron.app.ui.common.io
 import uz.kassiron.app.ui.kit.Edge
@@ -83,28 +87,36 @@ import uz.kassiron.app.ui.theme.K
 internal class QuickRowState(val id: Long) {
     var name by mutableStateOf("")
     var price by mutableStateOf("")
+    var optom by mutableStateOf("")
     var qty by mutableStateOf("")
     var barcode by mutableStateOf("")
     /** A message from the last save (server rules), cleared when the row changes. */
     var serverError by mutableStateOf<String?>(null)
     val focus = FocusRequester()
 
-    val isBlank: Boolean get() = name.isBlank() && price.isBlank() && qty.isBlank() && barcode.isBlank()
+    val isBlank: Boolean get() = name.isBlank() && price.isBlank() && optom.isBlank() && qty.isBlank() && barcode.isBlank()
+    val optomOk: Boolean get() = optom.isBlank() || Money.parse(optom)?.let { it >= 0 } == true
     val priceOk: Boolean get() = Money.parse(price)?.let { it >= 0 } == true
-    val complete: Boolean get() = name.isNotBlank() && priceOk && (qty.isBlank() || Money.parse(qty) != null)
+    val complete: Boolean get() = name.isNotBlank() && priceOk && optomOk && (qty.isBlank() || Money.parse(qty) != null)
 
     fun touch() { serverError = null }
 }
 
 /** Which cell of a row is wrong (shown red). */
-private enum class BadCell { NAME, PRICE, QTY }
+private enum class BadCell { NAME, PRICE, OPTOM, QTY }
 
 @Composable
 fun QuickProductsScreen(nav: NavHostController) = QuickEntry(nav)
 
 /** [prefill] lets the screenshot tests show a filled table. */
 @Composable
-internal fun QuickEntry(nav: NavHostController, prefill: List<Triple<String, String, String>> = emptyList(), showErrors: Boolean = false) {
+internal fun QuickEntry(
+    nav: NavHostController,
+    prefill: List<Triple<String, String, String>> = emptyList(),
+    showErrors: Boolean = false,
+    prefillOptom: List<String> = emptyList(),
+    initialCategory: String? = null,
+) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
@@ -120,9 +132,17 @@ internal fun QuickEntry(nav: NavHostController, prefill: List<Triple<String, Str
     var pendingFocus by remember { mutableStateOf<Long?>(null) }
     var saving by remember { mutableStateOf(false) }
     var scanMany by remember { mutableStateOf(false) }
+    var categoryId by rememberSaveable { mutableStateOf(initialCategory) }
+    var categorySheet by remember { mutableStateOf(false) }
+    val categories by dbState(emptyList<DbRow>()) { ProductService.categories(App.db) }
+    // A second price column ("Optom narx") only where the shop sells wholesale.
+    val wholesaleOn by dbState(false) { Wholesale.enabled() }
+    val nameW = if (wholesaleOn) 1.25f else 1.4f
+    val priceW = if (wholesaleOn) 0.85f else 0.8f
+    val qtyW = if (wholesaleOn) 0.6f else 0.8f
 
     if (rows.isEmpty()) {
-        prefill.forEach { (n, p, q) -> addRow().apply { name = n; price = p; qty = q } }
+        prefill.forEachIndexed { i, (n, p, q) -> addRow().apply { name = n; price = p; qty = q; optom = prefillOptom.getOrElse(i) { "" } } }
         repeat(if (prefill.isEmpty()) 5 else 2) { addRow() }
     }
     LaunchedEffect(Unit) { if (prefill.isEmpty()) pendingFocus = rows.first().id }
@@ -134,6 +154,7 @@ internal fun QuickEntry(nav: NavHostController, prefill: List<Triple<String, Str
         r.isBlank -> null
         r.name.isBlank() -> BadCell.NAME
         !r.priceOk -> BadCell.PRICE
+        wholesaleOn && !r.optomOk -> BadCell.OPTOM
         r.qty.isNotBlank() && Money.parse(r.qty) == null -> BadCell.QTY
         else -> null
     }
@@ -148,6 +169,7 @@ internal fun QuickEntry(nav: NavHostController, prefill: List<Triple<String, Str
         val what = r.serverError ?: when (badCell(r)) {
             BadCell.NAME -> ctx.getString(R.string.products_quick_need_name)
             BadCell.PRICE -> ctx.getString(R.string.products_quick_need_price)
+            BadCell.OPTOM -> ctx.getString(R.string.products_quick_need_optom)
             BadCell.QTY -> ctx.getString(R.string.products_quick_need_qty)
             null -> null
         } ?: return@mapIndexedNotNull null
@@ -161,12 +183,15 @@ internal fun QuickEntry(nav: NavHostController, prefill: List<Triple<String, Str
         val snapshot = rows.toList()
         val input = snapshot.mapIndexedNotNull { i, r ->
             if (!r.complete || r.serverError != null) null
-            else i to QuickRow(name = r.name.trim(), barcode = r.barcode.trim(), sellPrice = r.price, stock = r.qty)
+            else i to QuickRow(
+                name = r.name.trim(), barcode = r.barcode.trim(), sellPrice = r.price, stock = r.qty,
+                wholesalePrice = if (wholesaleOn) r.optom else "",
+            )
         }
         if (input.isEmpty()) return
         saving = true
         scope.launch {
-            val result = runCatching { io { ProductService.quickCreate(input, canPrices) } }
+            val result = runCatching { io { ProductService.quickCreate(input, canPrices, categoryId) } }
             saving = false
             result.onSuccess { res ->
                 res.errors.forEach { (i, e) -> snapshot.getOrNull(i)?.serverError = ctx.productError(e) }
@@ -198,10 +223,18 @@ internal fun QuickEntry(nav: NavHostController, prefill: List<Triple<String, Str
             },
         ) {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
+                // One category for the whole batch; it stays chosen for the next one.
+                PickField(
+                    stringResource(R.string.products_category),
+                    categories.firstOrNull { it.str("uuid") == categoryId }?.str("name") ?: stringResource(R.string.products_category_none),
+                    "", { categorySheet = true },
+                    Modifier.fillMaxWidth().padding(start = Edge, end = Edge, bottom = 10.dp),
+                )
                 Row(Modifier.fillMaxWidth().padding(horizontal = Edge), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    HeadCell(stringResource(R.string.products_quick_col_name), 1.4f)
-                    HeadCell(stringResource(R.string.products_quick_col_price), 0.8f)
-                    HeadCell(stringResource(R.string.products_quick_col_qty), 0.8f)
+                    HeadCell(stringResource(R.string.products_quick_col_name), nameW)
+                    HeadCell(stringResource(if (wholesaleOn) R.string.products_retail_price else R.string.products_quick_col_price), priceW)
+                    if (wholesaleOn) HeadCell(stringResource(R.string.products_wholesale_price), priceW)
+                    HeadCell(stringResource(R.string.products_quick_col_qty), qtyW)
                 }
                 rows.forEachIndexed { index, r ->
                     val bad = if (showsError(r)) badCell(r) else null
@@ -220,19 +253,27 @@ internal fun QuickEntry(nav: NavHostController, prefill: List<Triple<String, Str
                     ) {
                         QuickCell(
                             r.name, { r.name = it.take(200); r.touch(); ensureTrailingBlank() },
-                            stringResource(R.string.products_quick_col_name), 1.4f,
+                            stringResource(R.string.products_quick_col_name), nameW,
                             error = bad == BadCell.NAME || serverBad, numeric = false,
                             onFocus = ::onFocus, onNext = { focusManager.moveFocus(FocusDirection.Next) }, requester = r.focus,
                         )
                         QuickCell(
                             r.price, { r.price = numberInput(it); r.touch(); ensureTrailingBlank() },
-                            if (bad == BadCell.PRICE) stringResource(R.string.products_quick_price_missing) else "0", 0.8f,
+                            if (bad == BadCell.PRICE) stringResource(R.string.products_quick_price_missing) else "0", priceW,
                             error = bad == BadCell.PRICE, numeric = true, group = true,
                             onFocus = ::onFocus, onNext = { focusManager.moveFocus(FocusDirection.Next) },
                         )
+                        if (wholesaleOn) {
+                            QuickCell(
+                                r.optom, { r.optom = numberInput(it); r.touch(); ensureTrailingBlank() },
+                                "—", priceW,
+                                error = bad == BadCell.OPTOM, numeric = true, group = true,
+                                onFocus = ::onFocus, onNext = { focusManager.moveFocus(FocusDirection.Next) },
+                            )
+                        }
                         QuickCell(
                             r.qty, { r.qty = numberInput(it); r.touch(); ensureTrailingBlank() },
-                            "0", 0.8f,
+                            "0", qtyW,
                             error = bad == BadCell.QTY, numeric = true,
                             onFocus = ::onFocus, onNext = ::nextFromLast,
                         )
@@ -263,6 +304,26 @@ internal fun QuickEntry(nav: NavHostController, prefill: List<Triple<String, Str
         }
     }
 
+    if (categorySheet) {
+        PickSheet(
+            title = stringResource(R.string.products_category),
+            items = listOf(PickItem(null, stringResource(R.string.products_category_none))) + categories.map { PickItem(it.str("uuid"), it.str("name")) },
+            selected = categoryId,
+            searchHint = stringResource(R.string.products_category_search),
+            newTitle = { ctx.getString(R.string.products_category_new, it) },
+            newSub = stringResource(R.string.products_category_new_hint),
+            onPick = { id -> categoryId = id; categorySheet = false },
+            onCreate = { name ->
+                scope.launch {
+                    runCatching { io { ProductService.findOrCreateCategory(name) } }
+                        .onSuccess { id -> categoryId = id; categorySheet = false }
+                        .onFailure { snackbar.showSnackbar(ctx.productError(it)) }
+                }
+            },
+            onDismiss = { categorySheet = false },
+        )
+    }
+
     if (scanMany) {
         BarcodeScannerDialog(
             continuous = true,
@@ -281,7 +342,7 @@ internal fun QuickEntry(nav: NavHostController, prefill: List<Triple<String, Str
 
 @Composable
 private fun RowScope.HeadCell(text: String, weight: Float) {
-    Text(text, style = K.t.small.copy(fontSize = 11.5.sp, fontWeight = FontWeight.Bold), color = K.c.mu, modifier = Modifier.weight(weight).padding(horizontal = 2.dp, vertical = 4.dp))
+    Text(text, style = K.t.small.copy(fontSize = 11.5.sp, fontWeight = FontWeight.Bold, lineHeight = 14.sp), color = K.c.mu, maxLines = 2, modifier = Modifier.weight(weight).padding(horizontal = 2.dp, vertical = 4.dp))
 }
 
 /** One table cell: 44dp, rounded 11, lime border when focused, red when wrong. Enter = next cell. */

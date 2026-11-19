@@ -12,6 +12,7 @@ import uz.kassiron.app.core.Units
 import uz.kassiron.app.domain.CartLine
 import uz.kassiron.app.domain.PaymentSplit
 import uz.kassiron.app.domain.SaleMath
+import uz.kassiron.app.domain.Wholesale
 import kotlin.math.ceil
 import kotlin.math.max
 
@@ -24,11 +25,17 @@ data class TillProduct(
     val barcode: String?,
     val lowThreshold: Double?,
     val variantCount: Int,
+    /** Optom price, null = none (the retail price is used then too). */
+    val wholesale: Double? = null,
 ) {
     val isLow: Boolean get() = stock <= 0 || (lowThreshold != null && stock <= lowThreshold)
+    fun priceFor(optom: Boolean): Double = Wholesale.unitPrice(price, null, wholesale, optom)
 }
 
-data class TillVariant(val uuid: String, val label: String, val price: Double, val stock: Double, val barcode: String?)
+/** [wholesale]: the variant's own optom price (the product's is used when null). */
+data class TillVariant(val uuid: String, val label: String, val price: Double, val stock: Double, val barcode: String?, val wholesale: Double? = null) {
+    fun priceFor(product: TillProduct, optom: Boolean): Double = Wholesale.unitPrice(price, wholesale, product.wholesale, optom)
+}
 
 data class TillCustomer(val uuid: String, val name: String, val phone: String?, val balance: Double)
 
@@ -38,10 +45,14 @@ data class CartItem(
     val name: String,
     val variantLabel: String?,
     val unit: String,
+    /** What the line costs now: [retail] or, in an optom sale, [optom] when there is one. */
     val price: Double,
     val stock: Double,
     val qty: Double,
+    val retail: Double = price,
+    val optom: Double? = null,
 ) {
+    fun priced(wholesale: Boolean): CartItem = copy(price = if (wholesale) optom ?: retail else retail)
     val key: String get() = productUuid + "/" + (variantUuid ?: "")
     val subtotal: Double get() = SaleMath.lineSubtotal(price, qty)
     val fractional: Boolean get() = Units.allowsFraction(unit)
@@ -62,7 +73,7 @@ sealed interface BarcodeHit {
 
 /** Local reads for the till. Call off the main thread. */
 object TillData {
-    private const val PRODUCT_COLS = """p.uuid, p.name, p.unit, p.sell_price, p.stock_qty, p.barcode, p.low_stock_threshold,
+    private const val PRODUCT_COLS = """p.uuid, p.name, p.unit, p.sell_price, p.stock_qty, p.barcode, p.low_stock_threshold, p.wholesale_price,
         (SELECT COUNT(*) FROM product_variants v WHERE v.product_id = p.uuid AND v.status = 'active') AS variant_count"""
 
     /** The shop-wide low stock level (settings.low_stock_threshold_default), used when a product has none — as Product::lowStock does. */
@@ -77,6 +88,7 @@ object TillData {
         barcode = r.strOrNull("barcode"),
         lowThreshold = r.dblOrNull("low_stock_threshold") ?: lowDefault,
         variantCount = r.long("variant_count").toInt(),
+        wholesale = r.dblOrNull("wholesale_price"),
     )
 
     /** Product categories that have active products (the till's chips), by name. */
@@ -122,7 +134,8 @@ object TillData {
         val c = code.trim()
         if (c.isEmpty()) return null
         App.db.queryOne(
-            """SELECT v.uuid AS v_uuid, v.variant_label, v.sell_price AS v_price, v.stock_qty AS v_stock, v.barcode AS v_barcode, $PRODUCT_COLS
+            """SELECT v.uuid AS v_uuid, v.variant_label, v.sell_price AS v_price, v.stock_qty AS v_stock, v.barcode AS v_barcode,
+                      v.wholesale_price AS v_wholesale, $PRODUCT_COLS
                FROM product_variants v JOIN products p ON p.uuid = v.product_id
                WHERE v.barcode = ? AND v.status = 'active' AND p.status = 'active' LIMIT 1""",
             c,
@@ -130,7 +143,7 @@ object TillData {
             val p = product(r, shopLowDefault())
             return BarcodeHit.Variant(
                 p,
-                TillVariant(r.str("v_uuid"), r.str("variant_label"), r.dblOrNull("v_price") ?: p.price, r.dbl("v_stock"), r.strOrNull("v_barcode")),
+                TillVariant(r.str("v_uuid"), r.str("variant_label"), r.dblOrNull("v_price") ?: p.price, r.dbl("v_stock"), r.strOrNull("v_barcode"), r.dblOrNull("v_wholesale")),
             )
         }
         return App.db.queryOne("SELECT $PRODUCT_COLS FROM products p WHERE p.barcode = ? AND p.status = 'active' LIMIT 1", c)
@@ -140,7 +153,9 @@ object TillData {
     fun variants(product: TillProduct): List<TillVariant> = App.db.query(
         "SELECT * FROM product_variants WHERE product_id = ? AND status = 'active' ORDER BY variant_label COLLATE NOCASE",
         product.uuid,
-    ).map { TillVariant(it.str("uuid"), it.str("variant_label"), it.dblOrNull("sell_price") ?: product.price, it.dbl("stock_qty"), it.strOrNull("barcode")) }
+    ).map {
+        TillVariant(it.str("uuid"), it.str("variant_label"), it.dblOrNull("sell_price") ?: product.price, it.dbl("stock_qty"), it.strOrNull("barcode"), it.dblOrNull("wholesale_price"))
+    }
 
     private const val BALANCE =
         "(SELECT COALESCE(SUM(CASE WHEN d.type = 'qarz' THEN d.amount ELSE -d.amount END), 0) FROM debt_transactions d WHERE d.customer_id = c.uuid)"
@@ -179,6 +194,15 @@ class TillViewModel : ViewModel() {
     var category by mutableStateOf<String?>(null)
     var lastSale by mutableStateOf<LastSale?>(null)
 
+    /** Optom sale: every line at its optom price. Back to chakana after each sale and when the cart is cleared. */
+    var wholesale by mutableStateOf(false)
+        private set
+
+    fun setWholesaleMode(on: Boolean) {
+        wholesale = on
+        for (i in cart.indices) cart[i] = cart[i].priced(on)
+    }
+
     // Payment.
     var mode by mutableStateOf(PayMode.NAQD)
     var cashText by mutableStateOf("")
@@ -208,13 +232,15 @@ class TillViewModel : ViewModel() {
         val current = if (index >= 0) cart[index].qty else 0.0
         val name = product.name + (variant?.let { " (${it.label})" } ?: "")
         if (current + qty > stock + 0.000001) return AddResult.NoStock(name, stock, product.unit)
+        val retail = variant?.price ?: product.price
+        val optom = if (variant != null) variant.wholesale ?: product.wholesale else product.wholesale
         if (index >= 0) {
             val item = cart.removeAt(index)
-            cart.add(0, item.copy(qty = round3(item.qty + qty), stock = stock, price = variant?.price ?: product.price))
+            cart.add(0, item.copy(qty = round3(item.qty + qty), stock = stock, retail = retail, optom = optom).priced(wholesale))
         } else {
             cart.add(
                 0,
-                CartItem(product.uuid, variant?.uuid, product.name, variant?.label, product.unit, variant?.price ?: product.price, stock, qty),
+                CartItem(product.uuid, variant?.uuid, product.name, variant?.label, product.unit, retail, stock, qty, retail, optom).priced(wholesale),
             )
         }
         return AddResult.Added
@@ -234,8 +260,11 @@ class TillViewModel : ViewModel() {
 
     fun clear() {
         cart.clear()
+        wholesale = false
         resetPayment()
     }
+
+    fun priceType(): String = if (wholesale) Wholesale.WHOLESALE else Wholesale.RETAIL
 
     fun resetPayment() {
         mode = PayMode.NAQD

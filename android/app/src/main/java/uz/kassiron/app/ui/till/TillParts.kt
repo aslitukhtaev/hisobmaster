@@ -178,6 +178,7 @@ private fun CustomerField(customer: TillCustomer?, error: String?, onClick: () -
 @Composable
 internal fun PaymentSheet(
     vm: TillViewModel,
+    optom: Boolean = false,
     canDiscount: Boolean,
     selling: Boolean,
     error: String?,
@@ -186,7 +187,7 @@ internal fun PaymentSheet(
     onDismiss: () -> Unit,
 ) {
     KSheet(onDismiss = { if (!selling) onDismiss() }) {
-        PaymentContent(vm, canDiscount, selling, error, onSell, onPickCustomer)
+        PaymentContent(vm, canDiscount, selling, error, onSell, onPickCustomer, optom)
     }
 }
 
@@ -198,6 +199,7 @@ internal fun PaymentContent(
     error: String?,
     onSell: () -> Unit,
     onPickCustomer: () -> Unit,
+    optom: Boolean = false,
 ) {
     var showDiscount by remember { mutableStateOf(vm.discountText.isNotEmpty()) }
     val subtotal = vm.subtotal
@@ -209,7 +211,10 @@ internal fun PaymentContent(
 
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-            Text(stringResource(R.string.till_to_pay), style = K.t.label.copy(fontSize = 13.sp), color = K.c.mu, modifier = Modifier.weight(1f).alignByBaseline())
+            Row(Modifier.weight(1f).alignByBaseline(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.till_to_pay), style = K.t.label.copy(fontSize = 13.sp), color = K.c.mu)
+                if (optom) KTag(stringResource(R.string.till_wholesale_prices), KTagKind.Low)
+            }
             KMoney(total, size = 32.sp, modifier = Modifier.alignByBaseline())
         }
         if (discount > 0 && !discountBad) {
@@ -479,7 +484,7 @@ internal fun QtySheet(item: CartItem, onSet: (Double) -> Boolean, onDismiss: () 
 }
 
 @Composable
-internal fun VariantSheet(product: TillProduct, onPick: (TillVariant) -> Unit, onDismiss: () -> Unit) {
+internal fun VariantSheet(product: TillProduct, optom: Boolean = false, onPick: (TillVariant) -> Unit, onDismiss: () -> Unit) {
     val variants by dbState<List<TillVariant>?>(null, product.uuid) { TillData.variants(product) }
     KSheet(onDismiss = onDismiss) {
         KSheetTitle(product.name, onDismiss)
@@ -494,7 +499,7 @@ internal fun VariantSheet(product: TillProduct, onPick: (TillVariant) -> Unit, o
                 KRow(
                     title = v.label,
                     subtitle = { StockLine(v.stock, product.unit, v.stock <= 0 || (product.lowThreshold != null && v.stock <= product.lowThreshold)) },
-                    trailing = { KMoney(v.price) },
+                    trailing = { KMoney(v.priceFor(product, optom)) },
                     onClick = { onPick(v) },
                 )
             }

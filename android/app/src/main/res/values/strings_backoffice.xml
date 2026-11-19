@@ -253,4 +253,5 @@
         <item>noyabr</item>
         <item>dekabr</item>
     </string-array>
+    <string name="sales_price_type">Narx</string>
 </resources>

@@ -78,6 +78,7 @@ import uz.kassiron.app.R
 import uz.kassiron.app.core.Money
 import uz.kassiron.app.domain.SaleException
 import uz.kassiron.app.domain.SaleService
+import uz.kassiron.app.domain.Wholesale
 import uz.kassiron.app.print.BluetoothPrinter
 import uz.kassiron.app.print.PrintException
 import uz.kassiron.app.print.PrinterSettings
@@ -97,6 +98,8 @@ import uz.kassiron.app.ui.kit.KConfirm
 import uz.kassiron.app.ui.kit.KEmpty
 import uz.kassiron.app.ui.kit.KIconButton
 import uz.kassiron.app.ui.kit.KMoney
+import uz.kassiron.app.ui.kit.KOption
+import uz.kassiron.app.ui.kit.KSegmented
 import uz.kassiron.app.ui.kit.KRow
 import uz.kassiron.app.ui.kit.KScreen
 import uz.kassiron.app.ui.kit.KSearch
@@ -126,6 +129,7 @@ internal fun saleErrorText(context: Context, e: SaleException): String {
         "discount_too_large" -> context.getString(R.string.till_err_discount_too_large)
         "customer_required_for_debt" -> context.getString(R.string.till_err_customer_required)
         "insufficient_stock" -> context.getString(R.string.till_err_insufficient_stock, s)
+        "wholesale_not_allowed" -> context.getString(R.string.till_err_wholesale_not_allowed)
         else -> context.getString(R.string.till_err_unknown)
     }
 }
@@ -195,6 +199,13 @@ internal fun TillContent(
     val sync by App.sync.state.collectAsState()
     val canDiscount = user?.can("discount") == true
     val canProducts = user?.can("products") == true
+    // Optom selling exists only when the shop turned it on (website settings); re-read after each sync.
+    val wholesaleSetting by dbState<Boolean?>(null) { Wholesale.enabled() }
+    // The toggle needs the shop setting and the cashier's own "wholesale" permission.
+    val wholesaleOn = wholesaleSetting == true && user?.can(Wholesale.PERMISSION) == true
+    // Turned off on the website while an optom sale was open: back to chakana (not before the setting is read).
+    LaunchedEffect(wholesaleSetting, user) { if (wholesaleSetting != null && !wholesaleOn && vm.wholesale) vm.setWholesaleMode(false) }
+    val optom = wholesaleOn && vm.wholesale
 
     var showScanner by remember { mutableStateOf(false) }
     var showPay by remember { mutableStateOf(startSheet == TillSheet.PAY) }
@@ -316,7 +327,8 @@ internal fun TillContent(
         payError = null
         scope.launch {
             try {
-                val sale = io { SaleService.create(lines, naqd, karta, discount, customer) }
+                val priceType = if (optom) Wholesale.WHOLESALE else Wholesale.RETAIL
+                val sale = io { SaleService.create(lines, naqd, karta, discount, customer, priceType) }
                 vm.lastSale = LastSale(sale.uuid, sale.receiptNo, sale.total, sale.change, sale.qarz)
                 vm.clear()
                 vm.query = ""
@@ -348,6 +360,9 @@ internal fun TillContent(
                     total = vm.subtotal,
                     onPay = { payError = null; showPay = true },
                     onClear = { confirmClear = true },
+                    wholesaleOn = wholesaleOn,
+                    optom = optom,
+                    onOptom = { on -> vm.setWholesaleMode(on); haptic(view) },
                 )
             }
         },
@@ -421,11 +436,12 @@ internal fun TillContent(
                 when (e) {
                     is TillEntry.Line -> CartLineRow(
                         e.item,
+                        optom,
                         onPlus = { plus(e.item) },
                         onMinus = { minus(e.item) },
                         onQty = { qtyFor = e.item },
                     )
-                    is TillEntry.Product -> ProductRow(e.product, onClick = { add(e.product, null) })
+                    is TillEntry.Product -> ProductRow(e.product, optom, onClick = { add(e.product, null) })
                 }
             }
             if (list != null && list.isEmpty()) {
@@ -454,6 +470,7 @@ internal fun TillContent(
     if (showPay && !cartEmpty) {
         PaymentSheet(
             vm = vm,
+            optom = optom,
             canDiscount = canDiscount,
             selling = selling,
             error = payError,
@@ -471,7 +488,7 @@ internal fun TillContent(
     }
 
     variantFor?.let { product ->
-        VariantSheet(product, onPick = { v -> variantFor = null; add(product, v) }, onDismiss = { variantFor = null })
+        VariantSheet(product, optom, onPick = { v -> variantFor = null; add(product, v) }, onDismiss = { variantFor = null })
     }
 
     qtyFor?.let { item ->
@@ -503,20 +520,24 @@ internal fun StockLine(stock: Double, unit: String, low: Boolean, variants: Int 
 }
 
 @Composable
-private fun ProductRow(p: TillProduct, onClick: () -> Unit) {
+private fun ProductRow(p: TillProduct, optom: Boolean, onClick: () -> Unit) {
     KRow(
         title = p.name,
         subtitle = { StockLine(p.stock, p.unit, p.isLow, p.variantCount) },
-        trailing = { KMoney(p.price) },
+        trailing = { KMoney(p.priceFor(optom)) },
         onClick = onClick,
     )
 }
 
 @Composable
-private fun CartLineRow(item: CartItem, onPlus: () -> Unit, onMinus: () -> Unit, onQty: () -> Unit) {
+private fun CartLineRow(item: CartItem, optom: Boolean, onPlus: () -> Unit, onMinus: () -> Unit, onQty: () -> Unit) {
     KRow(
         title = item.name + (item.variantLabel?.let { " · $it" } ?: ""),
-        subtitle = { KSub(Money.format(item.price)) },
+        subtitle = {
+            // In an optom sale, a line with no optom price goes at the ordinary price: say so.
+            val note = if (optom && item.optom == null) " · " + stringResource(R.string.till_no_wholesale_price) else ""
+            KSub(Money.format(item.price) + note)
+        },
         trailing = { KStepper(Money.qty(item.qty), onMinus = onMinus, onPlus = onPlus, onQtyClick = onQty) },
         selected = true,
         onClick = onPlus,
@@ -527,13 +548,35 @@ private fun CartLineRow(item: CartItem, onPlus: () -> Unit, onMinus: () -> Unit,
 /** The cart bar (mockup 6): item count and total on the left, "To‘lash" on the right. Long-press the total to clear the cart. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun CartBar(count: Int, total: Double, onPay: () -> Unit, onClear: () -> Unit) {
+private fun CartBar(
+    count: Int,
+    total: Double,
+    onPay: () -> Unit,
+    onClear: () -> Unit,
+    wholesaleOn: Boolean = false,
+    optom: Boolean = false,
+    onOptom: (Boolean) -> Unit = {},
+) {
     KBottomBar(background = K.c.s1) {
+        if (wholesaleOn) {
+            KSegmented(
+                listOf(KOption(stringResource(R.string.till_retail)), KOption(stringResource(R.string.till_wholesale))),
+                if (optom) 1 else 0,
+                { onOptom(it == 1) },
+                Modifier.fillMaxWidth(),
+                height = 30.dp,
+            )
+            Spacer(Modifier.height(10.dp))
+        }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(
                 Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).combinedClickable(onClick = onPay, onLongClick = onClear),
             ) {
-                Text(stringResource(R.string.till_cart_count, count), style = K.t.small, color = K.c.mu, maxLines = 1)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(stringResource(R.string.till_cart_count, count), style = K.t.small, color = K.c.mu, maxLines = 1)
+                    // Never sell optom by accident: the total says so in amber.
+                    if (optom) KTag(stringResource(R.string.till_wholesale), KTagKind.Low)
+                }
                 KMoney(total, size = 21.sp)
             }
             Spacer(Modifier.width(12.dp))
@@ -688,6 +731,7 @@ private fun ReceiptPaper(r: ReceiptData) {
         rule()
         line("№ " + r.receiptNo, r.createdAt)
         if (r.cashier.isNotBlank()) Text(stringResource(R.string.print_cashier) + ": " + r.cashier, style = mono)
+        if (r.wholesale) Text(stringResource(R.string.till_wholesale_prices), style = bold)
         rule()
         r.items.forEach { item -> line(item.name + " × " + Money.qty(item.qty), Money.format(item.subtotal, false)) }
         rule()

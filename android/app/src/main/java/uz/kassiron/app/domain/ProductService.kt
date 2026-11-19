@@ -61,6 +61,7 @@ data class ProductListItem(
     val variantStock: Double,
     /** Lower-cased name + barcode + variants' labels and barcodes, for instant local search. */
     val searchText: String,
+    val wholesalePrice: Double? = null,
 ) {
     /** A product with active variants sells only through them: its stock is theirs. */
     val stock: Double get() = if (variantCount > 0) variantStock else ownStock
@@ -85,6 +86,8 @@ data class ProductForm(
     val packageCode: String = "",
     val vatRate: String = "",
     val active: Boolean = true,
+    /** The optom price as typed; null = the field isn't shown (wholesale off): the saved value stays. */
+    val wholesalePrice: String? = null,
 )
 
 data class VariantForm(
@@ -95,6 +98,8 @@ data class VariantForm(
     val initialStock: String = "",
     /** First variant only: move the product's own stock onto it (the website's take_parent_stock). */
     val takeParentStock: Boolean = false,
+    /** As in [ProductForm]: null = not shown, keep the saved one; blank = the product's optom price. */
+    val wholesalePrice: String? = null,
 )
 
 /** One row of the quick entry table (QuickEntryController::productsStore). */
@@ -105,8 +110,10 @@ data class QuickRow(
     val costPrice: String = "",
     val stock: String = "",
     val unit: String = "dona",
+    /** Optional optom price (the column shows only when the shop sells wholesale). */
+    val wholesalePrice: String = "",
 ) {
-    val isBlank: Boolean get() = name.isBlank() && barcode.isBlank() && sellPrice.isBlank() && costPrice.isBlank() && stock.isBlank()
+    val isBlank: Boolean get() = name.isBlank() && barcode.isBlank() && sellPrice.isBlank() && costPrice.isBlank() && stock.isBlank() && wholesalePrice.isBlank()
 }
 
 data class QuickResult(val created: List<Int>, val errors: Map<Int, ProductException>)
@@ -139,7 +146,7 @@ object ProductService {
         }
         return db.query(
             """SELECT p.uuid, p.name, p.unit, p.sell_price, p.cost_price, p.stock_qty, p.barcode, p.status,
-                      p.low_stock_threshold, p.category_id, c.name AS category_name,
+                      p.low_stock_threshold, p.category_id, c.name AS category_name, p.wholesale_price,
                       COALESCE(v.cnt, 0) AS variant_count, COALESCE(v.stock, 0) AS variant_stock
                FROM products p
                LEFT JOIN categories c ON c.uuid = p.category_id
@@ -163,6 +170,7 @@ object ProductService {
                 variantCount = r.long("variant_count").toInt(),
                 variantStock = r.dbl("variant_stock"),
                 searchText = (r.str("name") + " " + r.str("barcode") + (variantText[uuid] ?: "")).lowercase(),
+                wholesalePrice = r.dblOrNull("wholesale_price"),
             )
         }
     }
@@ -319,6 +327,9 @@ object ProductService {
                 v
             }
             val categoryId = form.categoryId?.takeIf { id -> queryOne("SELECT uuid FROM categories WHERE uuid = ?", id) != null }
+            // Editable like the sell price (ProductController: anyone who may edit products).
+            val wholesale: Double? = if (form.wholesalePrice == null) existing?.dblOrNull("wholesale_price")
+                else money(form.wholesalePrice, null)
 
             val values = mapOf(
                 "category_id" to categoryId,
@@ -333,6 +344,7 @@ object ProductService {
                 "mxik" to mxik.ifEmpty { null },
                 "package_code" to packageCode.ifEmpty { null },
                 "vat_rate" to vat,
+                "wholesale_price" to wholesale,
                 "updated_at" to Time.now(),
             )
             if (existing == null) {
@@ -403,11 +415,14 @@ object ProductService {
             val barcode = form.barcode.trim()
             checkBarcode(this, barcode, null, existing?.str("uuid"))
 
+            val wholesale: Double? = if (form.wholesalePrice == null) existing?.dblOrNull("wholesale_price")
+                else money(form.wholesalePrice, null)
             val values = mapOf(
                 "variant_label" to label,
                 "barcode" to barcode.ifEmpty { null },
                 "sell_price" to sell,
                 "cost_price" to cost,
+                "wholesale_price" to wholesale,
             )
             if (existing == null) {
                 val newUuid = Ids.new()
@@ -454,13 +469,15 @@ object ProductService {
     /**
      * Saves the filled rows of the quick entry table in one transaction
      * (QuickEntryController::productsStore): rows with a mistake are
-     * reported by index and skipped, the rest are created.
+     * reported by index and skipped, the rest are created. [categoryId]: the
+     * one category the screen picked for the whole batch (null = none).
      */
-    fun quickCreate(rows: List<Pair<Int, QuickRow>>, canPrices: Boolean): QuickResult {
+    fun quickCreate(rows: List<Pair<Int, QuickRow>>, canPrices: Boolean, categoryId: String? = null): QuickResult {
         val userUuid = App.session.user.value?.uuid
         val created = mutableListOf<Int>()
         val errors = LinkedHashMap<Int, ProductException>()
         App.db.write {
+            val category = categoryId?.takeIf { id -> queryOne("SELECT uuid FROM categories WHERE uuid = ? AND type = 'product'", id) != null }
             val seen = HashSet<String>()
             for ((index, row) in rows) {
                 try {
@@ -471,6 +488,7 @@ object ProductService {
                     if (row.sellPrice.isBlank()) throw ProductException(ProductException.PRICE_REQUIRED)
                     val sell = money(row.sellPrice)!!
                     val cost = if (canPrices) money(row.costPrice, 0.0)!! else 0.0
+                    val wholesale = money(row.wholesalePrice, null)
                     if (unit.length > 20) throw ProductException(ProductException.UNIT_TOO_LONG)
                     val stock = qty(row.stock, unit)
                     if (barcode.length > 64) throw ProductException(ProductException.BARCODE_TOO_LONG)
@@ -482,8 +500,8 @@ object ProductService {
                     insert(
                         "products",
                         mapOf(
-                            "uuid" to uuid, "category_id" to null, "name" to name, "unit" to unit,
-                            "cost_price" to cost, "sell_price" to sell, "stock_qty" to 0.0,
+                            "uuid" to uuid, "category_id" to category, "name" to name, "unit" to unit,
+                            "cost_price" to cost, "sell_price" to sell, "wholesale_price" to wholesale, "stock_qty" to 0.0,
                             "barcode" to barcode.ifEmpty { null }, "status" to "active",
                             "created_at" to now, "updated_at" to now,
                         ),

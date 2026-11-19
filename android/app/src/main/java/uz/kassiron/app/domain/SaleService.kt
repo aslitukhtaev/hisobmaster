@@ -9,11 +9,33 @@ import uz.kassiron.app.core.Money
 import uz.kassiron.app.core.Outbox
 import uz.kassiron.app.core.Time
 import uz.kassiron.app.core.Units
+import uz.kassiron.app.core.User
 import kotlin.math.max
 import kotlin.math.min
 
 /** One cart line as the till sends it: prices are always re-read from the database. */
 data class CartLine(val productUuid: String, val variantUuid: String?, val qty: Double)
+
+/**
+ * Optom (wholesale) selling: one product, one stock, a second price. Exists
+ * only when the shop turned it on on the website (settings.wholesale_enabled = "1").
+ */
+object Wholesale {
+    const val RETAIL = "retail"
+    const val WHOLESALE = "wholesale"
+
+    fun enabled(): Boolean = App.kv.shopSetting("wholesale_enabled") == "1"
+
+    /** Selling optom needs the "wholesale" permission (the owner always has it). */
+    const val PERMISSION = "wholesale"
+
+    /**
+     * What a line costs (Sale.php does the same): optom = the variant's optom
+     * price, else the product's, else the ordinary price.
+     */
+    fun unitPrice(retail: Double, variantWholesale: Double?, productWholesale: Double?, wholesale: Boolean): Double =
+        if (wholesale) variantWholesale ?: productWholesale ?: retail else retail
+}
 
 /**
  * Why a sale was refused. [code] is one of: empty_cart, invalid_product,
@@ -123,10 +145,11 @@ object SaleService {
         karta: Double,
         discount: Double,
         customerUuid: String?,
+        priceType: String = Wholesale.RETAIL,
     ): CreatedSale {
         if (cart.isEmpty()) throw SaleException("empty_cart")
         val cashier = App.session.user.value ?: throw SaleException("not_signed_in")
-        val result = App.db.write { createIn(this, cashier.uuid, cart, naqdTendered, karta, discount, customerUuid) }
+        val result = App.db.write { createIn(this, cashier.uuid, cart, naqdTendered, karta, discount, customerUuid, priceType) }
         App.sync.requestSync()
         return result
     }
@@ -140,8 +163,15 @@ object SaleService {
         karta: Double,
         discount: Double,
         customerUuid: String?,
+        priceType: String = Wholesale.RETAIL,
     ): CreatedSale {
         if (cart.isEmpty()) throw SaleException("empty_cart")
+        val wholesale = priceType == Wholesale.WHOLESALE
+        if (wholesale) {
+            // Refused, never quietly sold at retail: the cashier must know.
+            val seller = db.queryOne("SELECT * FROM users WHERE uuid = ?", cashierUuid)?.let(User::from)
+            if (seller == null || !seller.can(Wholesale.PERMISSION)) throw SaleException("wholesale_not_allowed")
+        }
 
         var subtotal = 0.0
         val resolved = ArrayList<Resolved>(cart.size)
@@ -166,7 +196,8 @@ object SaleService {
                 throw SaleException("variant_required", name)
             }
 
-            val unitPrice = variant?.dblOrNull("sell_price") ?: product.dbl("sell_price")
+            val retail = variant?.dblOrNull("sell_price") ?: product.dbl("sell_price")
+            val unitPrice = Wholesale.unitPrice(retail, variant?.dblOrNull("wholesale_price"), product.dblOrNull("wholesale_price"), wholesale)
             val cost = variant?.dblOrNull("cost_price") ?: product.dbl("cost_price")
             val lineSubtotal = SaleMath.lineSubtotal(unitPrice, qty)
             subtotal += lineSubtotal
@@ -212,6 +243,7 @@ object SaleService {
                 "cash_received" to split.cashReceived,
                 "created_at" to now,
                 "receipt_no" to receiptNo,
+                "price_type" to if (wholesale) Wholesale.WHOLESALE else Wholesale.RETAIL,
             ),
         )
         Outbox.upsert(db, "sales", saleUuid)
