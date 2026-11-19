@@ -32,12 +32,21 @@ class ProductController
             $categoryId = (int) $categoryParam;
         }
 
+        // 50 per page: a catalogue of thousands made a multi-megabyte page.
+        $perPage = 50;
+        $page = page_number($request);
         $products = $lowStockOnly
             ? Product::lowStock($shopId, $shopDefaultThreshold)
-            : Product::allByShop($shopId, $search, $categoryId);
+            : Product::allByShop($shopId, $search, $categoryId, $perPage + 1, ($page - 1) * $perPage);
+        $hasNext = !$lowStockOnly && count($products) > $perPage;
+        if ($hasNext) {
+            array_pop($products);
+        }
 
         View::render('products/index', [
             'products' => $products,
+            'page' => $page,
+            'hasNext' => $hasNext,
             'categories' => $categories,
             'categoryFilter' => $categoryId === null ? '' : ($categoryId === 0 ? 'none' : (string) $categoryId),
             'counts' => Product::counts($shopId),

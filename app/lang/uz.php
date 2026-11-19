@@ -1102,4 +1102,12 @@ return [
     'permission_wholesale' => "Optom narxda sotish",
     'wholesale_not_allowed' => "Optom narxda sotishga ruxsatingiz yo'q. Do'kon egasidan so'rang.",
     'desktop_sync_rejected' => "Server :count ta o'zgarishni qabul qilmadi. Ular yo'qolmasligi uchun KassirON yordamiga murojaat qiling.",
+    'no_customers_found' => "Hech kim topilmadi.",
+    'scan_out_of_stock' => "«:name» omborda qolmagan.",
+    'pager_label' => "Sahifalar",
+    'pager_prev' => "Oldingi",
+    'pager_next' => "Keyingi",
+    'pager_page' => ":page-sahifa",
+    'sales_range_summary' => "Davrda :count ta sotuv",
+    'customer_phone_taken' => "Bu telefon raqamli mijoz allaqachon bor. Uni ro'yxatdan qidirib toping.",
 ];

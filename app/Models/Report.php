@@ -14,7 +14,7 @@ class Report
      */
     public static function resolvePeriod(string $period, string $customFrom, string $customTo): array
     {
-        if ($customFrom !== '' && $customTo !== '' && $customFrom <= $customTo) {
+        if (valid_ymd($customFrom) && valid_ymd($customTo) && $customFrom <= $customTo) {
             return [$customFrom, $customTo, 'custom'];
         }
 

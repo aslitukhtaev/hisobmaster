@@ -1049,6 +1049,16 @@ img.logo-for-dark-theme { display: none; }
 .receipt-wholesale { font-weight: 700; }
 @media (pointer: coarse) { .price-mode-btn { padding: 12px; } }
 
+/* iOS zooms the page into any field under 16px: keep fields at 16px on touch screens. */
+@media (pointer: coarse) {
+    .field input, .field select, .field textarea,
+    .search-bar input, .search-bar select, .category-filter, .pos-search, .quick-grid input {
+        font-size: 16px;
+    }
+}
+
+.pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0 6px; }
+
 /* ---------- Categories ---------- */
 .category-filter {
     min-width: 0; max-width: 220px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);

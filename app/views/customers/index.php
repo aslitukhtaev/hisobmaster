@@ -23,11 +23,18 @@
 <?php if (empty($customers)): ?>
     <div class="card">
         <p class="muted"><?= e($onlyDebtors ? t('no_debtors') : t('no_customers_yet')) ?></p>
+        <a href="/customers/create" class="btn btn-primary" style="margin-top:12px;"><?= e(t('add_customer')) ?></a>
     </div>
 <?php else: ?>
+    <div class="search-bar">
+        <label class="sr-only" for="customer-filter"><?= e(t('customer_search_placeholder')) ?></label>
+        <input type="search" id="customer-filter" placeholder="<?= e(t('customer_search_placeholder')) ?>" autocomplete="off"
+               data-filter-rows="#customers-table" data-filter-empty="#customers-filter-empty">
+    </div>
+    <p class="muted" id="customers-filter-empty" hidden><?= e(t('no_customers_found')) ?></p>
     <div class="card table-card">
         <div class="table-wrap">
-            <table class="table">
+            <table class="table" id="customers-table">
                 <thead>
                     <tr>
                         <th><?= e(t('full_name_label')) ?></th>

@@ -124,3 +124,5 @@
         </div>
     </div>
 <?php endif; ?>
+
+<?php require BASE_PATH . '/app/views/partials/pager.php'; ?>

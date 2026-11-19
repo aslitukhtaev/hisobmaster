@@ -435,6 +435,14 @@ CREATE TABLE IF NOT EXISTS sync_rejects (
 );
 CREATE INDEX IF NOT EXISTS idx_sync_rejects_device ON sync_rejects(device_id, id);
 
+-- Speed (measured on 20k products / 300k sales): every barcode scan, the
+-- reports' covering scans, and the push's last-write-wins check.
+CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(shop_id, barcode);
+CREATE INDEX IF NOT EXISTS idx_variants_barcode ON product_variants(shop_id, barcode);
+CREATE INDEX IF NOT EXISTS idx_sales_report ON sales(shop_id, created_at, status, total, discount);
+CREATE INDEX IF NOT EXISTS idx_sale_items_report ON sale_items(sale_id, product_id, qty, subtotal, cost_price_snapshot);
+CREATE INDEX IF NOT EXISTS idx_sync_changes_lww ON sync_changes(tbl, row_id, op, changed_at);
+
 -- A row a device created offline that turned out to be one the server
 -- already has (a customer with the same phone number): the device's uuid
 -- points at the server's row, so the device's sales and debts that refer to

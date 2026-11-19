@@ -14,7 +14,9 @@ class CsrfMiddleware
             return null;
         }
 
-        if (csrf_verify($request->input('_csrf'))) {
+        // A token sent as anything but a string (_csrf[]=…) is simply wrong, not a crash.
+        $token = $request->input('_csrf');
+        if (is_string($token) && csrf_verify($token)) {
             return null;
         }
 

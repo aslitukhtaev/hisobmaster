@@ -86,7 +86,7 @@ class ActivityLogController
 
         $fromUtc = null;
         $toUtc = null;
-        if ($from !== '' && $to !== '' && $from <= $to) {
+        if (valid_ymd($from) && valid_ymd($to) && $from <= $to) {
             [$fromUtc, $toUtc] = tashkent_day_bounds_utc($from, $to);
         } else {
             // An invalid/partial range is treated as "no date filter" rather

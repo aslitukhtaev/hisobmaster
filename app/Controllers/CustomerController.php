@@ -54,7 +54,17 @@ class CustomerController
         }
         $phone = $normalizedPhone;
 
-        $id = Customer::create($shopId, $fullName, $phone !== '' ? $phone : null, $note !== '' ? $note : null);
+        try {
+            $id = Customer::create($shopId, $fullName, $phone !== '' ? $phone : null, $note !== '' ? $note : null);
+        } catch (\PDOException $e) {
+            // The same phone was saved a moment ago (another tab, a phone sync): say so instead of an error page.
+            if (!str_contains($e->getMessage(), 'UNIQUE')) {
+                throw $e;
+            }
+            flash('error', t('customer_phone_taken'));
+            keep_old(['full_name' => $fullName, 'phone' => $phone, 'note' => $note]);
+            redirect('/customers/create');
+        }
 
         flash('success', t('customer_created'));
         redirect("/customers/{$id}");
@@ -165,15 +175,23 @@ class CustomerController
 
         $debtDueDate = $debtDueDateInput !== '' ? $debtDueDateInput : null;
 
-        Customer::update(
-            (int) $id,
-            $shopId,
-            $fullName,
-            $phone !== '' ? $phone : null,
-            $note !== '' ? $note : null,
-            $creditLimit,
-            $debtDueDate
-        );
+        try {
+            Customer::update(
+                (int) $id,
+                $shopId,
+                $fullName,
+                $phone !== '' ? $phone : null,
+                $note !== '' ? $note : null,
+                $creditLimit,
+                $debtDueDate
+            );
+        } catch (\PDOException $e) {
+            if (!str_contains($e->getMessage(), 'UNIQUE')) {
+                throw $e;
+            }
+            flash('error', t('customer_phone_taken'));
+            redirect("/customers/{$id}/edit");
+        }
 
         flash('success', t('customer_updated'));
         redirect("/customers/{$id}");

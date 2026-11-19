@@ -25,7 +25,7 @@ class Product
              ELSE p.stock_qty END";
 
     /** $categoryId: null = every product, 0 = only those without a category. */
-    public static function allByShop(int $shopId, ?string $search = null, ?int $categoryId = null): array
+    public static function allByShop(int $shopId, ?string $search = null, ?int $categoryId = null, ?int $limit = null, int $offset = 0): array
     {
         $sql = 'SELECT p.*, c.name AS category_name, ' . self::VARIANT_AGGREGATES . ', ' . self::EFFECTIVE_STOCK . ' AS effective_stock
                 FROM products p
@@ -49,7 +49,10 @@ class Product
             $params[] = $categoryId;
         }
 
-        $sql .= ' ORDER BY p.name';
+        $sql .= ' ORDER BY p.name COLLATE NOCASE, p.id';
+        if ($limit !== null) {
+            $sql .= ' LIMIT ' . max(1, $limit) . ' OFFSET ' . max(0, $offset);
+        }
 
         $stmt = Database::connect()->prepare($sql);
         $stmt->execute($params);

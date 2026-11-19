@@ -27,10 +27,22 @@ class SaleController
         $shopId = (int) Auth::shopId();
         $from = (string) $request->input('from', '');
         $to = (string) $request->input('to', '');
-        $filtered = $from !== '' && $to !== '' && $from <= $to;
+        $filtered = valid_ymd($from) && valid_ymd($to) && $from <= $to;
+
+        // A long range is shown 100 at a time (the export still has them all).
+        $perPage = 100;
+        $page = page_number($request);
+        $sales = $filtered ? Sale::rangeByShop($shopId, $from, $to, $perPage + 1, ($page - 1) * $perPage) : Sale::recentByShop($shopId);
+        $hasNext = $filtered && count($sales) > $perPage;
+        if ($hasNext) {
+            array_pop($sales);
+        }
 
         View::render('sales/index', [
-            'sales' => $filtered ? Sale::rangeByShop($shopId, $from, $to) : Sale::recentByShop($shopId),
+            'sales' => $sales,
+            'page' => $filtered ? $page : 1,
+            'hasNext' => $hasNext,
+            'rangeSummary' => $filtered ? Sale::rangeSummary($shopId, $from, $to) : null,
             'today' => Sale::todaysSummary($shopId),
             'from' => $from,
             'to' => $to,
@@ -49,7 +61,7 @@ class SaleController
         $shopId = (int) Auth::shopId();
         $from = (string) $request->input('from', '');
         $to = (string) $request->input('to', '');
-        $filtered = $from !== '' && $to !== '' && $from <= $to;
+        $filtered = valid_ymd($from) && valid_ymd($to) && $from <= $to;
 
         $sales = $filtered ? Sale::rangeByShop($shopId, $from, $to) : Sale::recentByShop($shopId);
 
@@ -104,6 +116,24 @@ class SaleController
                 return (float) $p['stock_qty'] > 0;
             }
         ));
+
+        // Barcodes of products that exist but have nothing left: a scan of one
+        // says "qolmagan" instead of "not found, add it as a new product".
+        $emptyBarcodes = [];
+        foreach (Product::allByShop($shopId) as $p) {
+            if ($p['status'] !== 'active') {
+                continue;
+            }
+            $variants = $variantsByProduct[(int) $p['id']] ?? [];
+            foreach ($variants as $v) {
+                if ($v['barcode'] !== null && $v['barcode'] !== '' && (float) $v['stock_qty'] <= 0) {
+                    $emptyBarcodes[(string) $v['barcode']] = $p['name'] . ' — ' . $v['variant_label'];
+                }
+            }
+            if ($p['barcode'] !== null && $p['barcode'] !== '' && empty($variants) && (float) $p['stock_qty'] <= 0) {
+                $emptyBarcodes[(string) $p['barcode']] = $p['name'];
+            }
+        }
 
         // The till's category buttons: only categories something can be sold
         // from right now, and only when there are two or more of them.
@@ -193,11 +223,12 @@ class SaleController
             'paperWidth' => (int) (Shop::find($shopId)['receipt_printer_width'] ?? 80),
             'isDesktop' => Desktop::enabled(),
             'shopName' => (string) (Shop::find($shopId)['name'] ?? ''),
-            'productsJson' => json_encode($productsJson, JSON_UNESCAPED_UNICODE),
+            'productsJson' => json_encode($productsJson, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP),
             'tillCategories' => $tillCategories,
+            'emptyBarcodesJson' => json_encode((object) $emptyBarcodes, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP),
             // The Chakana / Optom switch: shop setting on and the cashier allowed.
             'wholesaleEnabled' => Settings::wholesaleEnabled($shopId) && Auth::can('wholesale'),
-            'customersJson' => json_encode($customersJson, JSON_UNESCAPED_UNICODE),
+            'customersJson' => json_encode($customersJson, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP),
             'hasProducts' => count($activeProducts) > 0,
             'canDiscount' => Auth::can('discount'),
         ]);

@@ -559,3 +559,21 @@ function wholesale_enabled(): bool
 
     return $shopId !== null && \App\Models\Settings::wholesaleEnabled((int) $shopId);
 }
+
+/** A real calendar date written Y-m-d (what a date filter may pass on to queries). */
+function valid_ymd(string $date): bool
+{
+    if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date, $m)) {
+        return false;
+    }
+
+    return checkdate((int) $m[2], (int) $m[3], (int) $m[1]);
+}
+
+/** The ?page=N of a paged list, 1 or more. */
+function page_number(\App\Core\Request $request): int
+{
+    $page = (int) $request->input('page', 1);
+
+    return $page >= 1 && $page <= 100000 ? $page : 1;
+}

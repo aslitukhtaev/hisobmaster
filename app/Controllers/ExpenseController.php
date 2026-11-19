@@ -18,6 +18,11 @@ class ExpenseController
         $shopId = (int) Auth::shopId();
         $from = (string) $request->input('from', date('Y-m-01'));
         $to = (string) $request->input('to', date('Y-m-d'));
+        // A typed-in bad date falls back to this month instead of an error page.
+        if (!valid_ymd($from) || !valid_ymd($to) || $from > $to) {
+            $from = date('Y-m-01');
+            $to = date('Y-m-d');
+        }
 
         View::render('expenses/index', [
             'expenses' => Expense::allByShop($shopId, $from, $to),

@@ -6,6 +6,36 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+// <input data-filter-rows="#table-id">: hides the table's rows that don't
+// contain what is typed (name, phone...), case- and apostrophe-insensitive.
+function kassironFold(text) {
+    return String(text || '').toLowerCase().replace(/[\u2018\u2019\u02bb\u02bc`´]/g, "'").replace(/\s+/g, '');
+}
+document.addEventListener('input', function (e) {
+    var input = e.target;
+    var selector = input && input.getAttribute ? input.getAttribute('data-filter-rows') : null;
+    if (!selector) {
+        return;
+    }
+    var table = document.querySelector(selector);
+    if (!table) {
+        return;
+    }
+    var q = kassironFold(input.value);
+    var shown = 0;
+    table.querySelectorAll('tbody tr').forEach(function (tr) {
+        var hit = q === '' || kassironFold(tr.textContent).indexOf(q) !== -1;
+        tr.hidden = !hit;
+        if (hit) {
+            shown++;
+        }
+    });
+    var empty = document.querySelector(input.getAttribute('data-filter-empty') || '');
+    if (empty) {
+        empty.hidden = shown > 0;
+    }
+});
+
 // A filter <select data-autosubmit> applies as soon as it is changed.
 document.addEventListener('change', function (e) {
     var el = e.target;

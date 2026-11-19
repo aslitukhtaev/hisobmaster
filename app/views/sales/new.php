@@ -206,42 +206,45 @@ if (!is_array($oldCart)) {
 ?>
 <script nonce="<?= e(csp_nonce()) ?>">
     window.HM_PRODUCTS = <?= $productsJson ?>;
+    window.HM_EMPTY_BARCODES = <?= $emptyBarcodesJson ?>;
     window.HM_CUSTOMERS = <?= $customersJson ?>;
     window.HM_I18N = {
-        noResults: <?= json_encode(t('no_products_found'), JSON_UNESCAPED_UNICODE) ?>,
-        moreProducts: <?= json_encode(t('pos_more_products'), JSON_UNESCAPED_UNICODE) ?>,
-        debtRemainingLabel: <?= json_encode(t('debt_remaining_label'), JSON_UNESCAPED_UNICODE) ?>,
-        creditLimitPosLabel: <?= json_encode(t('credit_limit_pos_label'), JSON_UNESCAPED_UNICODE) ?>,
-        creditLimitExceededWarning: <?= json_encode(t('credit_limit_exceeded_warning'), JSON_UNESCAPED_UNICODE) ?>,
-        confirmExceedCreditLimit: <?= json_encode(t('confirm_exceed_credit_limit'), JSON_UNESCAPED_UNICODE) ?>,
-        stockLimitReached: <?= json_encode(t('stock_limit_reached'), JSON_UNESCAPED_UNICODE) ?>,
-        decreaseQty: <?= json_encode(t('decrease_qty'), JSON_UNESCAPED_UNICODE) ?>,
-        increaseQty: <?= json_encode(t('increase_qty'), JSON_UNESCAPED_UNICODE) ?>,
-        removeFromCart: <?= json_encode(t('remove_from_cart'), JSON_UNESCAPED_UNICODE) ?>,
-        editQty: <?= json_encode(t('edit_qty_label'), JSON_UNESCAPED_UNICODE) ?>,
-        discountEqualsLabel: <?= json_encode(t('discount_equals_label'), JSON_UNESCAPED_UNICODE) ?>,
-        pickVariantHint: <?= json_encode(t('pick_variant_hint'), JSON_UNESCAPED_UNICODE) ?>,
-        scanNotFound: <?= json_encode(t('scan_not_found'), JSON_UNESCAPED_UNICODE) ?>,
-        scanAddProduct: <?= json_encode(t('scan_add_product'), JSON_UNESCAPED_UNICODE) ?>,
-        customerNew: <?= json_encode(t('customer_new_option'), JSON_UNESCAPED_UNICODE) ?>,
-        customerDebt: <?= json_encode(t('customer_debt_short'), JSON_UNESCAPED_UNICODE) ?>,
-        customerNone: <?= json_encode(t('customer_no_match'), JSON_UNESCAPED_UNICODE) ?>,
-        emptyCart: <?= json_encode(t('cart_empty_submit'), JSON_UNESCAPED_UNICODE) ?>,
-        discountTooLarge: <?= json_encode(t('discount_too_large'), JSON_UNESCAPED_UNICODE) ?>,
-        currency: <?= json_encode(t('currency_symbol'), JSON_UNESCAPED_UNICODE) ?>
+        noResults: <?= json_encode(t('no_products_found'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        moreProducts: <?= json_encode(t('pos_more_products'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        debtRemainingLabel: <?= json_encode(t('debt_remaining_label'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        creditLimitPosLabel: <?= json_encode(t('credit_limit_pos_label'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        creditLimitExceededWarning: <?= json_encode(t('credit_limit_exceeded_warning'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        confirmExceedCreditLimit: <?= json_encode(t('confirm_exceed_credit_limit'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        stockLimitReached: <?= json_encode(t('stock_limit_reached'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        decreaseQty: <?= json_encode(t('decrease_qty'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        increaseQty: <?= json_encode(t('increase_qty'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        removeFromCart: <?= json_encode(t('remove_from_cart'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        editQty: <?= json_encode(t('edit_qty_label'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        discountEqualsLabel: <?= json_encode(t('discount_equals_label'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        pickVariantHint: <?= json_encode(t('pick_variant_hint'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        scanNotFound: <?= json_encode(t('scan_not_found'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        scanOutOfStock: <?= json_encode(t('scan_out_of_stock'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        scanRecordPurchase: <?= json_encode(t('record_purchase'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        scanAddProduct: <?= json_encode(t('scan_add_product'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        customerNew: <?= json_encode(t('customer_new_option'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        customerDebt: <?= json_encode(t('customer_debt_short'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        customerNone: <?= json_encode(t('customer_no_match'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        emptyCart: <?= json_encode(t('cart_empty_submit'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        discountTooLarge: <?= json_encode(t('discount_too_large'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        currency: <?= json_encode(t('currency_symbol'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>
     };
     window.HM_CAN_DISCOUNT = <?= $canDiscount ? 'true' : 'false' ?>;
     window.HM_CAN_PRODUCTS = <?= can('products') ? 'true' : 'false' ?>;
-    window.HM_OLD_CART = <?= json_encode($oldCart, JSON_UNESCAPED_UNICODE) ?>;
+    window.HM_OLD_CART = <?= json_encode($oldCart, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;
     window.HM_OLD_SALE = {
-        discount: <?= json_encode(old('discount', '0'), JSON_UNESCAPED_UNICODE) ?>,
-        naqdAmount: <?= json_encode(old('naqd_amount', ''), JSON_UNESCAPED_UNICODE) ?>,
-        kartaAmount: <?= json_encode(old('karta_amount', ''), JSON_UNESCAPED_UNICODE) ?>,
-        qrAmount: <?= json_encode(old('qr_amount', ''), JSON_UNESCAPED_UNICODE) ?>,
-        customerId: <?= json_encode(old('customer_id', ''), JSON_UNESCAPED_UNICODE) ?>,
-        customerName: <?= json_encode(old('customer_name', ''), JSON_UNESCAPED_UNICODE) ?>,
-        customerPhone: <?= json_encode(old('customer_phone', ''), JSON_UNESCAPED_UNICODE) ?>,
-        priceType: <?= json_encode($wholesaleEnabled ? old('price_type', 'retail') : 'retail', JSON_UNESCAPED_UNICODE) ?>
+        discount: <?= json_encode(old('discount', '0'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        naqdAmount: <?= json_encode(old('naqd_amount', ''), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        kartaAmount: <?= json_encode(old('karta_amount', ''), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        qrAmount: <?= json_encode(old('qr_amount', ''), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        customerId: <?= json_encode(old('customer_id', ''), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        customerName: <?= json_encode(old('customer_name', ''), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        customerPhone: <?= json_encode(old('customer_phone', ''), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        priceType: <?= json_encode($wholesaleEnabled ? old('price_type', 'retail') : 'retail', JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>
     };
 </script>
 <script src="<?= asset('js/sale.js') ?>" defer></script>

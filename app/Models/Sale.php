@@ -345,7 +345,7 @@ class Sale
      * export, so both read off the same rows. Unlike recentByShop() this has
      * no LIMIT, since a date range is already a bounded window.
      */
-    public static function rangeByShop(int $shopId, string $from, string $to): array
+    public static function rangeByShop(int $shopId, string $from, string $to, ?int $limit = null, int $offset = 0): array
     {
         [$startUtc, $endUtc] = tashkent_day_bounds_utc($from, $to);
 
@@ -356,10 +356,24 @@ class Sale
              LEFT JOIN customers c ON c.id = s.customer_id
              WHERE s.shop_id = ? AND s.created_at >= ? AND s.created_at < ?
              ORDER BY s.created_at DESC, s.id DESC'
+             . ($limit !== null ? ' LIMIT ' . max(1, $limit) . ' OFFSET ' . max(0, $offset) : '')
         );
         $stmt->execute([$shopId, $startUtc, $endUtc]);
 
         return $stmt->fetchAll();
+    }
+
+    /** Number and total of the completed sales in a date range (the paged list's header). */
+    public static function rangeSummary(int $shopId, string $from, string $to): array
+    {
+        [$startUtc, $endUtc] = tashkent_day_bounds_utc($from, $to);
+        $stmt = Database::connect()->prepare(
+            "SELECT COUNT(*) AS count, COALESCE(SUM(total), 0) AS revenue FROM sales
+             WHERE shop_id = ? AND status = 'completed' AND created_at >= ? AND created_at < ?"
+        );
+        $stmt->execute([$shopId, $startUtc, $endUtc]);
+
+        return $stmt->fetch() ?: ['count' => 0, 'revenue' => 0];
     }
 
     /**

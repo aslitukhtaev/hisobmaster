@@ -215,7 +215,8 @@ final class SyncSchema
                 BEGIN
                     INSERT INTO sync_changes (shop_id, tbl, row_id, op, source)
                     SELECT $shopNew, '$table', NEW.id, 'upsert', $source
-                    WHERE $changed;$updateCounters
+                    -- OLD.uuid NULL: the insert trigger filling the uuid, already journaled by the insert.
+                    WHERE OLD.uuid IS NOT NULL AND ($changed);$updateCounters
                 END");
 
             $pdo->exec("

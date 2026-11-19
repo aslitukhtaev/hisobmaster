@@ -29,6 +29,9 @@
     <a href="/sales/export<?= $filtered ? '?from=' . e($from) . '&amp;to=' . e($to) : '' ?>" class="btn btn-ghost"><?= e(t('export_csv_button')) ?></a>
 </form>
 
+<?php if (!empty($rangeSummary)): ?>
+    <p class="muted"><?= e(t('sales_range_summary', ['count' => (int) $rangeSummary['count']])) ?> · <?= money((float) $rangeSummary['revenue']) ?></p>
+<?php endif; ?>
 <?php if (empty($sales)): ?>
     <div class="card"><p class="muted"><?= e(t('no_sales_yet')) ?></p></div>
 <?php else: ?>
@@ -74,3 +77,5 @@
         </div>
     </div>
 <?php endif; ?>
+
+<?php require BASE_PATH . '/app/views/partials/pager.php'; ?>

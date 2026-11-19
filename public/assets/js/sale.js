@@ -254,6 +254,16 @@
                 }
             } else if (matches.length === 0 && String(query || '').trim() !== '') {
                 var code = String(query).trim();
+                var emptyName = (window.HM_EMPTY_BARCODES || {})[code];
+                if (emptyName) {
+                    // A product we have, just sold out: say so, and offer a purchase, not a new product.
+                    productListEl.innerHTML = '<p class="muted">' +
+                        escapeHtml((i18n.scanOutOfStock || ':name').replace(':name', emptyName)) +
+                        (window.HM_CAN_PRODUCTS ? ' <a class="scan-add-link" href="/purchases/create">' + escapeHtml(i18n.scanRecordPurchase || '') + '</a>' : '') +
+                        '</p>';
+                    searchEl.select();
+                    return;
+                }
                 productListEl.innerHTML = '<p class="muted">' +
                     escapeHtml((i18n.scanNotFound || '').replace(':code', code)) +
                     (window.HM_CAN_PRODUCTS && /^[0-9A-Za-z-]{4,64}$/.test(code)

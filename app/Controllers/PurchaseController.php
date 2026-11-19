@@ -59,7 +59,7 @@ class PurchaseController
         View::render('purchases/create', [
             'suppliers' => Supplier::allByShop($shopId),
             'hasProducts' => count($products) > 0,
-            'productsJson' => json_encode($productsJson, JSON_UNESCAPED_UNICODE),
+            'productsJson' => json_encode($productsJson, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP),
         ]);
     }
 

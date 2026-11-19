@@ -1102,4 +1102,12 @@ return [
     'permission_wholesale' => "Продажа по оптовой цене",
     'wholesale_not_allowed' => "У вас нет права продавать по оптовой цене. Обратитесь к владельцу магазина.",
     'desktop_sync_rejected' => "Сервер не принял изменений: :count. Чтобы они не потерялись, обратитесь в поддержку KassirON.",
+    'no_customers_found' => "Никого не найдено.",
+    'scan_out_of_stock' => "«:name» закончился на складе.",
+    'pager_label' => "Страницы",
+    'pager_prev' => "Назад",
+    'pager_next' => "Далее",
+    'pager_page' => "Страница :page",
+    'sales_range_summary' => "Продаж за период: :count",
+    'customer_phone_taken' => "Покупатель с этим номером телефона уже есть. Найдите его в списке.",
 ];
