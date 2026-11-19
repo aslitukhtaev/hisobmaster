@@ -60,6 +60,8 @@ object Schema {
                 r("sell_price", true, "0"), r("stock_qty", true, "0"), t("barcode"), t("status", true, "'active'"),
                 r("low_stock_threshold"), i("pack_size"), t("mxik"), t("package_code"), r("vat_rate"),
                 t("created_at", true), t("updated_at", true),
+                // The optom (wholesale) price; null = none. Used only where the shop turned wholesale on.
+                r("wholesale_price"),
             ),
             foreignKeys = mapOf("category_id" to "categories"),
             counters = listOf("stock_qty"),
@@ -70,6 +72,7 @@ object Schema {
             listOf(
                 t("product_id", true), t("variant_label", true), r("stock_qty", true, "0"), t("barcode"),
                 r("sell_price"), r("cost_price"), t("status", true, "'active'"), t("created_at", true),
+                r("wholesale_price"),
             ),
             foreignKeys = mapOf("product_id" to "products"),
             counters = listOf("stock_qty"),
@@ -96,6 +99,8 @@ object Schema {
                 t("cashier_id", true), t("customer_id"), r("total", true, "0"), r("discount", true, "0"),
                 t("payment_type", true, "'naqd'"), r("paid_amount", true, "0"), t("status", true, "'completed'"),
                 r("cash_received"), t("created_at", true), t("receipt_no"),
+                // 'retail' (chakana) or 'wholesale' (optom): which of the two prices the sale used.
+                t("price_type", true, "'retail'"),
             ),
             foreignKeys = mapOf("cashier_id" to "users", "customer_id" to "customers"),
             indexes = listOf("created_at", "customer_id"),

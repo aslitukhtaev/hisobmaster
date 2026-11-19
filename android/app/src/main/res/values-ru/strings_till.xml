@@ -126,4 +126,9 @@
     <string name="print_err_not_found">Принтер не найден — выберите заново</string>
     <string name="print_err_unknown">Не удалось напечатать</string>
     <string name="till_cat_all">Все</string>
+    <string name="till_retail">Розница</string>
+    <string name="till_wholesale">Опт</string>
+    <string name="till_wholesale_prices">По оптовой цене</string>
+    <string name="till_no_wholesale_price">без опта</string>
+    <string name="till_err_wholesale_not_allowed">У вас нет права продавать по оптовой цене</string>
 </resources>

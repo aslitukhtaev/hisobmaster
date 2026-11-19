@@ -126,4 +126,9 @@
     <string name="print_err_not_found">Printer topilmadi — qaytadan tanlang</string>
     <string name="print_err_unknown">Chop etib bo‘lmadi</string>
     <string name="till_cat_all">Hammasi</string>
+    <string name="till_retail">Chakana</string>
+    <string name="till_wholesale">Optom</string>
+    <string name="till_wholesale_prices">Optom narxda</string>
+    <string name="till_no_wholesale_price">optom yo‘q</string>
+    <string name="till_err_wholesale_not_allowed">Sizda optom narxda sotish huquqi yo‘q</string>
 </resources>

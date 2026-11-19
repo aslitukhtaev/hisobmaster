@@ -209,4 +209,11 @@
     <string name="purchases_err_line">%1$s: проверьте количество и цену</string>
     <string name="purchases_err_variant_required">%1$s: выберите вариант</string>
     <string name="purchases_err_qty_whole">%1$s: количество должно быть целым</string>
+    <string name="products_wholesale_price">Оптовая цена</string>
+    <string name="products_wholesale_hint">Берётся, когда на кассе выбран «Опт». Пусто — обычная цена.</string>
+    <string name="products_wholesale_above_retail">Оптовая цена выше розничной</string>
+    <string name="products_wholesale_below_cost">Оптовая цена ниже себестоимости — оптовая продажа в убыток</string>
+    <string name="products_wholesale_short">Опт: %1$s</string>
+    <string name="products_retail_price">Розничная цена</string>
+    <string name="products_quick_need_optom">неверная оптовая цена</string>
 </resources>

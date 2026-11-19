@@ -253,4 +253,5 @@
         <item>ноябрь</item>
         <item>декабрь</item>
     </string-array>
+    <string name="sales_price_type">Цена</string>
 </resources>

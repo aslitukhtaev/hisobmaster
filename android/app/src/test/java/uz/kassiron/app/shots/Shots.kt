@@ -58,8 +58,14 @@ object Shots {
     val customers = LinkedHashMap<String, String>()
     var lastSale: String = ""
     private var seeded = false
+    private var previousSync: uz.kassiron.app.sync.SyncManager? = null
 
     fun seed(signIn: Boolean = true) {
+        // A sync an earlier test asked for (3 s debounce) would otherwise run on this test's new database:
+        // stop the previous test's manager (each test gets a new app) and anything already queued here.
+        previousSync?.takeIf { it !== App.sync }?.shutdown()
+        previousSync = App.sync
+        App.sync.cancelPending()
         // Robolectric gives every test a fresh database but keeps this object: seed again when it's empty.
         seeded = seeded && App.db.scalarLong("SELECT COUNT(*) FROM users") > 0
         if (seeded) { if (signIn) App.session.signIn(owner) else App.session.signOut(); return }

@@ -45,7 +45,7 @@ class Db(context: Context) : SQLiteOpenHelper(context, "kassiron.db", null, VERS
 
     companion object {
         /** Bump with a migration in onUpgrade() whenever Schema changes. */
-        const val VERSION = 1
+        const val VERSION = 2
     }
 
     private val _changes = MutableStateFlow(0L)
@@ -62,8 +62,31 @@ class Db(context: Context) : SQLiteOpenHelper(context, "kassiron.db", null, VERS
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        // Columns added to Schema later: ALTER TABLE ... ADD COLUMN here, per version.
         Schema.createStatements().forEach(db::execSQL)
+        // Columns added to Schema since this database was made (v2: the optom price,
+        // sales.price_type): added in place, rows kept.
+        var added = false
+        for (table in Schema.TABLES) {
+            val have = HashSet<String>()
+            db.rawQuery("PRAGMA table_info(${table.name})", null).use { c ->
+                val name = c.getColumnIndexOrThrow("name")
+                while (c.moveToNext()) have += c.getString(name)
+            }
+            for (col in table.columns) {
+                if (col.name in have) continue
+                val sql = buildString {
+                    append("ALTER TABLE ${table.name} ADD COLUMN ${col.name} ${col.type}")
+                    // SQLite takes NOT NULL on an added column only with a default.
+                    if (col.notNull && col.default != null) append(" NOT NULL DEFAULT ${col.default}")
+                    else if (col.default != null) append(" DEFAULT ${col.default}")
+                }
+                db.execSQL(sql)
+                added = true
+            }
+        }
+        // Earlier pulls dropped values of columns this device didn't have yet (an optom
+        // price set on the website before this update): fetch everything once more.
+        if (added) db.execSQL("DELETE FROM kv WHERE key IN ('pull_cursor', 'pull_snap')")
     }
 
     private val db: SQLiteDatabase get() = writableDatabase

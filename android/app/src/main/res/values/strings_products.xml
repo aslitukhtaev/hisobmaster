@@ -209,4 +209,11 @@
     <string name="purchases_err_line">%1$s: soni va narxini tekshiring</string>
     <string name="purchases_err_variant_required">%1$s: variantni tanlang</string>
     <string name="purchases_err_qty_whole">%1$s: son butun bo‘lsin</string>
+    <string name="products_wholesale_price">Optom narx</string>
+    <string name="products_wholesale_hint">Kassada «Optom» tanlanganda shu narx olinadi. Bo‘sh qolsa — oddiy narx.</string>
+    <string name="products_wholesale_above_retail">Optom narx chakanadan qimmat</string>
+    <string name="products_wholesale_below_cost">Optom narx tannarxdan past — optom sotuv zarar</string>
+    <string name="products_wholesale_short">Optom: %1$s</string>
+    <string name="products_retail_price">Chakana narx</string>
+    <string name="products_quick_need_optom">optom narx noto‘g‘ri</string>
 </resources>

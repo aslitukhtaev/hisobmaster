@@ -11,7 +11,7 @@ data class User(
     val fullName: String,
     val login: String,
     val role: String,              // owner | employee
-    val permissions: Set<String>,  // sales, discount, products, prices, customers, expenses, reports
+    val permissions: Set<String>,  // sales, discount, wholesale, products, prices, customers, expenses, reports
 ) {
     val isOwner: Boolean get() = role == "owner"
 

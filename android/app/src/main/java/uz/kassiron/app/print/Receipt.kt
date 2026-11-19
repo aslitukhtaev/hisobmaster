@@ -28,6 +28,8 @@ data class ReceiptData(
     val debt: Double,
     val customerName: String?,
     val refunded: Double,
+    /** Sold at the optom prices (sales.price_type = 'wholesale'). */
+    val wholesale: Boolean = false,
 )
 
 data class ReceiptItem(val name: String, val qty: Double, val unitPrice: Double, val subtotal: Double)
@@ -78,6 +80,7 @@ object Receipts {
             debt = Money.round2(sale.dbl("total") - sale.dbl("paid_amount")),
             customerName = sale.strOrNull("customer_name")?.takeIf(String::isNotBlank),
             refunded = Money.round2(refunded),
+            wholesale = sale.strOrNull("price_type") == "wholesale",
         )
     }
 
@@ -129,6 +132,7 @@ object Receipts {
         divider()
         pair("№ ${r.receiptNo}", r.createdAt)
         if (r.cashier.isNotBlank()) out += ReceiptLine(clean(context.getString(R.string.print_cashier) + ": " + r.cashier))
+        if (r.wholesale) out += ReceiptLine(clean(context.getString(R.string.till_wholesale_prices)), bold = true)
         divider()
         for (item in r.items) {
             wrap(clean(item.name), width).forEach { out += ReceiptLine(it) }

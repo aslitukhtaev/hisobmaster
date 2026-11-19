@@ -36,6 +36,8 @@ import uz.kassiron.app.R
 import uz.kassiron.app.core.Row as DbRow
 import uz.kassiron.app.domain.ProductListItem
 import uz.kassiron.app.domain.ProductService
+import uz.kassiron.app.domain.Wholesale
+import uz.kassiron.app.core.Money
 import uz.kassiron.app.ui.Routes
 import uz.kassiron.app.ui.common.BarcodeScannerDialog
 import uz.kassiron.app.ui.common.dbState
@@ -73,6 +75,7 @@ fun ProductsScreen(nav: NavHostController) = ProductsList(nav)
 internal fun ProductsList(nav: NavHostController, initialFilter: StockFilter = StockFilter.ALL) {
     val user by App.session.user.collectAsState()
     val canPrices = user?.can("prices") == true
+    val wholesaleOn by dbState(false) { Wholesale.enabled() }
     val data by dbState<ProductsData?>(null, canPrices) {
         ProductsData(
             products = ProductService.list(App.db),
@@ -165,7 +168,7 @@ internal fun ProductsList(nav: NavHostController, initialFilter: StockFilter = S
                     item(key = "value") { StockValueLine(data!!.stockValue) }
                 }
                 items(shown, key = { it.uuid }) { p ->
-                    ProductRow(p, shopDefault) { nav.navigate(Routes.productEdit(p.uuid)) }
+                    ProductRow(p, shopDefault, wholesaleOn) { nav.navigate(Routes.productEdit(p.uuid)) }
                 }
             }
         }
@@ -188,7 +191,7 @@ private fun StockValueLine(value: Double) {
 }
 
 @Composable
-private fun ProductRow(p: ProductListItem, shopDefault: Double?, onClick: () -> Unit) {
+private fun ProductRow(p: ProductListItem, shopDefault: Double?, wholesaleOn: Boolean = false, onClick: () -> Unit) {
     val kind = when {
         p.isOut() -> KTagKind.Red
         p.isLow(shopDefault) -> KTagKind.Low
@@ -196,6 +199,7 @@ private fun ProductRow(p: ProductListItem, shopDefault: Double?, onClick: () -> 
     }
     val sub = buildList {
         if (!p.active) add(stringResource(R.string.products_inactive))
+        if (wholesaleOn) p.wholesalePrice?.let { add(stringResource(R.string.products_wholesale_short, Money.format(it))) }
         if (p.variantCount > 0) add(stringResource(R.string.products_variant_count, p.variantCount))
         val code = p.barcode?.takeIf { it.isNotBlank() }
         if (code != null) add(code) else p.categoryName?.takeIf { it.isNotBlank() }?.let(::add)

@@ -98,6 +98,7 @@ private data class SaleItem(
     val itemCount: Long,
     val refunded: Double,
     val customer: String?,
+    val wholesale: Boolean = false,
 )
 
 private data class SalesData(
@@ -127,7 +128,7 @@ private fun loadSales(from: String, to: String, filter: String?): SalesData {
         }
     }
     val sales = db.query(
-        """SELECT s.uuid, s.receipt_no, s.created_at, s.total, s.payment_type, s.status, c.full_name AS customer_name,
+        """SELECT s.uuid, s.receipt_no, s.created_at, s.total, s.payment_type, s.status, s.price_type, c.full_name AS customer_name,
                   (SELECT COUNT(*) FROM sale_items si WHERE si.sale_id = s.uuid) AS item_count,
                   (SELECT COALESCE(SUM(r.total_amount), 0) FROM refunds r WHERE r.sale_id = s.uuid) AS refunded
            FROM sales s LEFT JOIN customers c ON c.uuid = s.customer_id
@@ -138,6 +139,7 @@ private fun loadSales(from: String, to: String, filter: String?): SalesData {
             it.str("uuid"), receiptLabel(it.strOrNull("receipt_no"), it.str("uuid")), it.str("created_at"), it.dbl("total"),
             it.str("payment_type"), it.str("status"), it.long("item_count"), it.dbl("refunded"),
             it.strOrNull("customer_name")?.takeIf { n -> n.isNotBlank() },
+            it.strOrNull("price_type") == "wholesale",
         )
     }
     // Totals are for the whole period, whatever the payment filter (like the website).
@@ -252,11 +254,14 @@ private fun SaleRow(s: SaleItem, multiDay: Boolean, modifier: Modifier, onClick:
             Text(Time.local(s.createdAt, if (multiDay) "dd.MM HH:mm" else "HH:mm"), style = K.t.small, color = K.c.mu, maxLines = 1, modifier = Modifier.padding(bottom = 1.dp))
         }
         KSub(listOfNotNull(stringResource(R.string.bo_items, s.itemCount.toInt()), s.customer).joinToString(" · "))
-        when {
-            s.refunded > 0 -> Row(Modifier.padding(top = 2.dp)) {
-                KTag(stringResource(if (s.refunded >= s.total - 0.01) R.string.sales_refunded else R.string.sales_partly_refunded), KTagKind.Low)
+        val refundTag = s.refunded > 0
+        val statusTag = !refundTag && s.status != "completed"
+        if (s.wholesale || refundTag || statusTag) {
+            Row(Modifier.padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (s.wholesale) KTag(stringResource(R.string.till_wholesale), KTagKind.Neutral)
+                if (refundTag) KTag(stringResource(if (s.refunded >= s.total - 0.01) R.string.sales_refunded else R.string.sales_partly_refunded), KTagKind.Low)
+                if (statusTag) KTag(s.status)
             }
-            s.status != "completed" -> Row(Modifier.padding(top = 2.dp)) { KTag(s.status) }
         }
     }
 }
@@ -363,6 +368,7 @@ fun SaleDetailScreen(nav: NavHostController, uuid: String) {
                         }
                     }
                     if (s.str("status") != "completed") KKeyValue(stringResource(R.string.sales_status)) { KTag(s.str("status"), KTagKind.Low) }
+                    if (s.strOrNull("price_type") == "wholesale") KKeyValue(stringResource(R.string.sales_price_type)) { KTag(stringResource(R.string.till_wholesale_prices), KTagKind.Neutral) }
                 }
             }
             item("items-title") { KSection(stringResource(R.string.sales_items_title)) }

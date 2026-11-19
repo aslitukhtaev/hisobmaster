@@ -50,6 +50,7 @@ import uz.kassiron.app.domain.ProductException
 import uz.kassiron.app.domain.ProductForm
 import uz.kassiron.app.domain.ProductService
 import uz.kassiron.app.domain.VariantForm
+import uz.kassiron.app.domain.Wholesale
 import uz.kassiron.app.ui.Routes
 import uz.kassiron.app.ui.common.BarcodeScannerDialog
 import uz.kassiron.app.ui.common.dbState
@@ -118,6 +119,8 @@ internal fun ProductEdit(
     val user by App.session.user.collectAsState()
     val canPrices = user?.can("prices") == true
     val canProducts = user?.can("products") == true
+    // The optom price field exists only where the shop turned wholesale on (website settings).
+    val wholesaleOn by dbState(false) { Wholesale.enabled() }
 
     val data by dbState<EditData?>(null, uuid) {
         EditData(
@@ -144,6 +147,8 @@ internal fun ProductEdit(
                 packageCode = p.str("package_code"),
                 vatRate = editNumber(p.dblOrNull("vat_rate")),
                 active = p.str("status") == "active",
+                // Loaded only when shown: a hidden field (null) leaves the saved price alone.
+                wholesalePrice = if (Wholesale.enabled()) editNumber(p.dblOrNull("wholesale_price")) else null,
             )
         }
     }
@@ -253,10 +258,10 @@ internal fun ProductEdit(
                             if (sellEditable) {
                                 NumberField(
                                     f.sellPrice, { form = f.copy(sellPrice = numberInput(it)); errors = errors.copy(price = null) },
-                                    Modifier.weight(1f), label = stringResource(R.string.products_sell_price), error = errors.price,
+                                    Modifier.weight(1f), label = stringResource(if (wholesaleOn) R.string.products_retail_price else R.string.products_sell_price), error = errors.price,
                                 )
                             } else {
-                                PickField(stringResource(R.string.products_sell_price), Money.format(Money.parse(f.sellPrice) ?: 0.0), "", {}, Modifier.weight(1f), chevron = false)
+                                PickField(stringResource(if (wholesaleOn) R.string.products_retail_price else R.string.products_sell_price), Money.format(Money.parse(f.sellPrice) ?: 0.0), "", {}, Modifier.weight(1f), chevron = false)
                             }
                             if (canPrices) {
                                 NumberField(
@@ -269,6 +274,26 @@ internal fun ProductEdit(
                         val cost = Money.parse(f.costPrice)
                         if (canPrices && sell != null && cost != null && sell < cost) {
                             Text(stringResource(R.string.products_below_cost), style = K.t.small, color = K.c.amb)
+                        }
+                        if (wholesaleOn) {
+                            // Editable like the sell price (the website: anyone who may edit products).
+                            NumberField(
+                                f.wholesalePrice.orEmpty(), { form = f.copy(wholesalePrice = numberInput(it)) },
+                                label = stringResource(R.string.products_wholesale_price),
+                                placeholder = sell?.let { Money.format(it, false) } ?: "0",
+                            )
+                            val optom = f.wholesalePrice?.let(Money::parse)
+                            Text(
+                                stringResource(
+                                    when {
+                                        optom != null && sell != null && optom > sell -> R.string.products_wholesale_above_retail
+                                        optom != null && cost != null && canPrices && optom < cost -> R.string.products_wholesale_below_cost
+                                        else -> R.string.products_wholesale_hint
+                                    },
+                                ),
+                                style = K.t.small,
+                                color = if (optom != null && ((sell != null && optom > sell) || (cost != null && canPrices && optom < cost))) K.c.amb else K.c.mu,
+                            )
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             if (isNew) {
@@ -324,6 +349,7 @@ internal fun ProductEdit(
                                 product = d.product,
                                 variants = d.variants,
                                 canPrices = canPrices,
+                                wholesaleOn = wholesaleOn,
                                 canEdit = canProducts,
                                 onAdd = {
                                     val first = d.variants.none { it.str("status") == "active" }
@@ -344,6 +370,7 @@ internal fun ProductEdit(
                                             barcode = v.str("barcode"),
                                             sellPrice = editNumber(v.dblOrNull("sell_price")),
                                             costPrice = editNumber(v.dblOrNull("cost_price")),
+                                            wholesalePrice = if (wholesaleOn) editNumber(v.dblOrNull("wholesale_price")) else null,
                                         ),
                                         active = v.str("status") == "active",
                                     )
@@ -386,6 +413,7 @@ internal fun ProductEdit(
                 unit = product.str("unit"),
                 parentStock = if (first && draft.uuid == null) product.dbl("stock_qty") else 0.0,
                 canPrices = canPrices,
+                wholesaleOn = wholesaleOn,
                 onChange = { variantDraft = it },
                 onScan = { scanTarget = ScanTarget.VARIANT },
                 onDismiss = { variantDraft = null },
@@ -484,6 +512,7 @@ private fun VariantsSection(
     product: DbRow?,
     variants: List<DbRow>,
     canPrices: Boolean,
+    wholesaleOn: Boolean = false,
     canEdit: Boolean,
     onAdd: () -> Unit,
     onEdit: (DbRow) -> Unit,
@@ -509,6 +538,7 @@ private fun VariantsSection(
             val parts = buildList {
                 add(v.dblOrNull("sell_price")?.let { Money.format(it) } ?: samePrice)
                 if (canPrices) v.dblOrNull("cost_price")?.let { add(stringResource(R.string.products_cost_short, Money.format(it))) }
+                if (wholesaleOn) v.dblOrNull("wholesale_price")?.let { add(stringResource(R.string.products_wholesale_short, Money.format(it))) }
                 v.strOrNull("barcode")?.takeIf { it.isNotBlank() }?.let(::add)
                 if (!active) add(stringResource(R.string.products_inactive))
             }
@@ -530,6 +560,7 @@ private fun VariantSheet(
     unit: String,
     parentStock: Double,
     canPrices: Boolean,
+    wholesaleOn: Boolean = false,
     onChange: (VariantDraft) -> Unit,
     onScan: () -> Unit,
     onDismiss: () -> Unit,
@@ -561,6 +592,12 @@ private fun VariantSheet(
                     if (canPrices) NumberField(form.costPrice, { set(form.copy(costPrice = numberInput(it))) }, Modifier.weight(1f), label = stringResource(R.string.products_cost_price), placeholder = stringResource(R.string.products_variant_price_ph))
                 }
                 Text(stringResource(R.string.products_variant_price_hint), style = K.t.small, color = K.c.mu)
+            }
+            if (wholesaleOn) {
+                NumberField(
+                    form.wholesalePrice.orEmpty(), { set(form.copy(wholesalePrice = numberInput(it))) },
+                    label = stringResource(R.string.products_wholesale_price), placeholder = stringResource(R.string.products_variant_price_ph),
+                )
             }
             if (draft.uuid == null) {
                 if (parentStock > 0) {

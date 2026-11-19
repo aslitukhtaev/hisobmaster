@@ -16,9 +16,11 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -70,7 +72,10 @@ class SyncManager(private val context: Context, private val db: Db, private val 
 
     private val api = Api()
     private val engine = SyncEngine(db, kv, api)
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    // A background sync that fails (no database any more, a bug) is logged, never a crash of the app.
+    private val scope = CoroutineScope(
+        SupervisorJob() + Dispatchers.IO + CoroutineExceptionHandler { _, e -> Log.w(TAG, "background sync failed", e) },
+    )
     private val lock = Mutex()
 
     /** Someone asked for a sync while one was running: run once more right after. */
@@ -104,6 +109,17 @@ class SyncManager(private val context: Context, private val db: Db, private val 
                 _state.update { it.copy(pendingSales = pending) }
             }
         }
+    }
+
+    /** Drops a requested sync that hasn't started yet (tests: it must not run on the next test's database). */
+    fun cancelPending() {
+        debounce?.cancel()
+        debounce = null
+    }
+
+    /** Stops everything this manager runs (tests: each test gets a new app, database and manager). */
+    fun shutdown() {
+        scope.coroutineContext[Job]?.cancelChildren()
     }
 
     /** Ask for a sync soon (after a sale, on app open, pull-to-refresh). Never blocks. */
