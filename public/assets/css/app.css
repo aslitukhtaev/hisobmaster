@@ -1025,6 +1025,10 @@ img.logo-for-dark-theme { display: none; }
     .print-report .net-profit-tile { box-shadow: none; border: 1px solid #d1d5db; }
 }
 
+.quick-batch { margin-bottom: 12px; }
+.quick-batch .field { max-width: 360px; }
+.quick-batch p { margin: 6px 0 0; font-size: .8rem; }
+
 /* ---------- Optom (wholesale) prices ---------- */
 .wholesale-note { display: block; font-size: .75rem; }
 .price-mode-toggle {

@@ -4,8 +4,11 @@ $pageTitle = t('quick_products_title');
 $gridColumns = [
     ['key' => 'barcode', 'label' => t('barcode'), 'type' => 'text', 'placeholder' => t('quick_scan_here')],
     ['key' => 'name', 'label' => t('product_name'), 'type' => 'text', 'required' => true, 'wide' => true],
-    ['key' => 'sell_price', 'label' => t('sell_price'), 'type' => 'number', 'required' => true],
+    ['key' => 'sell_price', 'label' => $wholesale ? t('retail_price') : t('sell_price'), 'type' => 'number', 'required' => true],
 ];
+if ($wholesale) {
+    $gridColumns[] = ['key' => 'wholesale_price', 'label' => t('wholesale_price'), 'type' => 'number'];
+}
 if ($canPrices) {
     $gridColumns[] = ['key' => 'cost_price', 'label' => t('cost_price'), 'type' => 'number'];
 }
@@ -25,5 +28,17 @@ $gridPrefill = $prefillBarcode !== '' ? ['barcode' => $prefillBarcode] : null;
         <a href="/products" class="btn btn-ghost"><?= e(t('back_to_list')) ?></a>
     </div>
 </section>
+
+<div class="card quick-batch">
+    <label class="field">
+        <span><?= e(t('category')) ?></span>
+        <input type="text" name="category" list="quick-category-list" maxlength="100" autocomplete="off"
+               placeholder="<?= e(t('quick_category_placeholder')) ?>" data-quick-extra>
+    </label>
+    <datalist id="quick-category-list">
+        <?php foreach ($categories as $cat): ?><option value="<?= e($cat['name']) ?>"></option><?php endforeach; ?>
+    </datalist>
+    <p class="muted"><?= e(t('quick_category_hint')) ?></p>
+</div>
 
 <?php require BASE_PATH . '/app/views/partials/quick-grid.php'; ?>

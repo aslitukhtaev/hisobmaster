@@ -1096,4 +1096,7 @@ return [
     'price_mode_retail' => "Розница",
     'price_mode_wholesale' => "Опт",
     'receipt_wholesale' => "По оптовой цене",
+    'retail_price' => "Розничная цена",
+    'quick_category_placeholder' => "Без категории",
+    'quick_category_hint' => "Все товары, сохранённые здесь, попадут в эту категорию. Новое название создаст категорию.",
 ];

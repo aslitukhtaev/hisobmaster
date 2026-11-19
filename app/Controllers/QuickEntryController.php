@@ -9,6 +9,7 @@ use App\Core\Database;
 use App\Core\Request;
 use App\Core\View;
 use App\Models\ActivityLog;
+use App\Models\Category;
 use App\Models\Customer;
 use App\Models\DebtTransaction;
 use App\Models\Product;
@@ -29,6 +30,8 @@ class QuickEntryController
     {
         View::render('products/quick', [
             'canPrices' => Auth::can('prices'),
+            'wholesale' => wholesale_enabled(),
+            'categories' => Category::allByShop((int) Auth::shopId()),
             'prefillBarcode' => trim((string) $request->input('barcode', '')),
         ]);
     }
@@ -38,6 +41,12 @@ class QuickEntryController
         $rows = $this->rows($request);
         $shopId = (int) Auth::shopId();
         $canPrices = Auth::can('prices');
+        $wholesale = wholesale_enabled();
+        // One category for the whole batch (the field above the grid).
+        $category = Category::normalizeName((string) $request->input('category', ''));
+        if (mb_strlen($category) > 100 || looks_like_formula($category)) {
+            $this->json(['ok' => false, 'message' => t('category_name_formula')]);
+        }
 
         $created = [];
         $errors = [];
@@ -45,6 +54,7 @@ class QuickEntryController
 
         $pdo = Database::beginImmediate();
         try {
+            $categoryId = $category !== '' ? Category::findOrCreate($shopId, $category) : null;
             foreach ($rows as $i => $row) {
                 $index = (int) ($row['_row'] ?? $i);
                 $name = trim((string) ($row['name'] ?? ''));
@@ -53,6 +63,7 @@ class QuickEntryController
                 $sell = self::number($row['sell_price'] ?? '');
                 $cost = $canPrices ? self::number($row['cost_price'] ?? '') : '';
                 $stock = self::number($row['stock_qty'] ?? '');
+                $wholesalePrice = $wholesale ? self::number($row['wholesale_price'] ?? '') : '';
                 $cost = $cost === '' ? '0' : $cost;
                 $stock = $stock === '' ? '0' : $stock;
 
@@ -64,6 +75,7 @@ class QuickEntryController
                     !is_numeric($sell) || !is_numeric($cost) || !is_numeric($stock) => t('values_must_be_positive'),
                     (float) $sell < 0 || (float) $cost < 0 || (float) $stock < 0 => t('values_must_be_positive'),
                     !valid_money($sell) || !valid_money($cost) || (float) $stock > QTY_MAX => t('amount_too_large'),
+                    $wholesalePrice !== '' && !valid_money($wholesalePrice) => is_numeric($wholesalePrice) && (float) $wholesalePrice > 0 ? t('amount_too_large') : t('values_must_be_positive'),
                     mb_strlen($unit) > 20 => t('values_must_be_positive'),
                     !qty_fits_unit((float) $stock, $unit) => t('qty_must_be_whole', ['unit' => $unit]),
                     mb_strlen($barcode) > 64 => t('barcode_too_long'),
@@ -76,8 +88,9 @@ class QuickEntryController
                     continue;
                 }
 
-                Product::create([
+                $productId = Product::create([
                     'shop_id' => $shopId,
+                    'category_id' => $categoryId,
                     'name' => $name,
                     'unit' => $unit,
                     'cost_price' => (float) $cost,
@@ -85,6 +98,9 @@ class QuickEntryController
                     'stock_qty' => (float) $stock,
                     'barcode' => $barcode !== '' ? $barcode : null,
                 ]);
+                if ($wholesalePrice !== '') {
+                    Product::setWholesalePrice($productId, $shopId, (float) $wholesalePrice);
+                }
                 if ($barcode !== '') {
                     $seenBarcodes[$barcode] = true;
                 }

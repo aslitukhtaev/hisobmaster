@@ -231,6 +231,10 @@
         var body = new FormData();
         body.append('_csrf', grid.getAttribute('data-csrf'));
         body.append('rows', JSON.stringify(payload));
+        // Fields above the grid that apply to the whole batch (the category).
+        document.querySelectorAll('[data-quick-extra]').forEach(function (el) {
+            body.append(el.name, el.value.trim());
+        });
         saveBtn.disabled = true;
         showResult(i18n.saving || '', false);
 

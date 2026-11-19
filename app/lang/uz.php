@@ -1096,4 +1096,7 @@ return [
     'price_mode_retail' => "Chakana",
     'price_mode_wholesale' => "Optom",
     'receipt_wholesale' => "Optom narxda",
+    'retail_price' => "Chakana narx",
+    'quick_category_placeholder' => "Kategoriyasiz",
+    'quick_category_hint' => "Shu yerda saqlanadigan barcha mahsulotlar shu kategoriyaga tushadi. Yangi nom yozsangiz, kategoriya ochiladi.",
 ];
