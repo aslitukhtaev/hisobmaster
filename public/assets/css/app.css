@@ -412,6 +412,8 @@ img.logo-for-dark-theme { display: none; }
     background: var(--surface); border-radius: var(--radius);
     box-shadow: var(--shadow); padding: 20px;
 }
+/* Cards one after another (reports, expenses...) never touch. */
+.card + .card { margin-top: 16px; }
 .card-grid {
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
 }
@@ -1032,7 +1034,7 @@ img.logo-for-dark-theme { display: none; }
 /* ---------- Optom (wholesale) prices ---------- */
 .wholesale-note { display: block; font-size: .75rem; }
 .price-mode-toggle {
-    display: flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 10px;
+    display: flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin: 12px 0 10px;
 }
 .price-mode-btn {
     flex: 1; border: none; background: var(--surface); color: var(--muted); font: inherit; font-weight: 700;
