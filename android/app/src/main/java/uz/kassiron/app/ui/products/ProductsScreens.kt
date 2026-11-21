@@ -24,6 +24,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
+import uz.kassiron.app.ui.common.io
+import uz.kassiron.app.ui.kit.KButton
+import uz.kassiron.app.ui.kit.KButtonKind
+import uz.kassiron.app.ui.kit.KCard
+import uz.kassiron.app.ui.kit.KCardTone
+import uz.kassiron.app.ui.kit.KConfirm
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,6 +76,8 @@ private data class ProductsData(
     val categories: List<DbRow>,
     val stockValue: Double,
     val shopDefault: Double?,
+    /** Active products / variants without a barcode ("Hammasiga kod berish"). */
+    val noBarcode: Int = 0,
 )
 
 @Composable
@@ -83,8 +95,15 @@ internal fun ProductsList(nav: NavHostController, initialFilter: StockFilter = S
             categories = ProductService.categories(App.db),
             stockValue = if (canPrices) ProductService.stockValue(App.db) else 0.0,
             shopDefault = ProductService.shopLowStockDefault(),
+            noBarcode = ProductService.withoutBarcodeCount(App.db),
         )
     }
+    val canProducts = user?.can("products") == true
+    val scope = rememberCoroutineScope()
+    val snackbar = remember { SnackbarHostState() }
+    val ctx = LocalContext.current
+    var confirmCodes by remember { mutableStateOf(false) }
+    var giving by remember { mutableStateOf(false) }
 
     var query by rememberSaveable { mutableStateOf("") }
     var filter by rememberSaveable { mutableStateOf(initialFilter) }
@@ -112,6 +131,7 @@ internal fun ProductsList(nav: NavHostController, initialFilter: StockFilter = S
     }
 
     KScreen(
+        snackbar = snackbar,
         topBar = {
             KTopBar(stringResource(R.string.products_title)) {
                 KIconButton(Icons.AutoMirrored.Outlined.PlaylistAdd, { nav.navigate(Routes.QUICK_PRODUCTS) }, contentDescription = stringResource(R.string.products_quick_title))
@@ -165,6 +185,10 @@ internal fun ProductsList(nav: NavHostController, initialFilter: StockFilter = S
                 contentPadding = PaddingValues(start = Edge, end = Edge, top = 10.dp, bottom = 96.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                val missing = data!!.noBarcode
+                if (canProducts && missing > 0 && filter == StockFilter.ALL && query.isBlank()) {
+                    item(key = "nobarcode") { NoBarcodeBanner(missing, onGive = { confirmCodes = true }) }
+                }
                 if (canPrices && filter == StockFilter.ALL && query.isBlank() && categoryId == null) {
                     item(key = "value") { StockValueLine(data!!.stockValue) }
                 }
@@ -179,6 +203,40 @@ internal fun ProductsList(nav: NavHostController, initialFilter: StockFilter = S
         BarcodeScannerDialog(
             onResult = { code -> scanning = false; query = code.trim() },
             onDismiss = { scanning = false },
+        )
+    }
+
+    if (confirmCodes) {
+        val missing = data?.noBarcode ?: 0
+        KConfirm(
+            title = stringResource(R.string.products_barcode_all_title, missing),
+            text = stringResource(R.string.products_barcode_all_text),
+            confirm = stringResource(R.string.products_barcode_all),
+            dismiss = stringResource(R.string.common_cancel),
+            onConfirm = {
+                confirmCodes = false
+                if (!giving) {
+                    giving = true
+                    scope.launch {
+                        val n = runCatching { io { ProductService.generateMissingBarcodes() } }.getOrDefault(0)
+                        giving = false
+                        if (n > 0) snackbar.showSnackbar(ctx.getString(R.string.products_barcode_all_done, n))
+                    }
+                }
+            },
+            onDismiss = { confirmCodes = false },
+        )
+    }
+}
+
+/** "12 ta mahsulotning shtrix-kodi yo‘q · Hammasiga kod berish". */
+@Composable
+private fun NoBarcodeBanner(count: Int, onGive: () -> Unit) {
+    KCard(tone = KCardTone.Amber, padding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)) {
+        Text(stringResource(R.string.products_no_barcode, count), style = K.t.body.copy(fontSize = 14.sp), color = K.c.tx)
+        KButton(
+            stringResource(R.string.products_barcode_all), onGive, Modifier.fillMaxWidth().padding(top = 8.dp),
+            kind = KButtonKind.Alt, height = 40.dp, fontSize = 14.sp,
         )
     }
 }

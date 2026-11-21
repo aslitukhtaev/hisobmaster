@@ -44,4 +44,5 @@ object Keys {
     const val LANG = "lang"                      // uz | ru
     const val PRINTER_ADDRESS = "printer_address" // Bluetooth MAC
     const val PRINTER_WIDTH = "printer_width"    // 58 | 80
+    const val TILL_CARTS = "till_carts"          // JSON: the till's open carts (this device only, never synced)
 }

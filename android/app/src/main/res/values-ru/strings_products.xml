@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="products_barcode_generate">Сгенерировать код</string>
+    <string name="products_no_barcode">Без штрихкода: %1$d</string>
+    <string name="products_barcode_all">Присвоить коды всем</string>
+    <string name="products_barcode_all_title">Присвоить коды товарам: %1$d?</string>
+    <string name="products_barcode_all_text">Каждому будет присвоен собственный штрихкод магазина (начинается с 2). Товары с кодом не изменятся.</string>
+    <string name="products_barcode_all_done">Коды присвоены: %1$d</string>
     <!-- Products list -->
     <string name="products_title">Товары</string>
     <string name="products_search">Название или штрихкод</string>

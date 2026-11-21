@@ -248,7 +248,13 @@ internal fun ProductEdit(
                             placeholder = stringResource(R.string.products_barcode_ph),
                             keyboard = KeyboardType.Number,
                             error = errors.barcode ?: barcodeOwner?.let { stringResource(R.string.products_barcode_owner, it) },
-                            trailing = { ScanInside { scanTarget = ScanTarget.PRODUCT } },
+                            trailing = {
+                                BarcodeTrailing(
+                                    empty = f.barcode.isBlank(),
+                                    onGenerate = { scope.launch { val code = io { ProductService.newBarcode() }; form = form?.copy(barcode = code) } },
+                                    onScan = { scanTarget = ScanTarget.PRODUCT },
+                                )
+                            },
                         )
                         UnitPicker(
                             unit = f.unit,
@@ -580,6 +586,7 @@ private fun VariantSheet(
         value = io { ProductService.barcodeOwner(App.db, code, null, draft.uuid) }
     }
     fun set(f: VariantForm) = onChange(draft.copy(form = f))
+    val scope = rememberCoroutineScope()
     val editPrices = canPrices || draft.uuid == null
     KSheet(onDismiss) {
         KSheetTitle(stringResource(if (draft.uuid == null) R.string.products_variant_add else R.string.products_variant_edit), onDismiss)
@@ -590,7 +597,13 @@ private fun VariantSheet(
                 label = stringResource(R.string.products_barcode), placeholder = stringResource(R.string.products_barcode_ph),
                 keyboard = KeyboardType.Number,
                 error = owner?.let { stringResource(R.string.products_barcode_owner, it) },
-                trailing = { ScanInside(onScan) },
+                trailing = {
+                    BarcodeTrailing(
+                        empty = form.barcode.isBlank(),
+                        onGenerate = { scope.launch { val code = io { ProductService.newBarcode() }; set(form.copy(barcode = code)) } },
+                        onScan = onScan,
+                    )
+                },
             )
             if (editPrices) {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

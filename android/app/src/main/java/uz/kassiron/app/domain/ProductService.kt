@@ -4,6 +4,7 @@ import org.json.JSONObject
 import uz.kassiron.app.App
 import uz.kassiron.app.core.Db
 import uz.kassiron.app.core.Ids
+import uz.kassiron.app.core.Keys
 import uz.kassiron.app.core.Money
 import uz.kassiron.app.core.Outbox
 import uz.kassiron.app.core.Row
@@ -212,6 +213,58 @@ object ProductService {
 
     fun barcodeTaken(db: Db, barcode: String, exceptProduct: String? = null, exceptVariant: String? = null): Boolean =
         barcodeOwner(db, barcode, exceptProduct, exceptVariant) != null
+
+    // ---------- own barcodes (BarcodeGen) ----------
+
+    /** Every barcode in use, products and variants, active or not. */
+    private fun allBarcodes(db: Db): Set<String> =
+        (db.query("SELECT barcode FROM products WHERE barcode IS NOT NULL AND barcode != ''") +
+            db.query("SELECT barcode FROM product_variants WHERE barcode IS NOT NULL AND barcode != ''"))
+            .map { it.str("barcode") }.toSet()
+
+    /** A fresh own barcode for the "Kod yaratish" button: not used by any product or variant. */
+    fun newBarcode(db: Db = App.db): String = BarcodeGen.next(App.kv.get(Keys.DEVICE_CODE), allBarcodes(db))
+
+    // What "Hammasiga kod berish" gives a code to: active products without a barcode
+    // (a product sold through variants is left out: its variants carry the codes)
+    // and active variants of active products without one.
+    private const val NO_BARCODE_PRODUCTS =
+        "SELECT p.uuid FROM products p WHERE p.status = 'active' AND (p.barcode IS NULL OR p.barcode = '') " +
+            "AND NOT EXISTS (SELECT 1 FROM product_variants v WHERE v.product_id = p.uuid AND v.status = 'active') ORDER BY p.name COLLATE NOCASE"
+    private const val NO_BARCODE_VARIANTS =
+        "SELECT v.uuid FROM product_variants v JOIN products p ON p.uuid = v.product_id " +
+            "WHERE v.status = 'active' AND p.status = 'active' AND (v.barcode IS NULL OR v.barcode = '') ORDER BY p.name COLLATE NOCASE, v.variant_label COLLATE NOCASE"
+
+    fun withoutBarcodeCount(db: Db = App.db): Int = db.query(NO_BARCODE_PRODUCTS).size + db.query(NO_BARCODE_VARIANTS).size
+
+    /**
+     * Gives every active product / variant that has no barcode its own code, in one
+     * transaction (nothing that has a barcode is touched, nor anything inactive).
+     * Returns how many got one.
+     */
+    fun generateMissingBarcodes(): Int {
+        val userUuid = App.session.user.value?.uuid
+        val count = App.db.write {
+            val products = query(NO_BARCODE_PRODUCTS).map { it.str("uuid") }
+            val variants = query(NO_BARCODE_VARIANTS).map { it.str("uuid") }
+            val total = products.size + variants.size
+            if (total == 0) return@write 0
+            val codes = BarcodeGen.nextMany(App.kv.get(Keys.DEVICE_CODE), allBarcodes(this), total)
+            var i = 0
+            for (uuid in products) {
+                update("products", uuid, mapOf("barcode" to codes[i++], "updated_at" to Time.now()))
+                Outbox.upsert(this, "products", uuid)
+            }
+            for (uuid in variants) {
+                update("product_variants", uuid, mapOf("barcode" to codes[i++]))
+                Outbox.upsert(this, "product_variants", uuid)
+            }
+            activity(this, userUuid, "barcodes_generated", mapOf("count" to total.toString()))
+            total
+        }
+        if (count > 0) App.sync.requestSync()
+        return count
+    }
 
     // ---------- validation helpers (helpers.php) ----------
 
