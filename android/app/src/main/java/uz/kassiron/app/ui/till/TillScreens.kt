@@ -69,6 +69,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.CoroutineScope
@@ -215,6 +217,9 @@ internal fun TillContent(
     var variantFor by remember { mutableStateOf<TillProduct?>(null) }
     var qtyFor by remember { mutableStateOf<CartItem?>(null) }
     var confirmClear by remember { mutableStateOf(false) }
+    // The cart whose menu (rename / close) is open, and the one asked to be closed with lines in it.
+    var cartMenu by remember { mutableStateOf<Int?>(null) }
+    var closeCartAt by remember { mutableStateOf<Int?>(null) }
     var selling by remember { mutableStateOf(false) }
     var payError by remember { mutableStateOf<String?>(null) }
 
@@ -332,7 +337,8 @@ internal fun TillContent(
                 val priceType = if (optom) Wholesale.WHOLESALE else Wholesale.RETAIL
                 val sale = io { SaleService.create(lines, naqd, karta, discount, customer, priceType) }
                 vm.lastSale = LastSale(sale.uuid, sale.receiptNo, sale.total, sale.change, sale.qarz)
-                vm.clear()
+                // Only this cart closes: the ones waiting stay as they are.
+                vm.finishSale()
                 vm.query = ""
                 showPay = false
                 haptic(view, confirm = true)
@@ -368,13 +374,16 @@ internal fun TillContent(
     // on the website and synced while the cart is open): the pay sheet then
     // shows exactly what the sale will charge.
     val dbTick by App.db.changes.collectAsState()
-    LaunchedEffect(dbTick) {
+    // Also when another cart is opened: a cart that waited is checked against today's prices and stock.
+    LaunchedEffect(dbTick, vm.active) {
         if (vm.cart.isEmpty()) return@LaunchedEffect
         val items = vm.cart.toList()
         val fresh = io { items.map { it.key to TillData.fresh(it) } }
         vm.applyFresh(fresh)
     }
     val cartEmpty = vm.cart.isEmpty()
+    // The carts are written to the device when the till is left.
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { vm.flush() }
 
     KScreen(
         snackbar = snackbar,
@@ -399,6 +408,17 @@ internal fun TillContent(
         }
         if (sync.rejected > 0) {
             KAlert(stringResource(R.string.sync_rejected, sync.rejected.toInt()), Icons.Outlined.ErrorOutline, tone = KCardTone.Red)
+            Spacer(Modifier.height(10.dp))
+        }
+        // The carts: shown once there is something to switch between (a second cart, or a first one with lines).
+        if (vm.cartCount > 1 || !cartEmpty) {
+            CartTabs(
+                tabs = vm.tabs,
+                canAdd = vm.canAddCart,
+                onSwitch = { vm.switchTo(it); payError = null; haptic(view) },
+                onNew = { if (vm.newCart()) { vm.query = ""; payError = null; haptic(view) } },
+                onMenu = { cartMenu = it },
+            )
             Spacer(Modifier.height(10.dp))
         }
         KSearch(
@@ -522,6 +542,40 @@ internal fun TillContent(
 
     qtyFor?.let { item ->
         QtySheet(item, onSet = { qty -> vm.setQty(item.key, qty) }, onDismiss = { qtyFor = null })
+    }
+
+    cartMenu?.let { index ->
+        val tab = vm.tabs.getOrNull(index)
+        if (tab == null) cartMenu = null
+        else CartMenuSheet(
+            tab,
+            onRename = { vm.renameCart(index, it); cartMenu = null },
+            onClose = { cartMenu = null; if (tab.count > 0) closeCartAt = index else vm.closeCart(index) },
+            onDismiss = { cartMenu = null },
+        )
+    }
+    closeCartAt?.let { index ->
+        KConfirm(
+            title = stringResource(R.string.till_cart_close_title),
+            text = stringResource(R.string.till_cart_close_text),
+            confirm = stringResource(R.string.till_cart_close),
+            dismiss = stringResource(R.string.common_cancel),
+            onConfirm = { vm.closeCart(index); closeCartAt = null },
+            onDismiss = { closeCartAt = null },
+            danger = true,
+        )
+    }
+    // Carts that waited more than a day: asked about once, never deleted silently.
+    if (vm.stalePrompt > 0) {
+        KConfirm(
+            title = stringResource(R.string.till_cart_stale_title, vm.stalePrompt),
+            text = stringResource(R.string.till_cart_stale_text),
+            confirm = stringResource(R.string.till_cart_stale_delete),
+            dismiss = stringResource(R.string.till_cart_stale_keep),
+            onConfirm = { vm.deleteStale() },
+            onDismiss = { vm.keepStale() },
+            danger = true,
+        )
     }
 
     if (confirmClear) {

@@ -200,6 +200,24 @@ fun NumberField(
     }
 }
 
+/**
+ * Inside the barcode field: "Kod yaratish" while the field is empty (the shop's
+ * own code, BarcodeGen), then the scan button.
+ */
+@Composable
+fun BarcodeTrailing(empty: Boolean, onGenerate: () -> Unit, onScan: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (empty) {
+            Box(
+                Modifier.heightIn(min = 36.dp).clip(RoundedCornerShape(10.dp)).border(1.dp, K.c.bd, RoundedCornerShape(10.dp))
+                    .background(K.c.s2).clickable(onClick = onGenerate).padding(horizontal = 10.dp),
+                contentAlignment = Alignment.Center,
+            ) { Text(stringResource(R.string.products_barcode_generate), style = K.t.chip, color = K.c.tx, maxLines = 1) }
+        }
+        ScanInside(onScan)
+    }
+}
+
 /** The small lime scan button inside a field (mockup 16: Shtrix-kod). */
 @Composable
 fun ScanInside(onClick: () -> Unit) {

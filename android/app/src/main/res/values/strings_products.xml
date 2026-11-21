@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="products_barcode_generate">Kod yaratish</string>
+    <string name="products_no_barcode">%1$d ta mahsulotning shtrix-kodi yo‘q</string>
+    <string name="products_barcode_all">Hammasiga kod berish</string>
+    <string name="products_barcode_all_title">%1$d ta mahsulotga kod berilsinmi?</string>
+    <string name="products_barcode_all_text">Har biriga do‘konning o‘z shtrix-kodi beriladi (2 bilan boshlanadi). Kodi bor mahsulotlarga tegilmaydi.</string>
+    <string name="products_barcode_all_done">%1$d ta mahsulotga kod berildi</string>
     <!-- Products list -->
     <string name="products_title">Mahsulotlar</string>
     <string name="products_search">Nomi yoki shtrix-kod</string>

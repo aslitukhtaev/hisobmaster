@@ -1,6 +1,7 @@
 package uz.kassiron.app.ui.till
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -239,8 +240,14 @@ object TillData {
 
 /**
  * The till's state: survives going to the receipt / another tab and back,
- * and (the cart and the Chakana / Optom choice, through [saved]) Android
- * closing the app in the background while the cashier is in a payment app.
+ * and (every cart, through [saved] and the local kv) Android closing the app in
+ * the background while the cashier is in a payment app, or a restart.
+ *
+ * Several carts can be open at once (up to [MAX_CARTS]): one customer's long
+ * cart waits while a quick one is rung up. The fields below ([cart], [wholesale],
+ * the payment fields, [customer]) always belong to the ACTIVE cart; the others are
+ * kept in [slots] and swapped in by [switchTo]. A waiting cart reserves no stock
+ * and is never synced.
  */
 class TillViewModel(private val saved: SavedStateHandle = SavedStateHandle()) : ViewModel() {
     val cart = mutableStateListOf<CartItem>()
@@ -259,9 +266,147 @@ class TillViewModel(private val saved: SavedStateHandle = SavedStateHandle()) : 
         persist()
     }
 
-    init {
-        restore()
+    // Payment: every change is kept (a half-typed payment survives like the lines do).
+    private var modeState by mutableStateOf(PayMode.NAQD)
+    private var cashState by mutableStateOf("")
+    private var kartaState by mutableStateOf("")
+    private var debtState by mutableStateOf("")
+    private var discountState by mutableStateOf("")
+    private var customerState by mutableStateOf<TillCustomer?>(null)
+
+    var mode: PayMode
+        get() = modeState
+        set(v) { modeState = v; persist() }
+    var cashText: String
+        get() = cashState
+        set(v) { cashState = v; persist() }
+    var kartaText: String
+        get() = kartaState
+        set(v) { kartaState = v; persist() }
+    var debtText: String
+        get() = debtState
+        set(v) { debtState = v; persist() }
+    var discountText: String
+        get() = discountState
+        set(v) { discountState = v; persist() }
+    var customer: TillCustomer?
+        get() = customerState
+        set(v) { customerState = v; persist() }
+
+    // ---------- the carts ----------
+
+    private val slots = mutableStateListOf<CartSlot>()
+    /** Index of the open cart in [slots]. */
+    var active by mutableIntStateOf(0)
+        private set
+    private var nextId = 1L
+    private var restoring = false
+
+    /** Carts left waiting longer than a day (asked about once on opening the till). */
+    var stalePrompt by mutableIntStateOf(0)
+        private set
+
+    /** The tabs of the till: every cart with what is in it (the open one live). */
+    val tabs: List<CartTab>
+        get() = slots.mapIndexed { i, s ->
+            if (i == active) CartTab(i, s.number, s.name, customerState?.name, itemCount, subtotal, true)
+            else CartTab(i, s.number, s.name, s.customer?.name, s.itemCount, s.subtotal, false)
+        }
+
+    val cartCount: Int get() = slots.size
+    val canAddCart: Boolean get() = slots.size < MAX_CARTS
+
+    /** The open cart as a slot (its id, number and name come from [slots]). */
+    private fun snapshot(): CartSlot = slots[active].copy(
+        lines = cart.toList(), wholesale = wholesale, mode = modeState, cash = cashState, karta = kartaState,
+        debt = debtState, discount = discountState, customer = customerState,
+    )
+
+    private fun loadSlot(s: CartSlot) {
+        cart.clear()
+        cart.addAll(s.lines)
+        wholesale = s.wholesale
+        modeState = s.mode
+        cashState = s.cash
+        kartaState = s.karta
+        debtState = s.debt
+        discountState = s.discount
+        customerState = s.customer
     }
+
+    /** Opens a new empty cart next to the others and switches to it; false at the limit. */
+    fun newCart(): Boolean {
+        if (slots.size >= MAX_CARTS) return false
+        persist()
+        val number = (1..MAX_CARTS).first { n -> slots.none { it.number == n } }
+        slots += CartSlot(id = nextId++, number = number)
+        active = slots.lastIndex
+        loadSlot(slots[active])
+        write()
+        return true
+    }
+
+    fun switchTo(index: Int) {
+        if (index == active || index !in slots.indices) return
+        persist()
+        active = index
+        loadSlot(slots[index])
+        write()
+    }
+
+    /** Closes a cart with its lines. The last cart is not removed but emptied ("Savat 1"). */
+    fun closeCart(index: Int) {
+        if (index !in slots.indices) return
+        persist()
+        if (slots.size == 1) {
+            slots[0] = CartSlot(id = nextId++, number = 1)
+            active = 0
+            loadSlot(slots[0])
+            write()
+            return
+        }
+        slots.removeAt(index)
+        when {
+            index == active -> { active = minOf(index, slots.lastIndex); loadSlot(slots[active]) }
+            index < active -> active -= 1
+        }
+        write()
+    }
+
+    fun renameCart(index: Int, name: String) {
+        if (index !in slots.indices) return
+        persist()
+        slots[index] = slots[index].copy(name = name.trim().take(MAX_NAME).ifBlank { null })
+        write()
+    }
+
+    /** The sale of the open cart went through: only this cart closes, the waiting ones stay. */
+    fun finishSale() = closeCart(active)
+
+    private fun staleSlots(now: Long = System.currentTimeMillis()): List<Int> =
+        slots.indices.filter { i -> !slots[i].isEmpty && slots[i].touched > 0 && now - slots[i].touched > STALE_CART_MILLIS }
+
+    /** Deletes the carts left waiting for a day. */
+    fun deleteStale() {
+        persist()
+        val stale = staleSlots()
+        stalePrompt = 0
+        for (i in stale.reversed()) closeCart(i)
+    }
+
+    /** Keeps them, and asks again in a day. */
+    fun keepStale() {
+        persist()
+        val now = System.currentTimeMillis()
+        staleSlots().forEach { slots[it] = slots[it].copy(touched = now) }
+        stalePrompt = 0
+        write()
+    }
+
+    /** Writes the carts to the local kv now (leaving the till, tests). */
+    fun flush() = CartStore.flush()
+
+    override fun onCleared() = CartStore.flush()
 
     /**
      * Brings the cart in line with the database after a sync or another
@@ -281,58 +426,58 @@ class TillViewModel(private val saved: SavedStateHandle = SavedStateHandle()) : 
         if (changed) persist()
     }
 
+    /** Remembers the open cart (and every other) after a change. */
     private fun persist() {
-        val arr = JSONArray()
-        for (c in cart) {
-            arr.put(
-                JSONObject().put("p", c.productUuid).put("v", c.variantUuid ?: JSONObject.NULL).put("n", c.name)
-                    .put("l", c.variantLabel ?: JSONObject.NULL).put("u", c.unit).put("s", c.stock).put("q", c.qty)
-                    .put("r", c.retail).put("o", c.optom ?: JSONObject.NULL),
-            )
-        }
-        saved[SAVED_CART] = arr.toString()
-        saved[SAVED_WHOLESALE] = wholesale
+        if (restoring || slots.isEmpty()) return
+        val now = snapshot()
+        val old = slots[active]
+        // The time only moves when something in the cart really changed.
+        slots[active] = if (now.copy(touched = old.touched) == old) old else now.copy(touched = System.currentTimeMillis())
+        write()
+    }
+
+    private fun write() {
+        val json = CartCodec.encode(slots, active, nextId)
+        saved[SAVED_CARTS] = json
+        CartStore.schedule(json)
     }
 
     private fun restore() {
-        val json = saved.get<String>(SAVED_CART) ?: return
-        wholesale = saved.get<Boolean>(SAVED_WHOLESALE) ?: false
-        runCatching {
-            val arr = JSONArray(json)
-            for (i in 0 until arr.length()) {
-                val o = arr.getJSONObject(i)
-                val retail = o.getDouble("r")
-                cart += CartItem(
-                    productUuid = o.getString("p"),
-                    variantUuid = o.optString("v").takeIf { !o.isNull("v") && it.isNotEmpty() },
-                    name = o.getString("n"),
-                    variantLabel = o.optString("l").takeIf { !o.isNull("l") },
-                    unit = o.getString("u"),
-                    price = retail,
-                    stock = o.getDouble("s"),
-                    qty = o.getDouble("q"),
-                    retail = retail,
-                    optom = if (o.isNull("o")) null else o.getDouble("o"),
-                ).priced(wholesale)
+        restoring = true
+        try {
+            // The saved state of a process the system closed, else what was kept on the device, else the old single-cart format.
+            val decoded = saved.get<String>(SAVED_CARTS)?.let(CartCodec::decode)
+                ?: legacySlot()?.let { CartCodec.Decoded(listOf(it), 0, it.id + 1) }
+                ?: CartStore.load()?.let(CartCodec::decode)
+            if (decoded == null) {
+                slots += CartSlot(id = nextId++, number = 1)
+                return
             }
+            slots += decoded.slots
+            active = decoded.active
+            nextId = maxOf(decoded.nextId, decoded.slots.maxOf { it.id } + 1)
+            loadSlot(slots[active])
+            stalePrompt = staleSlots().size
+        } finally {
+            restoring = false
         }
     }
 
-    // Payment.
-    var mode by mutableStateOf(PayMode.NAQD)
-    var cashText by mutableStateOf("")
-    var kartaText by mutableStateOf("")
-    var debtText by mutableStateOf("")
-    var discountText by mutableStateOf("")
-    var customer by mutableStateOf<TillCustomer?>(null)
+    /** The single cart older versions kept in the saved state. */
+    private fun legacySlot(): CartSlot? {
+        val json = saved.get<String>(SAVED_CART) ?: return null
+        val wholesale = saved.get<Boolean>(SAVED_WHOLESALE) ?: false
+        val lines = runCatching { CartCodec.lines(JSONArray(json), wholesale) }.getOrNull() ?: return null
+        return CartSlot(id = 1, number = 1, lines = lines, wholesale = wholesale, touched = System.currentTimeMillis())
+    }
 
     val count: Double get() = cart.sumOf { it.qty }
 
     /** "3 ta mahsulot": whole units counted one by one, a weighed line (kg, litr) counts once. */
-    val itemCount: Int get() = cart.sumOf { if (it.fractional) 1 else Math.round(it.qty).toInt() }
+    val itemCount: Int get() = cartItemCount(cart)
 
     fun qtyOf(productUuid: String): Double = cart.filter { it.productUuid == productUuid }.sumOf { it.qty }
-    val subtotal: Double get() = SaleMath.round2(cart.sumOf { it.subtotal })
+    val subtotal: Double get() = cartSubtotal(cart)
 
     sealed interface AddResult {
         data object Added : AddResult
@@ -375,6 +520,7 @@ class TillViewModel(private val saved: SavedStateHandle = SavedStateHandle()) : 
 
     fun remove(key: String) { cart.removeAll { it.key == key }; persist() }
 
+    /** Empties the open cart (the tab stays). */
     fun clear() {
         cart.clear()
         wholesale = false
@@ -385,17 +531,19 @@ class TillViewModel(private val saved: SavedStateHandle = SavedStateHandle()) : 
     private companion object {
         const val SAVED_CART = "till_cart"
         const val SAVED_WHOLESALE = "till_wholesale"
+        const val SAVED_CARTS = "till_carts"
+        const val MAX_NAME = 20
     }
 
     fun priceType(): String = if (wholesale) Wholesale.WHOLESALE else Wholesale.RETAIL
 
     fun resetPayment() {
-        mode = PayMode.NAQD
-        cashText = ""
-        kartaText = ""
-        debtText = ""
-        discountText = ""
-        customer = null
+        modeState = PayMode.NAQD
+        cashState = ""
+        kartaState = ""
+        debtState = ""
+        discountState = ""
+        customerState = null
     }
 
     fun lines(): List<CartLine> = cart.reversed().map { CartLine(it.productUuid, it.variantUuid, it.qty) }
@@ -422,6 +570,10 @@ class TillViewModel(private val saved: SavedStateHandle = SavedStateHandle()) : 
     }
 
     private fun round3(v: Double) = Math.round(v * 1000) / 1000.0
+
+    init {
+        restore()
+    }
 }
 
 /** Quick cash chips: the exact total, then the total rounded up to common notes (19 000 → 20 000, 50 000, 100 000). */
