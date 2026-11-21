@@ -1,3 +1,4 @@
+<?php use App\Core\Auth; ?>
 <?php
 $pageTitle = t('new_sale');
 $pageKind = 'till';
@@ -68,6 +69,9 @@ $posIcon = static function (string $name): string {
         <a href="/products/create" class="btn btn-primary" style="margin-top:14px;"><?= e(t('add_product')) ?></a>
     </div>
 <?php else: ?>
+<!-- Several customers at once: each tab is its own cart, kept on this device only. -->
+<div class="cart-tabs" id="cart-tabs" role="tablist" aria-label="<?= e(t('carts_label')) ?>"></div>
+
 <div class="pos-layout">
     <div class="pos-products">
         <label class="sr-only" for="product-search"><?= e(t('search_products_placeholder')) ?></label>
@@ -232,6 +236,14 @@ if (!is_array($oldCart)) {
         pickVariantHint: <?= json_encode(t('pick_variant_hint'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
         scanNotFound: <?= json_encode(t('scan_not_found'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
         itemsCount: <?= json_encode(t('pos_items_count'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        cartName: <?= json_encode(t('cart_tab_name'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        cartNew: <?= json_encode(t('cart_tab_new'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        cartItems: <?= json_encode(t('pos_items_count'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        cartClose: <?= json_encode(t('cart_tab_close'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        cartCloseConfirm: <?= json_encode(t('cart_tab_close_confirm'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        cartRename: <?= json_encode(t('cart_tab_rename'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        cartsDropped: <?= json_encode(t('carts_dropped'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+        cartsStale: <?= json_encode(t('carts_stale'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
         scanOutOfStock: <?= json_encode(t('scan_out_of_stock'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
         scanRecordPurchase: <?= json_encode(t('record_purchase'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
         scanAddProduct: <?= json_encode(t('scan_add_product'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
@@ -244,6 +256,8 @@ if (!is_array($oldCart)) {
     };
     window.HM_CAN_DISCOUNT = <?= $canDiscount ? 'true' : 'false' ?>;
     window.HM_CAN_PRODUCTS = <?= can('products') ? 'true' : 'false' ?>;
+    window.HM_CARTS_KEY = <?= json_encode('kassiron.carts.' . (int) Auth::shopId() . '.' . (int) Auth::id(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;
+    window.HM_SALE_DONE = <?= !empty($lastSale) ? 'true' : 'false' ?>;
     window.HM_OLD_CART = <?= json_encode($oldCart, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;
     window.HM_OLD_SALE = {
         discount: <?= json_encode(old('discount', '0'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,

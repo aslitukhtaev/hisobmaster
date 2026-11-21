@@ -1166,4 +1166,12 @@ return [
     'label_my_sizes' => "Мои размеры",
     'label_size_delete_confirm' => "Удалить размер «:name»?",
     'labels_for_purchase' => "Этикетки для поступивших товаров",
+    'carts_label' => "Корзины",
+    'cart_tab_name' => "Корзина :n",
+    'cart_tab_new' => "+ Новая корзина",
+    'cart_tab_close' => "Закрыть корзину",
+    'cart_tab_close_confirm' => "Закрыть корзину «:name»? Товары в ней будут удалены.",
+    'cart_tab_rename' => "Дважды нажмите, чтобы переименовать",
+    'carts_dropped' => "Строк изменилось: :count — товара нет или осталось меньше.",
+    'carts_stale' => "Корзин отложено больше суток: :count. Удалить?",
 ];

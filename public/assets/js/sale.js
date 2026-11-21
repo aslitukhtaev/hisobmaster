@@ -564,6 +564,11 @@
         cartTotalEl.textContent = formatMoney(total);
         renderMobileBar(total);
         renderQuickCash(total);
+        lastTotal = total;
+        if (typeof renderCartTabs === 'function' && !switchingCart) {
+            renderCartTabs();
+            schedulePersist();
+        }
         document.getElementById('discount-field').value = discount;
 
         if (discountMode === 'percent') {
@@ -708,6 +713,11 @@
             document.getElementById('customer-id-field').value = '';
         }
         customerClearEl.hidden = !(selected || newCustomerMode || customerSearchEl.value);
+        // The active tab is named after its customer.
+        if (typeof renderCartTabs === 'function' && cartTabsEl) {
+            renderCartTabs();
+            schedulePersist();
+        }
     }
 
     function setCustomer(id) {
@@ -1123,6 +1133,11 @@
             }
         }
         completeBtnEl.disabled = true;
+        // Which cart this sale is: closed on the next page if the sale went through.
+        persistCarts();
+        try {
+            localStorage.setItem(FINISH_KEY, activeCartId);
+        } catch (err) { /* no storage */ }
     });
 
     // After a validation failure the server redirects back here with the
@@ -1243,18 +1258,350 @@
         });
     }
 
+    // ---- Several carts at once, on this device only: a customer with a big
+    // basket waits in one tab while a quick one is served in another. Parked
+    // carts reserve no stock and are not sales: nothing reaches the server
+    // until "Sotuvni yakunlash". Prices and stock are re-read when a cart is
+    // opened again, so a parked cart never sells at an old price.
+    var CARTS_KEY = window.HM_CARTS_KEY || 'kassiron.carts';
+    var FINISH_KEY = CARTS_KEY + '.finishing';
+    var MAX_CARTS = 5;
+    var cartTabsEl = document.getElementById('cart-tabs');
+    var carts = [];
+    var activeCartId = null;
+    var switchingCart = false;
+    var saveTimer = null;
+    var lastTotal = 0;
+
+    function newCartId() {
+        return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    }
+    function activeCart() {
+        return carts.find(function (c) { return c.id === activeCartId; }) || null;
+    }
+
+    function captureState() {
+        return {
+            lines: Array.from(cart.values()).map(function (e) {
+                return { productId: e.productId, variantId: e.variantId || null, qty: e.qty };
+            }),
+            discount: discountInputEl.value,
+            discountMode: discountMode,
+            priceMode: priceMode,
+            customerId: customerSelectEl.value || '',
+            customerText: customerSearchEl.value || '',
+            newCustomer: newCustomerMode,
+            newName: newCustomerNameEl.value,
+            newPhone: newCustomerPhoneEl.value,
+            activePreset: activePreset,
+            naqd: naqdAmount,
+            karta: kartaAmount,
+            qr: qrAmount,
+            lastEdited: lastEditedField
+        };
+    }
+
+    function setDiscountModeQuietly(mode) {
+        discountMode = mode === 'percent' ? 'percent' : 'amount';
+        discountInputEl.setAttribute('max', discountMode === 'percent' ? '99.99' : discountInputEl.getAttribute('data-max-amount') || '');
+        document.querySelectorAll('.discount-mode-btn').forEach(function (b) {
+            b.classList.toggle('active', b.getAttribute('data-mode') === discountMode);
+        });
+    }
+
+    function applyState(st) {
+        st = st || {};
+        switchingCart = true;
+        cart.clear();
+        var dropped = 0;
+        (st.lines || []).forEach(function (l) {
+            var product = productById(l.productId);
+            var variant = product && l.variantId ? variantOf(product, l.variantId) : null;
+            if (!product || (l.variantId && !variant)) {
+                dropped++;
+                return;
+            }
+            var stock = variant ? variant.stock : product.stock;
+            var qty = Math.min(Number(l.qty) || 0, stock);
+            if (qty <= 0) {
+                dropped++;
+                return;
+            }
+            if (qty < l.qty) {
+                dropped++;
+            }
+            cart.set(cartKey(l.productId, l.variantId), { productId: l.productId, variantId: l.variantId || null, qty: qty });
+        });
+        setDiscountModeQuietly(st.discountMode);
+        discountInputEl.value = st.discount || 0;
+        if (priceModeBtns.length) {
+            setPriceMode(st.priceMode === 'wholesale' ? 'wholesale' : 'retail');
+        }
+        newCustomerMode = !!st.newCustomer;
+        newCustomerNameEl.value = st.newName || '';
+        newCustomerPhoneEl.value = st.newPhone || '';
+        document.getElementById('customer-name-field').value = newCustomerNameEl.value;
+        document.getElementById('customer-phone-field').value = newCustomerPhoneEl.value;
+        customerSelectEl.value = st.customerId || '';
+        customerSearchEl.value = st.customerText || '';
+        updateCustomerFields();
+        activePreset = st.activePreset === undefined ? 'naqd' : st.activePreset;
+        naqdAmount = Number(st.naqd) || 0;
+        kartaAmount = Number(st.karta) || 0;
+        qrAmount = Number(st.qr) || 0;
+        lastEditedField = st.lastEdited || 'naqd';
+        switchingCart = false;
+        renderProducts();
+        renderCart();
+        if (dropped > 0) {
+            showFormError((i18n.cartsDropped || ':count').replace(':count', dropped));
+        }
+    }
+
+    function persistCarts() {
+        var current = activeCart();
+        if (current) {
+            current.state = captureState();
+            current.updated = Date.now();
+        }
+        try {
+            localStorage.setItem(CARTS_KEY, JSON.stringify({ active: activeCartId, carts: carts }));
+        } catch (e) { /* private window: carts simply don't survive a reload */ }
+    }
+    function schedulePersist() {
+        if (switchingCart) {
+            return;
+        }
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(persistCarts, 150);
+    }
+
+    function stateTotals(st) {
+        var count = 0, total = 0;
+        (st && st.lines || []).forEach(function (l) {
+            var product = productById(l.productId);
+            var variant = product && l.variantId ? variantOf(product, l.variantId) : null;
+            if (!product) {
+                return;
+            }
+            var price = variant ? variant.price : product.price;
+            if (st.priceMode === 'wholesale') {
+                if (variant && variant.wholesale != null) {
+                    price = variant.wholesale;
+                } else if (product.wholesale != null) {
+                    price = product.wholesale;
+                }
+            }
+            count++;
+            total += price * (Number(l.qty) || 0);
+        });
+        return { count: count, total: total };
+    }
+
+    function cartTitle(c, index) {
+        if (c.name) {
+            return c.name;
+        }
+        var st = c.id === activeCartId ? captureState() : (c.state || {});
+        var who = st.customerId ? String(st.customerText || '').split(' · ')[0] : (st.newCustomer ? (st.newName || st.newPhone) : '');
+        return who || (i18n.cartName || 'Savat :n').replace(':n', index + 1);
+    }
+
+    function renderCartTabs() {
+        if (!cartTabsEl || !carts.length) {
+            return;
+        }
+        cartTabsEl.innerHTML = carts.map(function (c, i) {
+            var on = c.id === activeCartId;
+            var totals = on ? { count: cart.size, total: lastTotal } : stateTotals(c.state);
+            var meta = totals.count ? ' · ' + (i18n.cartItems || ':count').replace(':count', totals.count) + ' · ' + formatMoney(totals.total) : '';
+            return '<div class="cart-tab' + (on ? ' active' : '') + '">' +
+                '<button type="button" class="cart-tab-main" role="tab" aria-selected="' + on + '" data-cart="' + c.id + '" title="' + escapeHtml(i18n.cartRename || '') + '">' +
+                    '<span class="cart-tab-name">' + escapeHtml(cartTitle(c, i)) + '</span><span class="cart-tab-meta">' + escapeHtml(meta) + '</span>' +
+                '</button>' +
+                (carts.length > 1 || totals.count ? '<button type="button" class="cart-tab-x" data-cart-close="' + c.id + '" aria-label="' + escapeHtml(i18n.cartClose || '') + '">×</button>' : '') +
+            '</div>';
+        }).join('') + (carts.length < MAX_CARTS ? '<button type="button" class="cart-tab-new" id="cart-tab-new">' + escapeHtml(i18n.cartNew || '+') + '</button>' : '');
+        // On a narrow screen the open cart's tab is scrolled into sight (sideways only).
+        var activeTab = cartTabsEl.querySelector('.cart-tab.active');
+        if (activeTab) {
+            var left = activeTab.offsetLeft - cartTabsEl.offsetLeft;
+            if (left < cartTabsEl.scrollLeft || left + activeTab.offsetWidth > cartTabsEl.scrollLeft + cartTabsEl.clientWidth) {
+                cartTabsEl.scrollLeft = Math.max(0, left - 8);
+            }
+        }
+    }
+
+    function switchToCart(id) {
+        if (id === activeCartId) {
+            return;
+        }
+        persistCarts();
+        activeCartId = id;
+        var target = activeCart();
+        applyState(target ? target.state : {});
+        persistCarts();
+        renderCartTabs();
+        searchEl.focus();
+    }
+
+    function askConfirm(message, onYes) {
+        var tg = window.Telegram && window.Telegram.WebApp;
+        if (tg && tg.initData && tg.isVersionAtLeast && tg.isVersionAtLeast('6.2')) {
+            tg.showConfirm(message, function (ok) { if (ok) { onYes(); } });
+        } else if (window.confirm(message)) {
+            onYes();
+        }
+    }
+
+    function closeCart(id) {
+        var c = carts.find(function (x) { return x.id === id; });
+        if (!c) {
+            return;
+        }
+        var count = id === activeCartId ? cart.size : stateTotals(c.state).count;
+        var doClose = function () {
+            var index = carts.indexOf(c);
+            carts.splice(index, 1);
+            if (!carts.length) {
+                carts.push({ id: newCartId(), name: '', state: {} });
+            }
+            if (id === activeCartId) {
+                activeCartId = carts[Math.min(index, carts.length - 1)].id;
+                applyState(activeCart().state);
+            }
+            persistCarts();
+            renderCartTabs();
+        };
+        if (count > 0) {
+            askConfirm((i18n.cartCloseConfirm || ':name').replace(':name', cartTitle(c, carts.indexOf(c))), doClose);
+        } else {
+            doClose();
+        }
+    }
+
+    if (cartTabsEl) {
+        cartTabsEl.addEventListener('click', function (e) {
+            var close = e.target.closest('[data-cart-close]');
+            if (close) {
+                closeCart(close.getAttribute('data-cart-close'));
+                return;
+            }
+            var tab = e.target.closest('[data-cart]');
+            if (tab) {
+                switchToCart(tab.getAttribute('data-cart'));
+                return;
+            }
+            if (e.target.closest('#cart-tab-new') && carts.length < MAX_CARTS) {
+                persistCarts();
+                var c = { id: newCartId(), name: '', state: {} };
+                carts.push(c);
+                activeCartId = c.id;
+                applyState({});
+                persistCarts();
+                renderCartTabs();
+                searchEl.focus();
+            }
+        });
+        // Double-click a tab's name to give the cart a name of its own ("Ko'k kurtka").
+        cartTabsEl.addEventListener('dblclick', function (e) {
+            var tab = e.target.closest('[data-cart]');
+            if (!tab) {
+                return;
+            }
+            var c = carts.find(function (x) { return x.id === tab.getAttribute('data-cart'); });
+            var nameEl = tab.querySelector('.cart-tab-name');
+            var input = document.createElement('input');
+            input.className = 'cart-tab-input';
+            input.maxLength = 24;
+            input.value = c.name || '';
+            nameEl.replaceWith(input);
+            input.focus();
+            var finished = false;
+            var done = function () {
+                if (finished) {
+                    return;
+                }
+                finished = true;
+                c.name = input.value.trim();
+                persistCarts();
+                renderCartTabs();
+            };
+            input.addEventListener('keydown', function (k) {
+                if (k.key === 'Enter') { k.preventDefault(); done(); }
+                if (k.key === 'Escape') { input.value = c.name || ''; done(); }
+            });
+            input.addEventListener('blur', done);
+        });
+    }
+
+    [newCustomerNameEl, newCustomerPhoneEl].forEach(function (el) {
+        el.addEventListener('input', function () {
+            renderCartTabs();
+            schedulePersist();
+        });
+    });
+
+    function loadCarts() {
+        try {
+            var saved = JSON.parse(localStorage.getItem(CARTS_KEY) || 'null');
+            if (saved && Array.isArray(saved.carts)) {
+                carts = saved.carts.slice(0, MAX_CARTS);
+                activeCartId = saved.active;
+            }
+        } catch (e) { carts = []; }
+        var finishing = null;
+        try {
+            finishing = localStorage.getItem(FINISH_KEY);
+            localStorage.removeItem(FINISH_KEY);
+        } catch (e) { /* no storage */ }
+        // The sale of that cart went through: it is done, the others stay.
+        if (finishing && window.HM_SALE_DONE) {
+            carts = carts.filter(function (c) { return c.id !== finishing; });
+        }
+        if (!carts.length) {
+            carts.push({ id: newCartId(), name: '', state: {} });
+        }
+        if (!carts.some(function (c) { return c.id === activeCartId; })) {
+            activeCartId = carts[0].id;
+        }
+        return finishing;
+    }
+
     populateCustomerSelect();
     renderProducts();
-    restoreOldState();
-    // Bring the customer field in line with what restoreOldState() put back.
-    if (customerSelectEl.value) {
-        var restored = customers.find(function (c) { return String(c.id) === customerSelectEl.value; });
-        customerSearchEl.value = restored ? customerLabel(restored) : '';
-    } else if (oldSale.customerName || oldSale.customerPhone) {
-        newCustomerMode = true;
-        customerSearchEl.value = oldSale.customerName || oldSale.customerPhone;
+    var finishingCart = loadCarts();
+    if (Array.isArray(oldCart) && oldCart.length > 0) {
+        // The sale was refused and came back: it belongs to the cart that was being sold.
+        if (finishingCart && carts.some(function (c) { return c.id === finishingCart; })) {
+            activeCartId = finishingCart;
+        }
+        restoreOldState();
+        // Bring the customer field in line with what restoreOldState() put back.
+        if (customerSelectEl.value) {
+            var restored = customers.find(function (c) { return String(c.id) === customerSelectEl.value; });
+            customerSearchEl.value = restored ? customerLabel(restored) : '';
+        } else if (oldSale.customerName || oldSale.customerPhone) {
+            newCustomerMode = true;
+            customerSearchEl.value = oldSale.customerName || oldSale.customerPhone;
+        }
+        updateCustomerFields();
+    } else {
+        applyState(activeCart().state);
     }
-    updateCustomerFields();
+    // Carts forgotten for a day: ask once, never drop them silently.
+    var staleCarts = carts.filter(function (c) {
+        return c.id !== activeCartId && c.updated && Date.now() - c.updated > 86400000 && stateTotals(c.state).count > 0;
+    });
+    if (staleCarts.length) {
+        setTimeout(function () {
+            askConfirm((i18n.cartsStale || ':count').replace(':count', staleCarts.length), function () {
+                carts = carts.filter(function (c) { return staleCarts.indexOf(c) === -1; });
+                persistCarts();
+                renderCartTabs();
+            });
+        }, 400);
+    }
     if (activePreset === null || (parseFloat(discountInputEl.value) || 0) > 0) {
         saleFormEl.classList.add('show-extra');
     }

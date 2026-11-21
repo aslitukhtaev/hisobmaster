@@ -1166,4 +1166,12 @@ return [
     'label_my_sizes' => "Mening o'lchamlarim",
     'label_size_delete_confirm' => "«:name» o'lchami o'chirilsinmi?",
     'labels_for_purchase' => "Kelgan tovarlar uchun yorliq",
+    'carts_label' => "Savatlar",
+    'cart_tab_name' => "Savat :n",
+    'cart_tab_new' => "+ Yangi savat",
+    'cart_tab_close' => "Savatni yopish",
+    'cart_tab_close_confirm' => "«:name» savati yopilsinmi? Undagi mahsulotlar o'chiriladi.",
+    'cart_tab_rename' => "Nomini o'zgartirish uchun ikki marta bosing",
+    'carts_dropped' => ":count ta qator o'zgardi: omborda qolmagan yoki kamroq qolgan.",
+    'carts_stale' => ":count ta savat bir kundan beri to'xtab turibdi. O'chirilsinmi?",
 ];
