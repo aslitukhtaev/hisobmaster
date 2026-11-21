@@ -50,6 +50,14 @@
 </form>
 <?php endif; ?>
 
+<?php if (!empty($missingBarcodes)): ?>
+<form method="post" action="/barcodes/generate-missing" class="notice-bar" data-confirm="<?= e(t('barcodes_generate_confirm', ['count' => (int) $missingBarcodes])) ?>">
+    <?= csrf_field() ?>
+    <span>⚠ <?= e(t('barcodes_missing_notice', ['count' => (int) $missingBarcodes])) ?></span>
+    <button type="submit" class="btn btn-ghost btn-sm"><?= e(t('barcodes_generate_all')) ?></button>
+</form>
+<?php endif; ?>
+
 <?php if (empty($products)): ?>
     <div class="card">
         <p class="muted"><?= e($lowStockOnly ? t('no_low_stock_products') : ($search !== '' || $categoryFilter !== '' ? t('no_products_found') : t('no_products_yet'))) ?></p>
@@ -60,6 +68,7 @@
             <table class="table">
                 <thead>
                     <tr>
+                        <th class="pick-col"><input type="checkbox" id="pick-all" aria-label="<?= e(t('select_all')) ?>"></th>
                         <th><?= e(t('product_name')) ?></th>
                         <th><?= e(t('category')) ?></th>
                         <?php if (can('prices')): ?><th><?= e(t('cost_price')) ?></th><?php endif; ?>
@@ -79,6 +88,7 @@
                     $isLowStock = $effectiveThreshold !== null && $stock <= $effectiveThreshold;
                 ?>
                     <tr>
+                        <td class="pick-col"><input type="checkbox" class="pick-row" value="<?= (int) $product['id'] ?>" aria-label="<?= e(t('select')) ?>"></td>
                         <td class="cell-wrap"><?= e($product['name']) ?></td>
                         <td class="muted" data-label="<?= e(t('category')) ?>"><?= e($product['category_name'] ?? '—') ?></td>
                         <?php if (can('prices')): ?>
@@ -127,3 +137,14 @@
 <?php endif; ?>
 
 <?php require BASE_PATH . '/app/views/partials/pager.php'; ?>
+
+<div class="pick-bar" id="pick-bar" hidden>
+    <span id="pick-count" data-label="<?= e(t('pick_selected')) ?>"></span>
+    <form method="post" action="/barcodes/generate-missing" id="pick-gen-form">
+        <?= csrf_field() ?>
+        <span id="pick-ids"></span>
+        <button type="submit" class="btn btn-ghost btn-sm"><?= e(t('generate_barcode')) ?></button>
+    </form>
+    <a href="/labels" class="btn btn-primary btn-sm" id="pick-labels"><?= e(t('print_labels')) ?></a>
+</div>
+<script src="<?= asset('js/barcode-tools.js') ?>" defer></script>

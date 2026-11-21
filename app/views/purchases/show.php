@@ -1,7 +1,10 @@
 <?php $pageTitle = t('purchase_details'); ?>
-<section class="page-head">
-    <h1><?= e(t('purchase_details')) ?></h1>
-    <p class="muted"><?= e(local_datetime($purchase['created_at'])) ?></p>
+<section class="page-head page-head-row">
+    <div>
+        <h1><?= e(t('purchase_details')) ?></h1>
+        <p class="muted"><?= e(local_datetime($purchase['created_at'])) ?></p>
+    </div>
+    <a href="/labels?purchase=<?= (int) $purchase['id'] ?>" class="btn btn-primary"><?= e(t('labels_for_purchase')) ?></a>
 </section>
 
 <div class="card" style="margin-bottom:16px;">

@@ -92,7 +92,9 @@ $parentLeftover = $hasActiveVariants ? (float) ($product['stock_qty'] ?? 0) : 0.
                     <button type="button" class="scan-btn barcode-scan-btn" data-target="#product-barcode-input" aria-label="<?= e(t('scan_barcode')) ?>" title="<?= e(t('scan_barcode')) ?>">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M20 8V5a1 1 0 0 0-1-1h-3M4 16v3a1 1 0 0 0 1 1h3M20 16v3a1 1 0 0 1-1 1h-3M6 8v8M10 8v8M14 8v8M18 8v8"/></svg>
                     </button>
+                    <button type="button" class="btn btn-ghost btn-sm gen-barcode-btn" data-gen-barcode="#product-barcode-input"><?= e(t('generate_barcode')) ?></button>
                 </div>
+                <svg class="barcode-preview" data-barcode-preview-for="#product-barcode-input" hidden></svg>
             </label>
         </div>
 
@@ -189,3 +191,6 @@ $parentLeftover = $hasActiveVariants ? (float) ($product['stock_qty'] ?? 0) : 0.
         checkStock();
     })();
 </script>
+
+<script src="<?= asset('js/vendor/JsBarcode.all.min.js') ?>" defer></script>
+<script src="<?= asset('js/barcode-tools.js') ?>" defer></script>

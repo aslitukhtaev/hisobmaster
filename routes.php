@@ -6,6 +6,7 @@ use App\Controllers\ActivityLogController;
 use App\Controllers\ApiController;
 use App\Controllers\AttendanceController;
 use App\Controllers\AuthController;
+use App\Controllers\BarcodeController;
 use App\Controllers\CategoryController;
 use App\Controllers\CustomerController;
 use App\Controllers\DashboardController;
@@ -19,6 +20,7 @@ use App\Controllers\SignupController;
 use App\Controllers\QuickEntryController;
 use App\Controllers\HomeController;
 use App\Controllers\JoinController;
+use App\Controllers\LabelController;
 use App\Controllers\LocaleController;
 use App\Controllers\ProductController;
 use App\Controllers\ProfileController;
@@ -100,6 +102,19 @@ $router->post('/products/{id}/toggle-status', [ProductController::class, 'toggle
 $router->post('/products/{id}/variants', [ProductController::class, 'variantStore'], ['auth', 'permission:products', 'csrf']);
 $router->post('/products/{id}/variants/{variantId}', [ProductController::class, 'variantUpdate'], ['auth', 'permission:products', 'csrf']);
 $router->post('/products/{id}/variants/{variantId}/toggle-status', [ProductController::class, 'variantToggleStatus'], ['auth', 'permission:products', 'csrf']);
+
+// The shop's own barcodes.
+$router->post('/barcodes/next', [BarcodeController::class, 'next'], ['auth', 'permission:products', 'csrf']);
+$router->post('/barcodes/assign', [BarcodeController::class, 'assign'], ['auth', 'permission:products', 'csrf']);
+$router->post('/barcodes/generate-missing', [BarcodeController::class, 'generateMissing'], ['auth', 'permission:products', 'csrf']);
+
+// Price labels; the defaults are the owner's.
+$router->get('/labels', [LabelController::class, 'index'], ['auth', 'permission:products']);
+$router->get('/labels/search', [LabelController::class, 'search'], ['auth', 'permission:products']);
+$router->post('/labels/sizes', [LabelController::class, 'saveSize'], ['auth', 'permission:products', 'csrf']);
+$router->post('/labels/sizes/delete', [LabelController::class, 'deleteSize'], ['auth', 'permission:products', 'csrf']);
+$router->get('/labels/settings', [LabelController::class, 'settingsForm'], ['auth', 'role:owner']);
+$router->post('/labels/settings', [LabelController::class, 'saveSettings'], ['auth', 'role:owner', 'csrf']);
 
 // Product categories need "products", expense ones "expenses" — checked in the controller.
 $router->get('/categories', [CategoryController::class, 'index'], ['auth']);

@@ -34,6 +34,7 @@ class SettingsController
                 $items[] = ['href' => '/suppliers', 'icon' => 'truck', 'title' => t('suppliers'), 'hint' => t('settings_suppliers_hint')];
             }
             if (Auth::isOwner()) {
+                $items[] = ['href' => '/labels/settings', 'icon' => 'printer', 'title' => t('label_settings_title'), 'hint' => t('label_settings_short')];
                 $items[] = ['href' => '/activity', 'icon' => 'clock', 'title' => t('activity_log'), 'hint' => t('settings_activity_hint')];
                 if (!$desktop) {
                     $items[] = ['href' => '/devices', 'icon' => 'monitor', 'title' => t('devices_title'), 'hint' => t('settings_devices_hint')];

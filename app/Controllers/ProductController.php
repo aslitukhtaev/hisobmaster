@@ -47,6 +47,7 @@ class ProductController
             'products' => $products,
             'page' => $page,
             'hasNext' => $hasNext,
+            'missingBarcodes' => \App\Models\Barcode::countMissing($shopId),
             'categories' => $categories,
             'categoryFilter' => $categoryId === null ? '' : ($categoryId === 0 ? 'none' : (string) $categoryId),
             'counts' => Product::counts($shopId),

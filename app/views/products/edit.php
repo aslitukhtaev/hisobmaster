@@ -1,5 +1,6 @@
-<section class="page-head">
+<section class="page-head page-head-row">
     <h1><?= e(t('edit_product')) ?></h1>
+    <a href="/labels?p=<?= (int) $product['id'] ?>" class="btn btn-ghost"><?= e(t('print_labels')) ?></a>
 </section>
 
 <?php if ($hasActiveVariants && (float) $product['stock_qty'] > 0): ?>
@@ -36,7 +37,11 @@ require BASE_PATH . '/app/views/products/_form.php';
             <div class="field-row">
                 <label class="field">
                     <span><?= e(t('barcode')) ?> (<?= e(t('optional')) ?>)</span>
-                    <input type="text" name="variant_barcode" maxlength="64" value="<?= e($variant['barcode'] ?? '') ?>">
+                    <div class="scan-input-row">
+                        <input type="text" name="variant_barcode" id="variant-barcode-<?= (int) $variant['id'] ?>" maxlength="64" value="<?= e($variant['barcode'] ?? '') ?>">
+                        <button type="button" class="btn btn-ghost btn-sm gen-barcode-btn" data-gen-barcode="#variant-barcode-<?= (int) $variant['id'] ?>"><?= e(t('generate_barcode')) ?></button>
+                    </div>
+                    <svg class="barcode-preview" data-barcode-preview-for="#variant-barcode-<?= (int) $variant['id'] ?>" hidden></svg>
                 </label>
                 <?php if (can('prices')): ?>
                 <label class="field">
@@ -103,7 +108,11 @@ require BASE_PATH . '/app/views/products/_form.php';
             </label>
             <label class="field">
                 <span><?= e(t('barcode')) ?> (<?= e(t('optional')) ?>)</span>
-                <input type="text" name="variant_barcode" maxlength="64">
+                <div class="scan-input-row">
+                    <input type="text" name="variant_barcode" id="variant-barcode-new" maxlength="64">
+                    <button type="button" class="btn btn-ghost btn-sm gen-barcode-btn" data-gen-barcode="#variant-barcode-new"><?= e(t('generate_barcode')) ?></button>
+                </div>
+                <svg class="barcode-preview" data-barcode-preview-for="#variant-barcode-new" hidden></svg>
             </label>
         </div>
         <div class="field-row">
