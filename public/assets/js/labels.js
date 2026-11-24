@@ -236,6 +236,11 @@
                 fit(el);
             }
         });
+        document.body.classList.add('printing-labels');
+        window.addEventListener('afterprint', function done() {
+            window.removeEventListener('afterprint', done);
+            document.body.classList.remove('printing-labels');
+        });
         window.print();
         armedWholesale = false;
         $('label-print').textContent = $('label-print').dataset.text;

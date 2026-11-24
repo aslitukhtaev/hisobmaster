@@ -635,3 +635,30 @@ var KASSIRON_VIRTUAL_PRINTER = /pdf|xps|onenote|fax/i;
 
     load();
 })();
+
+// Settings: a picked receipt logo / QR shows in its frame right away.
+(function () {
+    document.addEventListener('change', function (e) {
+        var input = e.target;
+        if (!input.classList || !input.classList.contains('js-receipt-file') || !input.files || !input.files[0]) {
+            return;
+        }
+        var box = input.closest('.receipt-upload');
+        var thumb = box && box.querySelector('.receipt-upload-thumb');
+        if (!thumb || !window.URL || !URL.createObjectURL) {
+            return;
+        }
+        var img = thumb.querySelector('img');
+        img.src = URL.createObjectURL(input.files[0]);
+        img.hidden = false;
+        thumb.classList.remove('is-empty');
+        var none = thumb.querySelector('.receipt-upload-empty');
+        if (none) {
+            none.hidden = true;
+        }
+        var remove = box.querySelector('.receipt-upload-remove input');
+        if (remove) {
+            remove.checked = false;
+        }
+    });
+})();

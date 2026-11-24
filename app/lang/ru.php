@@ -190,7 +190,6 @@ return [
     'qr_sales_label' => 'Продажи по QR',
     'copy_amount' => 'Скопировать сумму',
     'copied' => 'Скопировано',
-    'receipt_not_fiscal' => 'Не фискальный чек. Налоговый чек выдаётся отдельно.',
     'mxik_label' => 'Код МХИК (ИКПУ)',
     'mxik_hint' => 'Код товара в налоговой системе — для фискального чека',
     'package_code_label' => 'Код упаковки',
@@ -238,6 +237,14 @@ return [
     // Shop settings
     'shop_settings' => 'Настройки магазина',
     'shop_settings_hint' => 'Название, адрес и ширина чекового принтера настраиваются здесь.',
+    'receipt_logo_label' => 'Логотип вверху чека',
+    'receipt_logo_hint' => 'PNG или JPG. Печатается в самом верху чека. Лучше простой логотип на белом фоне.',
+    'receipt_qr_label' => 'QR-код внизу чека',
+    'receipt_qr_hint' => 'Например, Telegram, Instagram или QR для оплаты. Печатается внизу чека.',
+    'receipt_image_remove' => 'Убрать',
+    'receipt_image_choose' => 'Выбрать изображение',
+    'receipt_image_none' => 'Нет изображения',
+    'receipt_image_invalid' => 'Изображение не загружено. Выберите PNG или JPG (до 3 МБ).',
     'receipt_width_label' => 'Ширина чекового принтера',
     'shop_settings_updated' => 'Настройки магазина обновлены',
 

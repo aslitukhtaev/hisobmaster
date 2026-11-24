@@ -43,6 +43,14 @@ class Settings
         return self::get($shopId, 'wholesale_enabled') === '1';
     }
 
+    /** Receipt logo / QR (a small PNG data URI kept in settings, so it syncs to the desktop app too). */
+    public static function receiptImage(int $shopId, string $key): ?string
+    {
+        $value = self::get($shopId, $key);
+
+        return ($value !== null && strpos($value, 'data:image/png;base64,') === 0) ? $value : null;
+    }
+
     public static function lowStockThresholdDefault(int $shopId): ?float
     {
         $value = self::get($shopId, 'low_stock_threshold_default');

@@ -8,19 +8,16 @@
 
     <hr class="receipt-divider">
 
-    <table class="receipt-items">
-        <thead>
-            <tr>
-                <th><?= e(t('product_name')) ?></th>
-                <th><?= e(t('qty_short')) ?></th>
-                <th><?= e(t('sum')) ?></th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr><td><?= e(t('printer_test_item')) ?> 1</td><td>2</td><td><?= money(24000) ?></td></tr>
-            <tr><td><?= e(t('printer_test_item')) ?> 2 — <?= e(t('printer_test_long')) ?></td><td>1</td><td><?= money(1250000) ?></td></tr>
-        </tbody>
-    </table>
+    <div class="receipt-items">
+        <div class="receipt-item">
+            <div class="receipt-item-name"><?= e(t('printer_test_item')) ?> 1</div>
+            <div class="receipt-item-calc"><span>2 × <?= money(12000) ?></span><span class="receipt-item-sum"><?= money(24000) ?></span></div>
+        </div>
+        <div class="receipt-item">
+            <div class="receipt-item-name"><?= e(t('printer_test_item')) ?> 2 — <?= e(t('printer_test_long')) ?></div>
+            <div class="receipt-item-calc"><span>1 × <?= money(1250000) ?></span><span class="receipt-item-sum"><?= money(1250000) ?></span></div>
+        </div>
+    </div>
 
     <hr class="receipt-divider">
 

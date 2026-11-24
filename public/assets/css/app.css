@@ -201,6 +201,9 @@ p { margin: 0; }
     outline: none;
     transition: border-color .15s ease, box-shadow .15s ease;
 }
+.field input[type="radio"], .field input[type="checkbox"], .field input[type="file"] {
+    width: auto; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; flex: none;
+}
 .refund-qty-input {
     width: 96px;
     font: inherit;
@@ -813,7 +816,7 @@ img.logo-for-dark-theme { display: none; }
     padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border);
     font-weight: 700; font-size: .85rem; color: var(--muted); cursor: pointer;
 }
-.radio-pill input { accent-color: var(--primary-strong); }
+.radio-pill input { accent-color: var(--primary-strong); width: 16px; height: 16px; margin: 0; }
 .radio-pill:has(input:checked) { background: var(--primary-light); border-color: var(--primary-ink); color: var(--primary-dark); }
 
 #debt-fields { margin-bottom: 14px; padding-top: 10px; border-top: 1px dashed var(--border); }
@@ -1000,13 +1003,46 @@ img.logo-for-dark-theme { display: none; }
 }
 .receipt-58 { max-width: 240px; font-size: .78rem; }
 .receipt-header { text-align: center; }
-.receipt-shop-name { font-weight: 800; font-size: 1.05rem; }
+.receipt-shop-name { font-weight: 800; font-size: 1.05rem; text-transform: uppercase; }
 .receipt-meta { color: #6b7280; font-size: .76rem; margin-top: 3px; }
-.receipt-items { width: 100%; border-collapse: collapse; margin: 12px 0; }
-.receipt-items th, .receipt-items td { padding: 4px 0; text-align: left; font-size: .82rem; }
-.receipt-items th:last-child, .receipt-items td:last-child { text-align: right; }
+.receipt-items { margin: 10px 0; }
+.receipt-item { padding: 5px 0; }
+.receipt-item + .receipt-item { border-top: 1px dotted #d1d5db; }
+.receipt-item-name { font-weight: 700; font-size: .84rem; overflow-wrap: anywhere; word-break: break-word; }
+.receipt-item-calc { display: flex; justify-content: space-between; gap: 8px; font-size: .8rem; margin-top: 2px; }
+.receipt-item-calc span { white-space: nowrap; }
+.receipt-item-calc { flex-wrap: wrap; }
+.receipt-item-calc .receipt-item-sum { margin-left: auto; }
+.receipt-item-sum { font-weight: 700; }
+.receipt-small { font-size: .9em; }
+.receipt-logo { display: block; margin: 0 auto 6px; max-width: 70%; max-height: 90px; width: auto; height: auto; object-fit: contain; }
+.receipt-qr { display: block; margin: 0 auto 6px; width: 130px; max-width: 80%; height: auto; aspect-ratio: auto; object-fit: contain; image-rendering: pixelated; }
+.receipt-upload small { font-weight: 500; font-size: .8rem; line-height: 1.4; }
+.receipt-upload-row { display: flex; align-items: center; gap: 14px; }
+.receipt-upload-thumb {
+    flex: none; width: 112px; height: 84px; display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; overflow: hidden;
+}
+.receipt-upload-thumb.is-empty { background: var(--surface); border-style: dashed; }
+.receipt-upload-thumb img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
+.receipt-upload-thumb img[hidden], .receipt-upload-empty[hidden] { display: none; }
+.receipt-upload-empty { font-size: .75rem; font-weight: 600; color: var(--muted); text-align: center; padding: 0 6px; }
+.receipt-upload-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
+.receipt-upload-pick { position: relative; overflow: hidden; cursor: pointer; }
+.receipt-upload-pick input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.receipt-upload-remove { position: relative; cursor: pointer; }
+.receipt-upload-remove input { position: absolute; opacity: 0; width: 0; height: 0; }
+.receipt-upload-remove span {
+    display: inline-block; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border);
+    font-size: .8rem; font-weight: 600; color: var(--danger); background: transparent;
+}
+.receipt-upload-remove span::before { content: "\00d7\00a0"; font-weight: 700; }
+.receipt-upload-remove:hover span { background: var(--danger-bg); }
+.receipt-upload-remove input:checked + span { background: var(--danger); border-color: var(--danger); color: #fff; }
+.receipt-upload-remove input:focus-visible + span { box-shadow: 0 0 0 3px var(--ring); }
 .receipt-divider { border: none; border-top: 1px dashed #d1d5db; margin: 10px 0; }
 .receipt-line { display: flex; justify-content: space-between; font-size: .84rem; padding: 2px 0; }
+.receipt-line span:last-child { white-space: nowrap; text-align: right; }
 .receipt-total-row { display: flex; justify-content: space-between; font-weight: 800; font-size: 1.05rem; margin-top: 6px; }
 
 @media print {
@@ -1150,9 +1186,11 @@ img.logo-for-dark-theme { display: none; }
 /* Off screen until printing (measured there so type can be fitted). */
 .label-sheet { position: absolute; left: -10000px; top: 0; visibility: hidden; }
 @media print {
-    body * { visibility: hidden !important; }
-    .label-sheet, .label-sheet * { visibility: visible !important; }
-    .label-sheet { position: absolute; left: 0; top: 0; }
+    /* Only while labels are being printed (labels.js): every other page
+       (a receipt, a report) prints normally. */
+    body.printing-labels * { visibility: hidden !important; }
+    body.printing-labels .label-sheet, body.printing-labels .label-sheet * { visibility: visible !important; }
+    body.printing-labels .label-sheet { position: absolute; left: 0; top: 0; }
     .label-sheet .lbl { box-shadow: none; break-after: page; page-break-after: always; }
     .label-sheet .lbl:last-child { break-after: auto; page-break-after: auto; }
 }

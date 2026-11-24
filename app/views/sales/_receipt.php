@@ -8,14 +8,14 @@ $widthClass = $printerWidth === 58 ? 'receipt-58' : 'receipt-80';
 // construction (see Sale::create()), for split-payment sales too — paid_amount
 // is defined there as naqd + karta specifically so this keeps working unchanged.
 $debtAmount = round((float) $sale['total'] - (float) $sale['paid_amount'], 2);
+$logoSrc = App\Models\Settings::receiptImage((int) ($shop['id'] ?? 0), 'receipt_logo');
+$qrSrc = App\Models\Settings::receiptImage((int) ($shop['id'] ?? 0), 'receipt_qr');
 ?>
 <div class="receipt <?= $widthClass ?>">
     <div class="receipt-header">
+        <?php if ($logoSrc !== null): ?><img class="receipt-logo" src="<?= e($logoSrc) ?>" alt=""><?php endif; ?>
         <div class="receipt-shop-name"><?= e($shop['name'] ?? '') ?></div>
-        <?php if (!empty($shop['address'])): ?><div class="receipt-meta"><?= e($shop['address']) ?></div><?php endif; ?>
-        <?php if (!empty($shop['phone'])): ?><div class="receipt-meta"><?= e($shop['phone']) ?></div><?php endif; ?>
-        <div class="receipt-meta">№<?= e(receipt_number($sale)) ?> · <?= e(local_datetime($sale['created_at'])) ?></div>
-        <div class="receipt-meta"><?= e(t('cashier')) ?>: <?= e($sale['cashier_name'] ?? '') ?></div>
+        <div class="receipt-meta"><?= e(local_datetime($sale['created_at'])) ?> · №<?= e(receipt_number($sale)) ?></div>
         <?php if (($sale['price_type'] ?? 'retail') === 'wholesale'): ?>
             <div class="receipt-meta receipt-wholesale"><?= e(t('receipt_wholesale')) ?></div>
         <?php endif; ?>
@@ -23,24 +23,17 @@ $debtAmount = round((float) $sale['total'] - (float) $sale['paid_amount'], 2);
 
     <hr class="receipt-divider">
 
-    <table class="receipt-items">
-        <thead>
-            <tr>
-                <th><?= e(t('product_name')) ?></th>
-                <th><?= e(t('qty_short')) ?></th>
-                <th><?= e(t('sum')) ?></th>
-            </tr>
-        </thead>
-        <tbody>
-        <?php foreach ($items as $item): ?>
-            <tr>
-                <td><?= e($item['product_name']) ?><?= !empty($item['variant_label']) ? ' — ' . e($item['variant_label']) : '' ?></td>
-                <td><?= e(format_qty((float) $item['qty'])) ?></td>
-                <td><?= money((float) $item['subtotal']) ?></td>
-            </tr>
-        <?php endforeach; ?>
-        </tbody>
-    </table>
+    <div class="receipt-items">
+    <?php foreach ($items as $item): ?>
+        <div class="receipt-item">
+            <div class="receipt-item-name"><?= e($item['product_name']) ?><?= !empty($item['variant_label']) ? ' — ' . e($item['variant_label']) : '' ?></div>
+            <div class="receipt-item-calc">
+                <span><?= e(format_qty((float) $item['qty'])) ?> × <?= money((float) $item['unit_price']) ?></span>
+                <span class="receipt-item-sum"><?= money((float) $item['subtotal']) ?></span>
+            </div>
+        </div>
+    <?php endforeach; ?>
+    </div>
 
     <hr class="receipt-divider">
 
@@ -99,7 +92,15 @@ $debtAmount = round((float) $sale['total'] - (float) $sale['paid_amount'], 2);
     <?php endif; ?>
 
     <div class="receipt-header" style="margin-top:14px;">
-        <div class="receipt-meta"><?= e(t('receipt_not_fiscal')) ?></div>
+        <?php if ($qrSrc !== null): ?><img class="receipt-qr" src="<?= e($qrSrc) ?>" alt=""><?php endif; ?>
         <div class="receipt-meta"><?= e(t('thank_you_note')) ?></div>
+        <?php
+        $about = array_filter([trim((string) ($shop['address'] ?? '')), trim((string) ($shop['phone'] ?? ''))], 'strlen');
+        if ($about): ?>
+            <div class="receipt-meta receipt-small"><?= e(implode(' · ', $about)) ?></div>
+        <?php endif; ?>
+        <?php if (!empty($sale['cashier_name'])): ?>
+            <div class="receipt-meta receipt-small"><?= e(t('cashier')) ?>: <?= e($sale['cashier_name']) ?></div>
+        <?php endif; ?>
     </div>
 </div>

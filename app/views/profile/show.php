@@ -135,7 +135,7 @@
 </section>
 
 <div class="card form-card">
-    <form method="post" action="/profile/shop" class="stack">
+    <form method="post" action="/profile/shop" class="stack" enctype="multipart/form-data">
         <?= csrf_field() ?>
         <label class="field">
             <span><?= e(t('shop_name')) ?></span>
@@ -157,6 +157,50 @@
                     <span>58mm</span>
                 </label>
             </div>
+        </div>
+        <div class="field receipt-upload">
+            <span><?= e(t('receipt_logo_label')) ?> (<?= e(t('optional')) ?>)</span>
+            <div class="receipt-upload-row">
+                <div class="receipt-upload-thumb<?= empty($receiptLogo) ? ' is-empty' : '' ?>">
+                    <img src="<?= !empty($receiptLogo) ? e($receiptLogo) : '' ?>" alt=""<?= empty($receiptLogo) ? ' hidden' : '' ?>>
+                    <span class="receipt-upload-empty"<?= !empty($receiptLogo) ? ' hidden' : '' ?>><?= e(t('receipt_image_none')) ?></span>
+                </div>
+                <div class="receipt-upload-actions">
+                    <label class="btn btn-ghost btn-sm receipt-upload-pick">
+                        <input type="file" name="receipt_logo" class="js-receipt-file" accept="image/png,image/jpeg,image/webp,image/gif">
+                        <span><?= e(t('receipt_image_choose')) ?></span>
+                    </label>
+                    <?php if (!empty($receiptLogo)): ?>
+                        <label class="receipt-upload-remove">
+                            <input type="checkbox" name="remove_receipt_logo" value="1">
+                            <span><?= e(t('receipt_image_remove')) ?></span>
+                        </label>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <small class="muted"><?= e(t('receipt_logo_hint')) ?></small>
+        </div>
+        <div class="field receipt-upload">
+            <span><?= e(t('receipt_qr_label')) ?> (<?= e(t('optional')) ?>)</span>
+            <div class="receipt-upload-row">
+                <div class="receipt-upload-thumb<?= empty($receiptQr) ? ' is-empty' : '' ?>">
+                    <img src="<?= !empty($receiptQr) ? e($receiptQr) : '' ?>" alt=""<?= empty($receiptQr) ? ' hidden' : '' ?>>
+                    <span class="receipt-upload-empty"<?= !empty($receiptQr) ? ' hidden' : '' ?>><?= e(t('receipt_image_none')) ?></span>
+                </div>
+                <div class="receipt-upload-actions">
+                    <label class="btn btn-ghost btn-sm receipt-upload-pick">
+                        <input type="file" name="receipt_qr" class="js-receipt-file" accept="image/png,image/jpeg,image/webp,image/gif">
+                        <span><?= e(t('receipt_image_choose')) ?></span>
+                    </label>
+                    <?php if (!empty($receiptQr)): ?>
+                        <label class="receipt-upload-remove">
+                            <input type="checkbox" name="remove_receipt_qr" value="1">
+                            <span><?= e(t('receipt_image_remove')) ?></span>
+                        </label>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <small class="muted"><?= e(t('receipt_qr_hint')) ?></small>
         </div>
         <label class="field">
             <span><?= e(t('low_stock_threshold_default_label')) ?> (<?= e(t('optional')) ?>)</span>

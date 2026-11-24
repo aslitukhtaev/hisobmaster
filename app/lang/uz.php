@@ -192,7 +192,6 @@ return [
     'qr_sales_label' => 'QR sotuvlar',
     'copy_amount' => 'Summani nusxalash',
     'copied' => 'Nusxalandi',
-    'receipt_not_fiscal' => "Fiskal chek emas. Soliq cheki alohida beriladi.",
     'mxik_label' => 'MXIK (IKPU) kodi',
     'mxik_hint' => "Soliq tizimidagi mahsulot kodi — fiskal chek uchun",
     'package_code_label' => "O'ram kodi",
@@ -238,6 +237,14 @@ return [
     // Shop settings
     'shop_settings' => "Do'kon sozlamalari",
     'shop_settings_hint' => "Do'kon nomi, manzili va chek printer kengligini shu yerda sozlang.",
+    'receipt_logo_label' => "Chek tepasidagi logotip",
+    'receipt_logo_hint' => "PNG yoki JPG. Chekning eng tepasida chiqadi. Oq fonda, sodda logotip yaxshi chop etiladi.",
+    'receipt_qr_label' => "Chek pastidagi QR-kod",
+    'receipt_qr_hint' => "Masalan, Telegram, Instagram yoki to'lov QR-kodi. Chekning pastida chiqadi.",
+    'receipt_image_remove' => "Olib tashlash",
+    'receipt_image_choose' => "Rasm tanlash",
+    'receipt_image_none' => "Rasm yo'q",
+    'receipt_image_invalid' => "Rasm yuklanmadi. PNG yoki JPG tanlang (3 MB gacha).",
     'receipt_width_label' => 'Chek printer kengligi',
     'shop_settings_updated' => "Do'kon sozlamalari yangilandi",
 

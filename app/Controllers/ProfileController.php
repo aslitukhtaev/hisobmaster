@@ -26,6 +26,8 @@ class ProfileController
         View::render('profile/show', [
             'shop' => $shop,
             'lowStockThresholdDefault' => $lowStockThresholdDefault,
+            'receiptLogo' => $shop ? Settings::receiptImage((int) Auth::shopId(), 'receipt_logo') : null,
+            'receiptQr' => $shop ? Settings::receiptImage((int) Auth::shopId(), 'receipt_qr') : null,
             'wholesaleEnabled' => $shop ? Settings::wholesaleEnabled((int) Auth::shopId()) : false,
             // Where this account stays signed in (website only: the desktop
             // app has its own, local sign-ins).
@@ -177,7 +179,63 @@ class ProfileController
         Settings::set($shopId, 'low_stock_threshold_default', $lowStockDefaultRaw !== '' ? $lowStockDefaultRaw : null);
         Settings::set($shopId, 'wholesale_enabled', $request->input('wholesale_enabled') === '1' ? '1' : null);
 
+        foreach (['receipt_logo' => 400, 'receipt_qr' => 320] as $key => $maxSide) {
+            if ($request->input('remove_' . $key) === '1') {
+                Settings::set($shopId, $key, null);
+            }
+            $file = $request->file($key);
+            if ($file === null) {
+                continue;
+            }
+            $png = self::receiptImagePng($file, $maxSide);
+            if ($png === null) {
+                flash('error', t('receipt_image_invalid'));
+                redirect('/profile');
+            }
+            Settings::set($shopId, $key, 'data:image/png;base64,' . base64_encode($png));
+        }
+
         flash('success', t('shop_settings_updated'));
         redirect('/profile');
+    }
+
+    /**
+     * An uploaded picture as a small black-and-white-friendly PNG that fits
+     * $maxSide px: thermal paper prints it as is. Null for anything that is
+     * not a real, reasonably small image.
+     */
+    private static function receiptImagePng(array $file, int $maxSide): ?string
+    {
+        if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || (int) $file['size'] > 3 * 1024 * 1024
+            || !is_uploaded_file((string) $file['tmp_name']) || !function_exists('imagecreatefromstring')) {
+            return null;
+        }
+        $info = @getimagesize((string) $file['tmp_name']);
+        if ($info === false || !in_array($info[2], [IMAGETYPE_PNG, IMAGETYPE_JPEG, IMAGETYPE_GIF, IMAGETYPE_WEBP], true)
+            || $info[0] < 1 || $info[1] < 1 || $info[0] * $info[1] > 25000000) {
+            return null;
+        }
+        $src = @imagecreatefromstring((string) file_get_contents((string) $file['tmp_name']));
+        if ($src === false) {
+            return null;
+        }
+
+        $w = imagesx($src);
+        $h = imagesy($src);
+        $scale = min(1.0, $maxSide / max($w, $h));
+        $nw = max(1, (int) round($w * $scale));
+        $nh = max(1, (int) round($h * $scale));
+
+        // Flatten onto white (transparent logos would print black) and go grayscale.
+        $dst = imagecreatetruecolor($nw, $nh);
+        imagefill($dst, 0, 0, imagecolorallocate($dst, 255, 255, 255));
+        imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
+        imagefilter($dst, IMG_FILTER_GRAYSCALE);
+
+        ob_start();
+        imagepng($dst, null, 9);
+        $png = (string) ob_get_clean();
+
+        return strlen($png) <= 300 * 1024 ? $png : null;
     }
 }
