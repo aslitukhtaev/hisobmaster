@@ -69,11 +69,10 @@ $posIcon = static function (string $name): string {
         <a href="/products/create" class="btn btn-primary" style="margin-top:14px;"><?= e(t('add_product')) ?></a>
     </div>
 <?php else: ?>
-<!-- Several customers at once: each tab is its own cart, kept on this device only. -->
-<div class="cart-tabs" id="cart-tabs" role="tablist" aria-label="<?= e(t('carts_label')) ?>"></div>
-
 <div class="pos-layout">
     <div class="pos-products">
+        <!-- Several customers at once: each tab is its own cart, kept on this device only. -->
+        <div class="cart-tabs" id="cart-tabs" role="tablist" aria-label="<?= e(t('carts_label')) ?>"></div>
         <label class="sr-only" for="product-search"><?= e(t('search_products_placeholder')) ?></label>
         <div class="scan-input-row" style="margin-bottom:12px;">
             <div class="pos-search-wrap">
@@ -107,6 +106,12 @@ $posIcon = static function (string $name): string {
             <h2 class="cart-title"><?= e(t('cart')) ?><span class="cart-count" id="cart-count" hidden></span></h2>
             <button type="button" class="cart-clear" id="cart-clear" hidden><?= $posIcon('trash') ?><?= e(t('clear_cart')) ?></button>
         </div>
+        <?php if ($wholesaleEnabled): ?>
+            <div class="price-mode-toggle" role="group" aria-label="<?= e(t('price_mode_label')) ?>">
+                <button type="button" class="price-mode-btn active" data-price-mode="retail" aria-pressed="true"><?= e(t('price_mode_retail')) ?></button>
+                <button type="button" class="price-mode-btn" data-price-mode="wholesale" aria-pressed="false"><?= e(t('price_mode_wholesale')) ?></button>
+            </div>
+        <?php endif; ?>
         <div id="cart-list" class="cart-list"></div>
         <div id="cart-empty-msg" class="cart-empty">
             <?= $posIcon('cart') ?>
@@ -131,12 +136,6 @@ $posIcon = static function (string $name): string {
                     <span class="muted" id="discount-computed-label" style="display:none;"></span>
                     <span class="field-error" id="discount-error" hidden><?= e(t('discount_too_large')) ?></span>
                 </label>
-                <?php if ($wholesaleEnabled): ?>
-                    <div class="price-mode-toggle" role="group" aria-label="<?= e(t('price_mode_label')) ?>">
-                        <button type="button" class="price-mode-btn active" data-price-mode="retail" aria-pressed="true"><?= e(t('price_mode_retail')) ?></button>
-                        <button type="button" class="price-mode-btn" data-price-mode="wholesale" aria-pressed="false"><?= e(t('price_mode_wholesale')) ?></button>
-                    </div>
-                <?php endif; ?>
                 <div class="cart-total-row">
                     <span><?= e(t('total')) ?><span class="wholesale-badge" id="wholesale-badge" hidden><?= e(t('wholesale_short')) ?></span></span>
                     <strong id="cart-total">0 <?= e(t('currency_symbol')) ?></strong>

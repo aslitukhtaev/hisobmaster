@@ -909,17 +909,18 @@ img.logo-for-dark-theme { display: none; }
     :root[data-pos="on"][data-page="till"] .pos-product { box-shadow: 0 1px 2px rgba(14, 15, 12, .05); transition: transform .06s ease, border-color .12s ease; }
     :root[data-pos="on"][data-page="till"] .pos-product:active { transform: scale(.97); border-color: var(--primary-ink); }
     :root[data-pos="on"][data-page="till"] .pos-product-group > .pos-product:active { transform: none; }
-    :root[data-pos="on"][data-page="till"] .cart-head { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    :root[data-pos="on"][data-page="till"] .cart-head { margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
     :root[data-pos="on"][data-page="till"] .cart-list:empty { display: none; }
     :root[data-pos="on"][data-page="till"] .cart-empty { flex: 1; padding-top: 14vh; }
     :root[data-pos="on"][data-page="till"] .cart-empty svg { width: 64px; height: 64px; }
-    :root[data-pos="on"][data-page="till"] #complete-sale-btn svg { width: 26px; height: 26px; }
+    :root[data-pos="on"][data-page="till"] #complete-sale-btn svg { width: 22px; height: 22px; }
     :root[data-pos="on"][data-page="till"] .shell { height: 100vh; overflow: hidden; }
     :root[data-pos="on"][data-page="till"] .main { min-height: 0; }
     :root[data-pos="on"][data-page="till"] .content { min-height: 0; padding: 16px; display: flex; flex-direction: column; overflow: hidden; }
     :root[data-pos="on"][data-page="till"] .pos-layout { flex: 1; min-height: 0; align-items: stretch; gap: 16px; }
 
     :root[data-pos="on"][data-page="till"] .pos-products { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+    :root[data-pos="on"][data-page="till"] .cart-tabs { flex-shrink: 0; }
     :root[data-pos="on"][data-page="till"] .pos-search { padding: 16px 18px 16px 52px; font-size: 1.15rem; }
     :root[data-pos="on"][data-page="till"] .scan-btn { min-width: 56px; }
     :root[data-pos="on"][data-page="till"] .pos-product-list {
@@ -941,34 +942,66 @@ img.logo-for-dark-theme { display: none; }
         position: static; flex: 0 0 40%; max-width: 500px; min-height: 0; padding: 16px;
         display: flex; flex-direction: column;
     }
-    :root[data-pos="on"][data-page="till"] .cart-list { flex: 1; min-height: 0; max-height: none; margin: 0 0 6px; }
+    :root[data-pos="on"][data-page="till"] .cart-list { flex: 1; min-height: 110px; max-height: none; margin: 0 0 6px; }
+    /* The form may shrink and scroll when the discount/split fields are open, so the cart list is never squeezed away; "complete" stays pinned. */
+    :root[data-pos="on"][data-page="till"] #sale-form { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+    :root[data-pos="on"][data-page="till"] #sale-form #complete-sale-btn { position: sticky; bottom: 0; z-index: 1; }
     :root[data-pos="on"][data-page="till"] #cart-empty-msg { margin-bottom: 8px; }
+    :root[data-pos="on"][data-page="till"] .cart-list { gap: 6px; }
+    :root[data-pos="on"][data-page="till"] .cart-row { padding-bottom: 6px; }
     :root[data-pos="on"][data-page="till"] .cart-row-name { font-size: 1rem; }
     :root[data-pos="on"][data-page="till"] .cart-row-price { font-size: .8rem; }
-    :root[data-pos="on"][data-page="till"] .qty-stepper button { width: 46px; height: 46px; font-size: 1.4rem; border-radius: 10px; }
-    :root[data-pos="on"][data-page="till"] .qty-stepper .qty-direct-input { width: 72px; height: 46px; padding: 0 4px; font-size: 1.1rem; border-radius: 10px; }
-    :root[data-pos="on"][data-page="till"] .qty-stepper-fractional .qty-direct-input { width: 80px; }
-    :root[data-pos="on"][data-page="till"] .cart-row-subtotal { font-size: 1rem; min-width: 90px; }
-    :root[data-pos="on"][data-page="till"] .cart-remove { font-size: 1.4rem; padding: 10px; }
+    :root[data-pos="on"][data-page="till"] .qty-stepper button { width: 36px; height: 36px; font-size: 1.2rem; border-radius: 9px; }
+    :root[data-pos="on"][data-page="till"] .qty-stepper .qty-direct-input { width: 56px; height: 36px; padding: 0 4px; font-size: 1rem; border-radius: 9px; }
+    :root[data-pos="on"][data-page="till"] .qty-stepper-fractional .qty-direct-input { width: 66px; }
+    :root[data-pos="on"][data-page="till"] .cart-row-subtotal { font-size: .95rem; min-width: 84px; }
+    :root[data-pos="on"][data-page="till"] .cart-remove { font-size: 1.2rem; padding: 6px; }
 
-    :root[data-pos="on"][data-page="till"] .cart-totals { margin: 6px 0; }
-    :root[data-pos="on"][data-page="till"] .cart-total-row { font-size: 2rem; margin-top: 0; }
-    :root[data-pos="on"][data-page="till"] .cart-total-row strong { font-family: var(--font-display); }
+    /* The cart's lower part, top to bottom: the "discount / split" link, the open extras, the TOTAL
+       (its own tinted block, right above the payment choice), how it's paid, "complete". The form is a
+       flex column so the order is set here, whatever the markup order is. */
+    :root[data-pos="on"][data-page="till"] #sale-form { display: flex; flex-direction: column; }
+    :root[data-pos="on"][data-page="till"] .cart-totals { display: contents; }
+    :root[data-pos="on"][data-page="till"] #pos-extra-toggle { order: 0; }
+    :root[data-pos="on"][data-page="till"] .cart-totals > .field { order: 1; margin: 10px 0 0; }
+    :root[data-pos="on"][data-page="till"] .price-mode-toggle { margin: 0 0 4px; flex-shrink: 0; }
+    :root[data-pos="on"][data-page="till"] .price-mode-btn { padding: 7px 12px; font-size: .95rem; }
+    :root[data-pos="on"][data-page="till"] .cart-total-row {
+        order: 3; margin: 8px 0 2px; padding: 7px 16px; border-radius: var(--radius-sm);
+        background: var(--bg); border: 1px solid var(--border); font-size: 1rem;
+    }
+    :root[data-pos="on"][data-page="till"] .cart-total-row > span { color: var(--muted); font-weight: 700; font-size: 1.05rem; }
+    :root[data-pos="on"][data-page="till"] .cart-total-row strong { font-family: var(--font-display); font-size: 1.8rem; line-height: 1.1; letter-spacing: -.01em; }
+    :root[data-pos="on"][data-page="till"] .payment-types { order: 4; }
+    :root[data-pos="on"][data-page="till"] .pay-amounts { order: 5; }
+    :root[data-pos="on"][data-page="till"] .cart-change-row { order: 6; }
+    :root[data-pos="on"][data-page="till"] #debt-fields { order: 7; }
+    :root[data-pos="on"][data-page="till"] #sale-form-error { order: 8; }
+    :root[data-pos="on"][data-page="till"] #complete-sale-btn { order: 9; }
     :root[data-pos="on"][data-page="till"] .cart-change-row { font-size: 1.4rem; margin: 6px 0; }
-    :root[data-pos="on"][data-page="till"] .payment-types { margin: 8px 0; flex-wrap: nowrap; }
-    :root[data-pos="on"][data-page="till"] .payment-btn { flex-direction: column; gap: 6px; padding: 12px 4px; font-size: .95rem; }
-    :root[data-pos="on"][data-page="till"] .payment-btn svg { width: 26px; height: 26px; }
+    :root[data-pos="on"][data-page="till"] .payment-types { margin: 6px 0; flex-wrap: nowrap; }
+    :root[data-pos="on"][data-page="till"] .payment-btn { flex-direction: row; gap: 7px; padding: 10px 4px; font-size: .95rem; }
+    :root[data-pos="on"][data-page="till"] .payment-btn svg { width: 20px; height: 20px; }
     :root[data-pos="on"][data-page="till"] .payment-btn span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    :root[data-pos="on"][data-page="till"] #complete-sale-btn { padding: 22px; font-size: 1.35rem; margin-top: 10px; }
+    :root[data-pos="on"][data-page="till"] #complete-sale-btn { padding: 14px; font-size: 1.25rem; margin-top: 8px; }
     :root[data-pos="on"][data-page="till"] #debt-fields { margin-bottom: 8px; }
 
     :root[data-pos="on"][data-page="till"] .pos-extra-toggle {
-        display: block; width: 100%; padding: 6px; border: none; background: none; cursor: pointer;
-        color: var(--muted); font-size: .8rem; font-weight: 600; text-decoration: underline; text-align: right;
+        display: block; width: 100%; padding: 6px 12px; border: 1px dashed var(--border); border-radius: 10px; background: none; cursor: pointer;
+        color: var(--muted); font-size: .85rem; font-weight: 600; text-align: center;
     }
+    :root[data-pos="on"][data-page="till"] #sale-form.show-extra .pos-extra-toggle { border-style: solid; border-color: var(--primary-ink); color: var(--text); }
     :root[data-pos="on"][data-page="till"] #sale-form:not(.show-extra) .cart-totals > .field,
     :root[data-pos="on"][data-page="till"] #sale-form:not(.show-extra) .pay-amounts { display: none; }
     :root[data-pos="on"][data-page="till"] #sale-form.show-extra .pay-amounts { margin-bottom: 8px; gap: 8px; }
+    /* Open extras stay compact so the cart list keeps its room. */
+    :root[data-pos="on"][data-page="till"] #sale-form.show-extra .cart-totals > .field { margin-top: 8px; }
+    :root[data-pos="on"][data-page="till"] #sale-form.show-extra .cart-totals > .field > span:first-child, :root[data-pos="on"][data-page="till"] #sale-form.show-extra .pay-amounts .field > span:first-child { font-size: .75rem; margin-bottom: 3px; }
+    :root[data-pos="on"][data-page="till"] #sale-form.show-extra .cart-totals input, :root[data-pos="on"][data-page="till"] #sale-form.show-extra .pay-amounts input { padding-top: 8px; padding-bottom: 8px; }
+    :root[data-pos="on"][data-page="till"] #sale-form.show-extra .quick-cash { display: none; }
+    :root[data-pos="on"][data-page="till"] #sale-form.show-extra .cart-totals > .field, :root[data-pos="on"][data-page="till"] #sale-form.show-extra .pay-amounts .field { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 10px; row-gap: 2px; }
+    :root[data-pos="on"][data-page="till"] #sale-form.show-extra .cart-totals > .field > span:first-child, :root[data-pos="on"][data-page="till"] #sale-form.show-extra .pay-amounts .field > span:first-child { margin: 0; }
+    :root[data-pos="on"][data-page="till"] #sale-form.show-extra .cart-totals > .field > .muted, :root[data-pos="on"][data-page="till"] #sale-form.show-extra .cart-totals > .field > .field-error { grid-column: 1 / -1; }
 
     :root[data-pos="on"][data-page="till"] .last-sale { margin-bottom: 10px; padding: 8px 14px; }
     :root[data-pos="on"][data-page="till"] .last-sale-change, :root[data-pos="on"][data-page="till"] .last-sale-total { font-size: 1.3rem; }
