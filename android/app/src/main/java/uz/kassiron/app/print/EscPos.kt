@@ -1,7 +1,13 @@
 package uz.kassiron.app.print
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Color
 import java.io.ByteArrayOutputStream
 import java.nio.charset.Charset
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.roundToInt
 
 /**
  * ESC/POS bytes for cheap 58/80 mm thermal printers. Text is either plain
@@ -31,14 +37,63 @@ class EscPos(private val cp866: Boolean) {
 
     fun build(): ByteArray = out.toByteArray()
 
-    fun receipt(lines: List<ReceiptLine>) = apply {
+    /** [dots]: the printable width — 384 on 58 mm paper, 576 on 80 mm (8 dots per mm). */
+    fun receipt(lines: List<ReceiptLine>, dots: Int = 384) = apply {
         for (l in lines) {
+            val img = l.image
+            if (img != null) {
+                align(true)
+                if (img.logo) image(img.png, (dots * 0.7).roundToInt(), 22 * 8)
+                else (if (dots >= 576) 34 * 8 else 30 * 8).let { image(img.png, it, it) }
+                continue
+            }
             align(l.center); bold(l.bold); big(l.big)
             line(l.text)
         }
         big(false); bold(false); align(false)
         feed(3)
         cut()
+    }
+
+    /**
+     * A PNG as a black-and-white raster (GS v 0), scaled to fit [maxW] x [maxH]
+     * dots keeping its shape (never enlarged past twice its size). Sent in
+     * bands of 128 rows, which cheap printers' buffers take. A picture that
+     * doesn't decode is skipped: the receipt still prints.
+     */
+    fun image(png: ByteArray, maxW: Int, maxH: Int) = apply {
+        val src = runCatching { BitmapFactory.decodeByteArray(png, 0, png.size) }.getOrNull() ?: return@apply
+        if (src.width <= 0 || src.height <= 0) return@apply
+        val scale = min(min(maxW.toFloat() / src.width, maxH.toFloat() / src.height), 2f)
+        val w = max(1, (src.width * scale).roundToInt())
+        val h = max(1, (src.height * scale).roundToInt())
+        val bmp = if (w == src.width && h == src.height) src else Bitmap.createScaledBitmap(src, w, h, true)
+        val pixels = IntArray(w * h)
+        bmp.getPixels(pixels, 0, w, 0, 0, w, h)
+        val rowBytes = (w + 7) / 8
+        var y0 = 0
+        while (y0 < h) {
+            val band = min(128, h - y0)
+            bytes(0x1D, 0x76, 0x30, 0x00, rowBytes and 0xFF, (rowBytes shr 8) and 0xFF, band and 0xFF, (band shr 8) and 0xFF)
+            val data = ByteArray(rowBytes * band)
+            for (y in 0 until band) {
+                for (x in 0 until w) {
+                    if (isInk(pixels[(y0 + y) * w + x])) {
+                        val i = y * rowBytes + x / 8
+                        data[i] = (data[i].toInt() or (0x80 shr (x % 8))).toByte()
+                    }
+                }
+            }
+            out.write(data)
+            y0 += band
+        }
+        line()
+    }
+
+    private fun isInk(argb: Int): Boolean {
+        if (Color.alpha(argb) < 128) return false // transparent = paper
+        val lum = (Color.red(argb) * 299 + Color.green(argb) * 587 + Color.blue(argb) * 114) / 1000
+        return lum < 128
     }
 
     private fun encode(s: String): ByteArray {
@@ -79,6 +134,7 @@ object Text {
         for (c in normalizeQuotes(s)) {
             when {
                 c.code < 128 -> append(c)
+                c == '·' -> append('-')
                 CYR.containsKey(c.lowercaseChar()) -> {
                     val t = CYR.getValue(c.lowercaseChar())
                     append(if (c.isUpperCase()) t.replaceFirstChar { it.uppercaseChar() } else t)

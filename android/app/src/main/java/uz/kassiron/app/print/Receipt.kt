@@ -1,6 +1,7 @@
 package uz.kassiron.app.print
 
 import android.content.Context
+import android.util.Base64
 import uz.kassiron.app.App
 import uz.kassiron.app.R
 import uz.kassiron.app.core.Db
@@ -30,6 +31,9 @@ data class ReceiptData(
     val refunded: Double,
     /** Sold at the optom prices (sales.price_type = 'wholesale'). */
     val wholesale: Boolean = false,
+    /** The shop's receipt logo (top) and QR (bottom): PNG bytes from the website's shop settings, or null. */
+    val logo: ByteArray? = null,
+    val qr: ByteArray? = null,
 )
 
 data class ReceiptItem(val name: String, val qty: Double, val unitPrice: Double, val subtotal: Double)
@@ -81,7 +85,20 @@ object Receipts {
             customerName = sale.strOrNull("customer_name")?.takeIf(String::isNotBlank),
             refunded = Money.round2(refunded),
             wholesale = sale.strOrNull("price_type") == "wholesale",
+            logo = image("receipt_logo"),
+            qr = image("receipt_qr"),
         )
+    }
+
+    /**
+     * A receipt picture uploaded on the website (Profil -> Do'kon sozlamalari): the
+     * settings value is a "data:image/png;base64,..." URI (Settings::receiptImage).
+     */
+    fun image(key: String): ByteArray? {
+        val value = App.kv.shopSetting(key) ?: return null
+        val prefix = "data:image/png;base64,"
+        if (!value.startsWith(prefix)) return null
+        return runCatching { Base64.decode(value.substring(prefix.length), Base64.DEFAULT) }.getOrNull()?.takeIf { it.isNotEmpty() }
     }
 
     /** "+998901112233" -> "+998 90 111 22 33" (other numbers unchanged). */
@@ -126,13 +143,11 @@ object Receipts {
         }
         fun divider() { out += ReceiptLine("-".repeat(width)) }
 
+        // Top: logo, shop name, date · number (app/views/sales/_receipt.php).
+        r.logo?.let { out += ReceiptLine("", center = true, image = ReceiptImage(it, logo = true)) }
         if (r.shopName.isNotBlank()) center(r.shopName, bold = true, big = true)
-        if (r.shopAddress.isNotBlank()) center(r.shopAddress)
-        if (r.shopPhone.isNotBlank()) center(r.shopPhone)
-        divider()
-        pair("№ ${r.receiptNo}", r.createdAt)
-        if (r.cashier.isNotBlank()) out += ReceiptLine(clean(context.getString(R.string.print_cashier) + ": " + r.cashier))
-        if (r.wholesale) out += ReceiptLine(clean(context.getString(R.string.till_wholesale_prices)), bold = true)
+        center(r.createdAt + " · № " + r.receiptNo)
+        if (r.wholesale) center(context.getString(R.string.till_wholesale_prices), bold = true)
         divider()
         for (item in r.items) {
             wrap(clean(item.name), width).forEach { out += ReceiptLine(it) }
@@ -145,14 +160,19 @@ object Receipts {
         if (r.change > 0) pair(context.getString(R.string.till_change), Money.format(r.change, false))
         if (r.debt > 0) r.customerName?.let { pair(context.getString(R.string.till_customer), it) }
         if (r.refunded > 0) pair(context.getString(R.string.print_refunded), "-" + Money.format(r.refunded, false))
-        divider()
-        center(context.getString(R.string.print_not_fiscal))
+        // Bottom: QR, thanks, the shop's address · phone, cashier.
+        out += ReceiptLine("")
+        r.qr?.let { out += ReceiptLine("", center = true, image = ReceiptImage(it, logo = false)) }
         center(context.getString(R.string.print_thanks))
+        val about = listOf(r.shopAddress, r.shopPhone).map(String::trim).filter(String::isNotEmpty)
+        if (about.isNotEmpty()) center(about.joinToString(" · "))
+        if (r.cashier.isNotBlank()) center(context.getString(R.string.print_cashier) + ": " + r.cashier)
         return out
     }
 
     /** Plain text for sharing (messengers): the same receipt, 32 columns. */
-    fun text(context: Context, r: ReceiptData): String = lines(context, r, 32).joinToString("\n") { it.text.trimEnd() }
+    fun text(context: Context, r: ReceiptData): String =
+        lines(context, r, 32).filter { it.image == null }.joinToString("\n") { it.text.trimEnd() }
 
     fun twoCols(left: String, right: String, width: Int): String {
         val space = width - right.length
@@ -180,5 +200,14 @@ object Receipts {
     }
 }
 
-/** One printed line; [big] = double width and height (uses half the columns). */
-data class ReceiptLine(val text: String, val center: Boolean = false, val bold: Boolean = false, val big: Boolean = false)
+/** One printed line; [big] = double width and height (uses half the columns); [image] = a picture instead of text. */
+data class ReceiptLine(
+    val text: String,
+    val center: Boolean = false,
+    val bold: Boolean = false,
+    val big: Boolean = false,
+    val image: ReceiptImage? = null,
+)
+
+/** A receipt picture: the logo (up to 70% of the paper, 22 mm high) or the QR (34 mm; 30 mm on 58 mm paper). */
+class ReceiptImage(val png: ByteArray, val logo: Boolean)

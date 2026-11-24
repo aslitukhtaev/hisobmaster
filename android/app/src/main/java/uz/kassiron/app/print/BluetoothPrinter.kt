@@ -160,7 +160,7 @@ object BluetoothPrinter {
         val cp866 = PrinterSettings.cp866
         val clean: (String) -> String = if (cp866) Text::normalizeQuotes else Text::toAscii
         val lines = Receipts.lines(context, data, PrinterSettings.columns, clean)
-        return EscPos(cp866).receipt(lines).build()
+        return EscPos(cp866).receipt(lines, if (PrinterSettings.widthMm == 80) 576 else 384).build()
     }
 
     /** A short test page: shop name, width ruler, Cyrillic sample. */

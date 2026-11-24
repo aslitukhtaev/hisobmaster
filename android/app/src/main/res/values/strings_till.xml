@@ -127,8 +127,7 @@
     <string name="print_test_title">Sinov cheki</string>
     <string name="print_cashier">Kassir</string>
     <string name="print_refunded">Qaytarilgan</string>
-    <string name="print_not_fiscal">Fiskal chek emas</string>
-    <string name="print_thanks">Xaridingiz uchun rahmat</string>
+    <string name="print_thanks">Xaridingiz uchun rahmat!</string>
     <string name="print_err_no_bluetooth">Bu telefonda Bluetooth yo‘q</string>
     <string name="print_err_bt_off">Bluetooth o‘chiq — uni yoqing</string>
     <string name="print_err_permission">Printer uchun Bluetooth’ga ruxsat bering</string>

@@ -3,9 +3,11 @@ package uz.kassiron.app.ui.till
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
+import android.graphics.BitmapFactory
 import android.view.HapticFeedbackConstants
 import android.view.View
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -53,6 +56,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -816,15 +822,25 @@ private fun ReceiptPaper(r: ReceiptData) {
         Modifier.widthIn(max = 460.dp).fillMaxWidth().kShadow(shape).clip(shape).background(PaperWhite)
             .padding(horizontal = 14.dp, vertical = 16.dp),
     ) {
-        if (r.shopName.isNotBlank()) center(r.shopName, bold)
-        if (r.shopAddress.isNotBlank()) center(r.shopAddress)
-        if (r.shopPhone.isNotBlank()) center(r.shopPhone)
+        val small = mono.copy(fontSize = 11.sp, lineHeight = 17.sp)
+        val logo = remember(r.logo) { r.logo?.let { runCatching { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() }.getOrNull() } }
+        val qr = remember(r.qr) { r.qr?.let { runCatching { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() }.getOrNull() } }
+        // Top: logo, shop name, date · number — as the website's receipt (app/views/sales/_receipt.php).
+        logo?.let {
+            Image(
+                it, null, Modifier.fillMaxWidth(0.7f).heightIn(max = 90.dp).align(Alignment.CenterHorizontally).padding(bottom = 6.dp),
+                contentScale = ContentScale.Fit,
+            )
+        }
+        if (r.shopName.isNotBlank()) center(r.shopName.uppercase(), bold)
+        center(r.createdAt + " · № " + r.receiptNo, small)
+        if (r.wholesale) center(stringResource(R.string.till_wholesale_prices), bold)
         rule()
-        line("№ " + r.receiptNo, r.createdAt)
-        if (r.cashier.isNotBlank()) Text(stringResource(R.string.print_cashier) + ": " + r.cashier, style = mono)
-        if (r.wholesale) Text(stringResource(R.string.till_wholesale_prices), style = bold)
-        rule()
-        r.items.forEach { item -> line(item.name + " × " + Money.qty(item.qty), Money.format(item.subtotal, false)) }
+        r.items.forEach { item ->
+            Text(item.name, style = mono, modifier = Modifier.fillMaxWidth())
+            line(Money.qty(item.qty) + " × " + Money.format(item.unitPrice, false), Money.format(item.subtotal, false), small)
+            Spacer(Modifier.height(4.dp))
+        }
         rule()
         if (r.discount > 0) line(stringResource(R.string.till_discount), "−" + Money.format(r.discount, false))
         line(stringResource(R.string.till_receipt_total), Money.format(r.total), bold)
@@ -832,9 +848,18 @@ private fun ReceiptPaper(r: ReceiptData) {
         if (r.change > 0) line(stringResource(R.string.till_change), Money.format(r.change, false))
         if (r.debt > 0) r.customerName?.let { line(stringResource(R.string.till_customer), it) }
         if (r.refunded > 0) line(stringResource(R.string.print_refunded), "−" + Money.format(r.refunded, false))
-        rule()
-        center(stringResource(R.string.print_not_fiscal), mono.copy(fontSize = 11.sp, lineHeight = 17.sp))
-        center(stringResource(R.string.print_thanks), mono.copy(fontSize = 11.sp, lineHeight = 17.sp))
+        // Bottom: QR, thanks, the shop's address · phone, cashier.
+        Spacer(Modifier.height(12.dp))
+        qr?.let {
+            Image(
+                it, null, Modifier.width(130.dp).heightIn(max = 130.dp).align(Alignment.CenterHorizontally).padding(bottom = 6.dp),
+                contentScale = ContentScale.Fit, filterQuality = FilterQuality.None,
+            )
+        }
+        center(stringResource(R.string.print_thanks))
+        val about = listOf(r.shopAddress, r.shopPhone).map(String::trim).filter(String::isNotEmpty)
+        if (about.isNotEmpty()) center(about.joinToString(" · "), small)
+        if (r.cashier.isNotBlank()) center(stringResource(R.string.print_cashier) + ": " + r.cashier, small)
     }
 }
 

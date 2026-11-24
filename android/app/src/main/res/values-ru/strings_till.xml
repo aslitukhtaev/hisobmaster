@@ -127,8 +127,7 @@
     <string name="print_test_title">Пробный чек</string>
     <string name="print_cashier">Кассир</string>
     <string name="print_refunded">Возвращено</string>
-    <string name="print_not_fiscal">Не фискальный чек</string>
-    <string name="print_thanks">Спасибо за покупку</string>
+    <string name="print_thanks">Спасибо за покупку!</string>
     <string name="print_err_no_bluetooth">На этом телефоне нет Bluetooth</string>
     <string name="print_err_bt_off">Bluetooth выключен — включите его</string>
     <string name="print_err_permission">Разрешите доступ к Bluetooth для принтера</string>
