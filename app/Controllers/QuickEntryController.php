@@ -178,6 +178,164 @@ class QuickEntryController
         $this->json(['ok' => true, 'created' => $created, 'errors' => $errors]);
     }
 
+    /**
+     * "Tez o'zgartirish": every active product and variant in one grid —
+     * name, barcode, prices — changed like a spreadsheet and saved together
+     * (public/assets/js/bulk-edit.js). Only the cells that changed are sent
+     * and written, so nothing else on the product is touched.
+     */
+    public function bulkEditForm(Request $request): void
+    {
+        $shopId = (int) Auth::shopId();
+        $pdo = Database::connect();
+        $rows = [];
+        $products = $pdo->prepare(
+            "SELECT p.id, p.name, p.barcode, p.sell_price, p.cost_price, p.wholesale_price, p.unit, COALESCE(c.name, '') AS category
+             FROM products p LEFT JOIN categories c ON c.id = p.category_id
+             WHERE p.shop_id = ? AND p.status = 'active' ORDER BY p.name COLLATE NOCASE"
+        );
+        $products->execute([$shopId]);
+        $variants = $pdo->prepare(
+            "SELECT id, product_id, variant_label, barcode, sell_price, cost_price, wholesale_price
+             FROM product_variants WHERE shop_id = ? AND status = 'active' ORDER BY variant_label COLLATE NOCASE"
+        );
+        $variants->execute([$shopId]);
+        $byProduct = [];
+        foreach ($variants->fetchAll() as $v) {
+            $byProduct[(int) $v['product_id']][] = $v;
+        }
+        $num = static fn (mixed $v): string => $v === null ? '' : rtrim(rtrim(number_format((float) $v, 2, '.', ''), '0'), '.');
+        foreach ($products->fetchAll() as $p) {
+            $rows[] = [
+                'type' => 'product', 'id' => (int) $p['id'], 'parent' => null, 'category' => (string) $p['category'],
+                'name' => (string) $p['name'], 'barcode' => (string) ($p['barcode'] ?? ''), 'sell_price' => $num($p['sell_price']),
+                'wholesale_price' => $num($p['wholesale_price']), 'cost_price' => $num($p['cost_price']), 'unit' => (string) $p['unit'],
+            ];
+            foreach ($byProduct[(int) $p['id']] ?? [] as $v) {
+                $rows[] = [
+                    'type' => 'variant', 'id' => (int) $v['id'], 'parent' => (string) $p['name'], 'category' => (string) $p['category'],
+                    'name' => (string) $v['variant_label'], 'barcode' => (string) ($v['barcode'] ?? ''), 'sell_price' => $num($v['sell_price']),
+                    'wholesale_price' => $num($v['wholesale_price']), 'cost_price' => $num($v['cost_price']), 'unit' => (string) $p['unit'],
+                ];
+            }
+        }
+
+        View::render('products/bulk-edit', [
+            'rows' => $rows,
+            'canPrices' => Auth::can('prices'),
+            'wholesale' => wholesale_enabled(),
+            'categories' => Category::allByShop($shopId),
+        ]);
+    }
+
+    /**
+     * Saves the changed cells: rows of {_row, type: product|variant, id,
+     * fields: {name, barcode, sell_price, wholesale_price, cost_price}} —
+     * only the fields that changed. A row with a mistake comes back marked;
+     * the others are saved.
+     */
+    public function bulkEditStore(Request $request): void
+    {
+        $rows = $this->rows($request);
+        $shopId = (int) Auth::shopId();
+        $canPrices = Auth::can('prices');
+        $wholesale = wholesale_enabled();
+        $pdo = Database::connect();
+
+        $saved = [];
+        $errors = [];
+        $seenBarcodes = [];
+        foreach ($rows as $i => $row) {
+            $index = (int) ($row['_row'] ?? $i);
+            $isVariant = ($row['type'] ?? '') === 'variant';
+            $id = (int) ($row['id'] ?? 0);
+            $fields = is_array($row['fields'] ?? null) ? $row['fields'] : [];
+            $table = $isVariant ? 'product_variants' : 'products';
+            $exists = $pdo->prepare("SELECT id FROM $table WHERE id = ? AND shop_id = ?");
+            $exists->execute([$id, $shopId]);
+            if ($id <= 0 || $exists->fetchColumn() === false) {
+                $errors[] = ['row' => $index, 'message' => t('product_not_found')];
+                continue;
+            }
+
+            $set = [];
+            $error = null;
+            foreach ($fields as $field => $raw) {
+                $value = trim((string) $raw);
+                if ($field === 'name') {
+                    $max = $isVariant ? 100 : 200;
+                    $error = match (true) {
+                        $value === '' => t('fill_required_fields'),
+                        mb_strlen($value) > $max => t('product_name_too_long'),
+                        looks_like_formula($value) => t('product_name_formula'),
+                        default => null,
+                    };
+                    $set[$isVariant ? 'variant_label' : 'name'] = $value;
+                } elseif ($field === 'barcode') {
+                    if ($value !== '') {
+                        $error = match (true) {
+                            mb_strlen($value) > 64 => t('barcode_too_long'),
+                            isset($seenBarcodes[$value]) => t('quick_barcode_duplicate'),
+                            Product::barcodeTaken($shopId, $value, $isVariant ? null : $id, $isVariant ? $id : null) => t('barcode_taken', ['barcode' => $value]),
+                            default => null,
+                        };
+                        $seenBarcodes[$value] = true;
+                    }
+                    $set['barcode'] = $value !== '' ? $value : null;
+                } elseif (in_array($field, ['sell_price', 'wholesale_price', 'cost_price'], true)) {
+                    if (($field === 'wholesale_price' && !$wholesale) || ($field === 'cost_price' && !$canPrices)) {
+                        continue;
+                    }
+                    $number = self::number($value);
+                    // Empty: no optom price; a variant's empty price / cost = the product's.
+                    $required = !$isVariant && $field === 'sell_price';
+                    if ($number === '') {
+                        if ($required) {
+                            $error = t('quick_price_required');
+                        }
+                        $set[$field] = (!$isVariant && $field === 'cost_price') ? 0.0 : null;
+                    } elseif (!is_numeric($number) || (float) $number < 0) {
+                        $error = t('values_must_be_positive');
+                    } elseif (!valid_money($number)) {
+                        $error = t('amount_too_large');
+                    } else {
+                        $set[$field] = round((float) $number, 2);
+                    }
+                }
+                if ($error !== null) {
+                    break;
+                }
+            }
+            if ($error !== null) {
+                $errors[] = ['row' => $index, 'message' => $error];
+                continue;
+            }
+            if ($set === []) {
+                $saved[] = $index;
+                continue;
+            }
+
+            try {
+                if (!$isVariant) {
+                    $set['updated_at'] = gmdate('Y-m-d H:i:s');
+                }
+                $assignments = implode(', ', array_map(static fn (string $c): string => "$c = ?", array_keys($set)));
+                $pdo->prepare("UPDATE $table SET $assignments WHERE id = ? AND shop_id = ?")
+                    ->execute([...array_values($set), $id, $shopId]);
+            } catch (Throwable $e) {
+                log_exception($e);
+                $errors[] = ['row' => $index, 'message' => t('quick_failed')];
+                continue;
+            }
+            $saved[] = $index;
+        }
+
+        if ($saved !== []) {
+            ActivityLog::record($shopId, Auth::id(), 'products_bulk_edited', ['count' => (string) count($saved)]);
+        }
+        $this->json(['ok' => true, 'saved' => $saved, 'errors' => $errors]);
+    }
+
     /** @return list<array<string, mixed>> */
     private function rows(Request $request): array
     {

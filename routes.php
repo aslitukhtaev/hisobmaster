@@ -27,6 +27,7 @@ use App\Controllers\ProfileController;
 use App\Controllers\PurchaseController;
 use App\Controllers\ReportController;
 use App\Controllers\SaleController;
+use App\Controllers\WholesaleRestoreController;
 use App\Controllers\SupplierController;
 use App\Controllers\SuperAdminController;
 use App\Controllers\TelegramController;
@@ -94,6 +95,11 @@ $router->post('/products', [ProductController::class, 'store'], ['auth', 'permis
 // no actual pattern collision (different segment counts).
 $router->get('/products/import', [ProductController::class, 'importForm'], ['auth', 'permission:products']);
 $router->get('/products/quick', [QuickEntryController::class, 'productsForm'], ['auth', 'permission:products']);
+$router->get('/products/bulk-edit', [QuickEntryController::class, 'bulkEditForm'], ['auth', 'permission:products']);
+$router->post('/products/bulk-edit', [QuickEntryController::class, 'bulkEditStore'], ['auth', 'permission:products', 'csrf']);
+// Reads the server's backups: website only.
+$router->get('/products/restore-wholesale', [WholesaleRestoreController::class, 'show'], ['auth', 'role:owner', 'web_only']);
+$router->post('/products/restore-wholesale', [WholesaleRestoreController::class, 'restore'], ['auth', 'role:owner', 'web_only', 'csrf']);
 $router->post('/products/quick', [QuickEntryController::class, 'productsStore'], ['auth', 'permission:products', 'csrf']);
 $router->post('/products/import/preview', [ProductController::class, 'importPreview'], ['auth', 'permission:products', 'csrf']);
 $router->post('/products/import/commit', [ProductController::class, 'importCommit'], ['auth', 'permission:products', 'csrf']);
