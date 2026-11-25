@@ -13,9 +13,6 @@
         <a href="/products/import" class="btn btn-ghost"><?= e(t('import_products')) ?></a>
         <a href="/products/create" class="btn btn-ghost"><?= e(t('add_product')) ?></a>
         <a href="/products/bulk-edit" class="btn btn-ghost"><?= e(t('bulk_edit_title')) ?></a>
-        <?php if (App\Core\Auth::isOwner() && wholesale_enabled() && !App\Desktop\Desktop::enabled()): ?>
-            <a href="/products/restore-wholesale" class="btn btn-ghost"><?= e(t('wholesale_restore_link')) ?></a>
-        <?php endif; ?>
         <a href="/products/quick" class="btn btn-primary"><?= e(t('quick_products_title')) ?></a>
     </div>
 </section>
