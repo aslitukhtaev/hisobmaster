@@ -1185,7 +1185,7 @@ return [
     'carts_dropped' => ":count ta qator o'zgardi: omborda qolmagan yoki kamroq qolgan.",
     'carts_stale' => ":count ta savat bir kundan beri to'xtab turibdi. O'chirilsinmi?",
     'bulk_edit_title' => 'Tez o\'zgartirish',
-    'bulk_edit_hint' => 'Hamma mahsulotlar bitta jadvalda: nomi, shtrix-kodi va narxlarini Excel\'dagidek o\'zgartiring (Enter — pastga, Esc — qaytarish, Excel\'dan ustunni nusxalab qo\'yish ham bo\'ladi). «Saqlash» faqat o\'zgargan kataklarni yozadi.',
+    'bulk_edit_hint' => 'Hamma mahsulotlar bitta jadvalda: nomi, kategoriyasi, shtrix-kodi va narxlarini Excel\'dagidek o\'zgartiring (Enter — pastga, Esc — qaytarish, Excel\'dan ustunni nusxalab qo\'yish ham bo\'ladi). «Saqlash» faqat o\'zgargan kataklarni yozadi.',
     'bulk_edit_saved' => ':count ta mahsulot saqlandi',
     'bulk_edit_changes' => ':count ta mahsulotda o\'zgarish bor',
     'bulk_edit_nothing' => 'Hech narsa o\'zgartirilmagan',
