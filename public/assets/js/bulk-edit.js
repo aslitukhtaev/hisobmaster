@@ -16,6 +16,8 @@
         r._i = i;
         r._orig = {};
         columns.forEach(function (c) { r._orig[c.key] = r[c.key] == null ? '' : String(r[c.key]); });
+        r._readOnly = {};
+        columns.forEach(function (c) { r._readOnly[c.key] = !!c.productOnly && r.type === 'variant'; });
         r._now = Object.assign({}, r._orig);
         return r;
     });
@@ -109,6 +111,15 @@
                 input.setAttribute('data-col', String(col));
                 input.setAttribute('aria-label', c.label + ': ' + item.name);
                 input.value = item._now[c.key];
+                if (c.list) {
+                    input.setAttribute('list', c.list);
+                }
+                if (item._readOnly[c.key]) {
+                    // A variant is in its product's category.
+                    input.readOnly = true;
+                    input.tabIndex = -1;
+                    input.className = 'bulk-readonly';
+                }
                 td.appendChild(input);
                 tr.appendChild(td);
             });
@@ -225,7 +236,7 @@
             var item = itemOf(tr);
             line.split('\t').forEach(function (value, j) {
                 var cell = inputs[col + j];
-                if (cell) {
+                if (cell && !cell.readOnly) {
                     cell.value = value.trim();
                     item._now[columns[col + j].key] = cell.value;
                 }

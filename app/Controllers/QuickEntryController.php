@@ -260,6 +260,7 @@ class QuickEntryController
 
             $set = [];
             $error = null;
+            $newCategory = null;
             foreach ($fields as $field => $raw) {
                 $value = trim((string) $raw);
                 if ($field === 'name') {
@@ -271,6 +272,18 @@ class QuickEntryController
                         default => null,
                     };
                     $set[$isVariant ? 'variant_label' : 'name'] = $value;
+                } elseif ($field === 'category') {
+                    if ($isVariant) {
+                        continue; // a variant is in its product's category
+                    }
+                    $category = Category::normalizeName($value);
+                    $error = match (true) {
+                        mb_strlen($category) > 100 => t('values_must_be_positive'),
+                        looks_like_formula($category) => t('category_name_formula'),
+                        default => null,
+                    };
+                    // Found or made only once the whole row is valid (below).
+                    $newCategory = $category;
                 } elseif ($field === 'barcode') {
                     if ($value !== '') {
                         $error = match (true) {
@@ -310,12 +323,15 @@ class QuickEntryController
                 $errors[] = ['row' => $index, 'message' => $error];
                 continue;
             }
-            if ($set === []) {
+            if ($set === [] && $newCategory === null) {
                 $saved[] = $index;
                 continue;
             }
 
             try {
+                if ($newCategory !== null) {
+                    $set['category_id'] = $newCategory !== '' ? Category::findOrCreate($shopId, $newCategory) : null;
+                }
                 if (!$isVariant) {
                     $set['updated_at'] = gmdate('Y-m-d H:i:s');
                 }

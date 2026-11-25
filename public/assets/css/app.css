@@ -1236,6 +1236,7 @@ img.logo-for-dark-theme { display: none; }
 .bulk-grid tr.bulk-variant td:nth-child(2) { padding-left: 18px; }
 .bulk-parent { font-size: .72rem; color: var(--muted); margin: 2px 0 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bulk-more { margin: 10px 0 0; }
+.bulk-grid input.bulk-readonly { color: var(--muted); background: transparent; cursor: default; }
 
 /* ---------- Till: several carts ---------- */
 .cart-tabs { display: flex; gap: 8px; overflow-x: auto; margin: 0 0 12px; padding-bottom: 2px; scrollbar-width: none; }

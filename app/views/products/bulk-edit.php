@@ -3,6 +3,7 @@ $pageTitle = t('bulk_edit_title');
 
 $columns = [
     ['key' => 'name', 'label' => t('product_name'), 'wide' => true],
+    ['key' => 'category', 'label' => t('category'), 'list' => 'bulk-category-list', 'productOnly' => true],
     ['key' => 'barcode', 'label' => t('barcode')],
     ['key' => 'sell_price', 'label' => $wholesale ? t('retail_price') : t('sell_price'), 'number' => true],
 ];
@@ -74,6 +75,9 @@ $bulkI18n = [
         <button type="button" class="btn btn-primary" id="bulk-save"><?= e(t('save')) ?></button>
     </div>
 </div>
+<datalist id="bulk-category-list">
+    <?php foreach ($categories as $cat): ?><option value="<?= e($cat['name']) ?>"></option><?php endforeach; ?>
+</datalist>
 <script nonce="<?= e(csp_nonce()) ?>">
     window.HM_BULK_ROWS = <?= json_encode($rows, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;
 </script>
