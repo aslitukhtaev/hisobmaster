@@ -1160,7 +1160,7 @@ return [
     'label_save_default' => "Shu sozlamani odatiy qilish",
     'label_preview' => "Ko'rinishi",
     'label_total' => "Jami: :count ta yorliq",
-    'label_printer_hint' => "Chop etish oynasida printerni tanlang va qog'oz o'lchamini :size mm qilib qo'ying, chekka joylarni (margins) «Yo'q» qiling.",
+    'label_printer_hint' => "Chop etish oynasida printerni tanlang, qog'oz o'lchamini :size mm, yo'nalishni «Kitob» (Portrait), chekka joylarni (margins) «Yo'q» qiling. Masshtab 100%.",
     'label_no_items' => "Hali mahsulot yo'q. Pastdagi qidiruvdan qo'shing yoki mahsulotlar ro'yxatida belgilang.",
     'label_no_barcode' => "shtrix-kodi yo'q",
     'label_no_wholesale' => "optom narxi yo'q",

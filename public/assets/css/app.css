@@ -1221,15 +1221,6 @@ img.logo-for-dark-theme { display: none; }
 .lbl-cur { font-size: .65em; }
 /* Off screen until printing (measured there so type can be fitted). */
 .label-sheet { position: absolute; left: -10000px; top: 0; visibility: hidden; }
-@media print {
-    /* Only while labels are being printed (labels.js): every other page
-       (a receipt, a report) prints normally. */
-    body.printing-labels * { visibility: hidden !important; }
-    body.printing-labels .label-sheet, body.printing-labels .label-sheet * { visibility: visible !important; }
-    body.printing-labels .label-sheet { position: absolute; left: 0; top: 0; }
-    .label-sheet .lbl { box-shadow: none; break-after: page; page-break-after: always; }
-    .label-sheet .lbl:last-child { break-after: auto; page-break-after: auto; }
-}
 
 /* ---------- Till: several carts ---------- */
 .cart-tabs { display: flex; gap: 8px; overflow-x: auto; margin: 0 0 12px; padding-bottom: 2px; scrollbar-width: none; }

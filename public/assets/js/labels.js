@@ -161,7 +161,11 @@
 
     function renderPreview() {
         var page = $('label-page-style');
-        page.textContent = '@page { size: ' + opts.w + 'mm ' + opts.h + 'mm; margin: 0; }';
+        // No page size here: a size wider than tall (58×40) makes the browser
+        // print "landscape", and label printer drivers then turn the whole page
+        // 90° — the barcode came out sideways across two labels. The page is the
+        // printer's own label (its paper size), upright; see printSheet().
+        page.textContent = '@page { margin: 0; }';
         var box = $('label-preview');
         box.innerHTML = '';
         var warning = $('label-warning');
@@ -236,14 +240,54 @@
                 fit(el);
             }
         });
-        document.body.classList.add('printing-labels');
-        window.addEventListener('afterprint', function done() {
-            window.removeEventListener('afterprint', done);
-            document.body.classList.remove('printing-labels');
-        });
-        window.print();
+        printSheet(sheet.innerHTML);
         armedWholesale = false;
         $('label-print').textContent = $('label-print').dataset.text;
+    }
+
+    /**
+     * Prints the labels alone, from a hidden frame: one label per page, the
+     * page upright and as big as the printer's label (no landscape turn), and
+     * nothing of this page behind them (its height used to add blank labels).
+     */
+    function printSheet(html) {
+        var css = '';
+        Array.prototype.forEach.call(document.styleSheets, function (sheet) {
+            var rules;
+            try { rules = sheet.cssRules; } catch (e) { return; }
+            Array.prototype.forEach.call(rules || [], function (r) {
+                if (r.selectorText && /^\.lbl/.test(r.selectorText)) {
+                    css += r.cssText + ' ';
+                }
+            });
+        });
+        var old = document.getElementById('label-print-frame');
+        if (old) {
+            old.parentNode.removeChild(old);
+        }
+        var frame = document.createElement('iframe');
+        frame.id = 'label-print-frame';
+        frame.setAttribute('aria-hidden', 'true');
+        frame.tabIndex = -1;
+        frame.style.cssText = 'position:fixed;left:-10000px;top:0;border:0;height:100px;width:' + opts.w + 'mm';
+        document.body.appendChild(frame);
+        var doc = frame.contentDocument;
+        doc.open();
+        doc.write('<!doctype html><html><head><meta charset="utf-8"><style>' + css +
+            '@page { margin: 0; }' +
+            'html, body { margin: 0; padding: 0; background: #fff; }' +
+            '.lbl { box-shadow: none; margin: 0; break-after: page; page-break-after: always; break-inside: avoid; }' +
+            '.lbl:last-child { break-after: auto; page-break-after: auto; }' +
+            '</style></head><body>' + html + '</body></html>');
+        doc.close();
+        var win = frame.contentWindow;
+        win.addEventListener('afterprint', function () {
+            setTimeout(function () { if (frame.parentNode) { frame.parentNode.removeChild(frame); } }, 500);
+        });
+        setTimeout(function () {
+            win.focus();
+            win.print();
+        }, 50);
     }
 
     // ---------- events ----------
