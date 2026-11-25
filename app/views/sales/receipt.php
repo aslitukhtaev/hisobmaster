@@ -2,7 +2,8 @@
 $printerWidth = (int) ($shop['receipt_printer_width'] ?? 80);
 ?>
 <style>
-    @page { size: <?= $printerWidth ?>mm 297mm; margin: 2mm; }
+    /* Ctrl+P on this page (the print button prints the receipt's own page instead, see app.js). */
+    @page { size: <?= $printerWidth ?>mm 297mm; margin: 0; }
 </style>
 <section class="page-head page-head-row no-print">
     <div>

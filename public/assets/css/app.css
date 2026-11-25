@@ -1083,7 +1083,10 @@ img.logo-for-dark-theme { display: none; }
     /* The layout's own notices sit above the page content: none belong on paper. */
     #desktop-status, #desktop-update, .flash-alert, .trial-banner { display: none !important; }
     body, .content { padding: 0 !important; margin: 0 !important; background: #fff !important; }
-    .receipt { box-shadow: none; border-radius: 0; margin: 0; padding: 6px; max-width: 100%; }
+    .receipt { box-shadow: none; border-radius: 0; margin: 0 auto; padding: 2mm 0; max-width: 100%; color: #000; }
+    /* Only the part of the roll the printer reaches: about 72 mm of 80, 48 of 58. */
+    .receipt.receipt-80 { width: 72mm; }
+    .receipt.receipt-58 { width: 48mm; }
     @page { margin: 4mm; }
     /* Printed report page (/reports/print): flat white cards on paper instead
        of the themed surface + drop shadow, and dark-mode text tokens don't

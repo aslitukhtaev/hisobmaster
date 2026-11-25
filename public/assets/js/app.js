@@ -6,6 +6,68 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+// A receipt through the browser's print dialog (the website, or the desktop
+// app before a printer is chosen): the receipt's own thermal page
+// (/sales/{id}/print — the safe 72/48 mm text width) in a hidden frame, its
+// page made exactly as long as the receipt. A fixed A4-long page cut long
+// receipts in two, and the screen page ran past the edge the printer reaches.
+function kassironPrintReceipt(path, paper) {
+    if (!path) {
+        window.print();
+        return;
+    }
+    paper = Number(paper) === 58 ? 58 : 80;
+    var old = document.getElementById('receipt-print-frame');
+    if (old) {
+        old.parentNode.removeChild(old);
+    }
+    var frame = document.createElement('iframe');
+    frame.id = 'receipt-print-frame';
+    frame.setAttribute('aria-hidden', 'true');
+    frame.tabIndex = -1;
+    frame.style.cssText = 'position:fixed;left:-10000px;top:0;border:0;height:100px;width:' + Math.ceil(paper / 25.4 * 96) + 'px';
+    var done = false;
+    function remove() {
+        if (frame.parentNode) {
+            frame.parentNode.removeChild(frame);
+        }
+    }
+    function fallback() {
+        if (!done) {
+            done = true;
+            remove();
+            window.print();
+        }
+    }
+    var timer = setTimeout(fallback, 15000);
+    frame.addEventListener('load', function () {
+        var doc = null;
+        try { doc = frame.contentDocument; } catch (e) { doc = null; }
+        if (!doc || !doc.querySelector('.receipt')) {
+            clearTimeout(timer);
+            fallback();
+            return;
+        }
+        var fonts = doc.fonts && doc.fonts.ready ? doc.fonts.ready : Promise.resolve();
+        fonts.then(function () {
+            if (done) {
+                return;
+            }
+            done = true;
+            clearTimeout(timer);
+            var heightMm = Math.max(30, Math.ceil(doc.documentElement.scrollHeight * 25.4 / 96) + 4);
+            var style = doc.createElement('style');
+            style.textContent = '@page { size: ' + paper + 'mm ' + heightMm + 'mm; margin: 0; }';
+            doc.head.appendChild(style);
+            frame.contentWindow.addEventListener('afterprint', function () { setTimeout(remove, 500); });
+            frame.contentWindow.focus();
+            frame.contentWindow.print();
+        });
+    });
+    frame.src = path;
+    document.body.appendChild(frame);
+}
+
 // <input data-filter-rows="#table-id">: hides the table's rows that don't
 // contain what is typed (name, phone...), case- and apostrophe-insensitive.
 function kassironFold(text) {
@@ -278,6 +340,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     && typeof window.kassironDesktop.printPage === 'function') {
                     return;
                 }
+                if (btn.hasAttribute('data-print-path') && !document.documentElement.classList.contains('in-telegram')) {
+                    kassironPrintReceipt(btn.getAttribute('data-print-path'), btn.getAttribute('data-paper'));
+                    return;
+                }
                 window.print();
             });
         });
@@ -439,7 +505,7 @@ var KASSIRON_VIRTUAL_PRINTER = /pdf|xps|onenote|fax/i;
         if (receiptUrl) {
             window.location.href = receiptUrl;
         } else {
-            window.print();
+            kassironPrintReceipt(btn.getAttribute('data-print-path'), btn.getAttribute('data-paper'));
         }
     }
 
@@ -501,7 +567,7 @@ var KASSIRON_VIRTUAL_PRINTER = /pdf|xps|onenote|fax/i;
                     } else {
                         show(text('no-printer'), false, ['settings']);
                         if (!receiptUrl) {
-                            window.print();
+                            kassironPrintReceipt(btn.getAttribute('data-print-path'), btn.getAttribute('data-paper'));
                         }
                     }
                 } else {
