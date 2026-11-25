@@ -11,8 +11,11 @@ use App\Core\SocialAuth;
 use App\Core\TelegramAuth;
 use App\Core\View;
 use App\Desktop\Desktop;
+use App\Desktop\DesktopSync;
+use App\Desktop\SyncHttpException;
 use App\Models\Settings;
 use App\Models\Shop;
+use App\Models\ShopProfile;
 use App\Models\User;
 
 class ProfileController
@@ -155,87 +158,53 @@ class ProfileController
             redirect('/profile');
         }
 
-        $shopId = (int) Auth::shopId();
-        $name = trim((string) $request->input('shop_name', ''));
-        $address = trim((string) $request->input('shop_address', ''));
-        $printerWidth = (int) $request->input('receipt_printer_width', 80);
-        $lowStockDefaultRaw = trim((string) $request->input('low_stock_threshold_default', ''));
-
-        if ($name === '') {
-            flash('error', t('fill_required_fields'));
-            redirect('/profile');
-        }
-
-        if ($lowStockDefaultRaw !== '' && (!is_numeric($lowStockDefaultRaw) || (float) $lowStockDefaultRaw < 0)) {
-            flash('error', t('values_must_be_positive'));
-            redirect('/profile');
-        }
-
-        if (!in_array($printerWidth, [58, 80], true)) {
-            $printerWidth = 80;
-        }
-
-        Shop::updateSettings($shopId, $name, $address !== '' ? $address : null, $printerWidth);
-        Settings::set($shopId, 'low_stock_threshold_default', $lowStockDefaultRaw !== '' ? $lowStockDefaultRaw : null);
-        Settings::set($shopId, 'wholesale_enabled', $request->input('wholesale_enabled') === '1' ? '1' : null);
-
-        foreach (['receipt_logo' => 400, 'receipt_qr' => 320] as $key => $maxSide) {
-            if ($request->input('remove_' . $key) === '1') {
-                Settings::set($shopId, $key, null);
-            }
+        $input = [
+            'shop_name' => (string) $request->input('shop_name', ''),
+            'shop_address' => (string) $request->input('shop_address', ''),
+            'receipt_printer_width' => (string) $request->input('receipt_printer_width', '80'),
+            'low_stock_threshold_default' => (string) $request->input('low_stock_threshold_default', ''),
+            'wholesale_enabled' => $request->input('wholesale_enabled') === '1' ? '1' : '',
+        ];
+        $images = [];
+        foreach (array_keys(ShopProfile::IMAGES) as $key) {
+            $input['remove_' . $key] = $request->input('remove_' . $key) === '1' ? '1' : '';
             $file = $request->file($key);
             if ($file === null) {
                 continue;
             }
-            $png = self::receiptImagePng($file, $maxSide);
-            if ($png === null) {
+            if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || (int) $file['size'] > ShopProfile::MAX_UPLOAD_BYTES
+                || !is_uploaded_file((string) $file['tmp_name'])) {
                 flash('error', t('receipt_image_invalid'));
                 redirect('/profile');
             }
-            Settings::set($shopId, $key, 'data:image/png;base64,' . base64_encode($png));
+            $images[$key] = (string) file_get_contents((string) $file['tmp_name']);
+        }
+
+        // The desktop app: the server keeps the shop's settings (and makes the
+        // pictures — no image library here); the local copy is replaced by the
+        // server's at every sync, so they are saved there and brought back.
+        if (Desktop::enabled()) {
+            try {
+                $response = DesktopSync::request('/api/device/shop-settings', $input + ['images' => array_map('base64_encode', $images)]);
+                DesktopSync::applyServerShopState($response);
+            } catch (SyncHttpException $e) {
+                $code = $e->getMessage();
+                flash('error', in_array($code, ['fill_required_fields', 'values_must_be_positive', 'receipt_image_invalid'], true)
+                    ? t($code)
+                    : ($code === 'offline' ? t('shop_settings_need_internet') : t('shop_settings_sync_failed', ['code' => $code])));
+                redirect('/profile');
+            }
+            flash('success', t('shop_settings_updated'));
+            redirect('/profile');
+        }
+
+        $error = ShopProfile::save((int) Auth::shopId(), $input, $images);
+        if ($error !== null) {
+            flash('error', t($error));
+            redirect('/profile');
         }
 
         flash('success', t('shop_settings_updated'));
         redirect('/profile');
-    }
-
-    /**
-     * An uploaded picture as a small black-and-white-friendly PNG that fits
-     * $maxSide px: thermal paper prints it as is. Null for anything that is
-     * not a real, reasonably small image.
-     */
-    private static function receiptImagePng(array $file, int $maxSide): ?string
-    {
-        if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || (int) $file['size'] > 3 * 1024 * 1024
-            || !is_uploaded_file((string) $file['tmp_name']) || !function_exists('imagecreatefromstring')) {
-            return null;
-        }
-        $info = @getimagesize((string) $file['tmp_name']);
-        if ($info === false || !in_array($info[2], [IMAGETYPE_PNG, IMAGETYPE_JPEG, IMAGETYPE_GIF, IMAGETYPE_WEBP], true)
-            || $info[0] < 1 || $info[1] < 1 || $info[0] * $info[1] > 25000000) {
-            return null;
-        }
-        $src = @imagecreatefromstring((string) file_get_contents((string) $file['tmp_name']));
-        if ($src === false) {
-            return null;
-        }
-
-        $w = imagesx($src);
-        $h = imagesy($src);
-        $scale = min(1.0, $maxSide / max($w, $h));
-        $nw = max(1, (int) round($w * $scale));
-        $nh = max(1, (int) round($h * $scale));
-
-        // Flatten onto white (transparent logos would print black) and go grayscale.
-        $dst = imagecreatetruecolor($nw, $nh);
-        imagefill($dst, 0, 0, imagecolorallocate($dst, 255, 255, 255));
-        imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
-        imagefilter($dst, IMG_FILTER_GRAYSCALE);
-
-        ob_start();
-        imagepng($dst, null, 9);
-        $png = (string) ob_get_clean();
-
-        return strlen($png) <= 300 * 1024 ? $png : null;
     }
 }

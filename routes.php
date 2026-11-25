@@ -59,7 +59,8 @@ $router->get('/settings', [SettingsController::class, 'index'], ['auth']);
 
 $router->get('/profile', [ProfileController::class, 'show'], ['auth']);
 $router->post('/profile', [ProfileController::class, 'update'], ['auth', 'web_only', 'csrf']);
-$router->post('/profile/shop', [ProfileController::class, 'updateShop'], ['auth', 'role:owner', 'web_only', 'csrf']);
+// Not web_only: in the desktop app it is saved on the server through the API (ProfileController::updateShop).
+$router->post('/profile/shop', [ProfileController::class, 'updateShop'], ['auth', 'role:owner', 'csrf']);
 $router->post('/profile/devices/sign-out-others', [ProfileController::class, 'signOutOthers'], ['auth', 'web_only', 'csrf']);
 $router->post('/profile/devices/{id}/remove', [ProfileController::class, 'removeDevice'], ['auth', 'web_only', 'csrf']);
 $router->post('/profile/identities/{id}/remove', [ProfileController::class, 'removeIdentity'], ['auth', 'web_only', 'csrf']);
@@ -195,6 +196,7 @@ $router->get('/activity/export', [ActivityLogController::class, 'exportCsv'], ['
 $router->post('/api/device/activate', [ApiController::class, 'activate']);
 $router->post('/api/sync/push', [ApiController::class, 'push']);
 $router->post('/api/sync/pull', [ApiController::class, 'pull']);
+$router->post('/api/device/shop-settings', [ApiController::class, 'shopSettings']);
 $router->post('/api/desktop/update', [ApiController::class, 'updateCheck']);
 $router->post('/api/desktop/package', [ApiController::class, 'package']);
 $router->get('/api/license/public-key', [ApiController::class, 'publicKey']);

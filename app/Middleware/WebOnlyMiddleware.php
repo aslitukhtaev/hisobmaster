@@ -9,7 +9,7 @@ use App\Desktop\Desktop;
 
 /**
  * Sections that change data only the server owns (employees and invites,
- * passwords, shop settings, the list of computers): in the desktop app they
+ * passwords, the list of computers): in the desktop app they
  * point to the website instead — a change made there reaches this computer
  * with the next sync.
  */

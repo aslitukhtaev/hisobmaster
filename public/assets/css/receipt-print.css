@@ -33,6 +33,6 @@ body.paper-58 { width: 58mm; padding: 1mm 5mm 3mm; font-size: 11px; }
 .receipt-line span:last-child { text-align: right; white-space: nowrap; }
 .receipt-total-row { display: flex; justify-content: space-between; gap: 6px; font-weight: 700; font-size: 1.3em; margin-top: 3px; }
 .receipt-small { font-size: .9em; }
-.receipt-logo { display: block; margin: 0 auto 4px; max-width: 70%; max-height: 22mm; width: auto; height: auto; object-fit: contain; }
+.receipt-logo { display: block; margin: 0 auto 4px; max-width: 70%; max-height: 22mm; width: auto; height: auto; object-fit: contain; image-rendering: pixelated; }
 .receipt-qr { display: block; margin: 0 auto 4px; width: 34mm; max-width: 80%; height: auto; image-rendering: pixelated; }
 body.paper-58 .receipt-qr { width: 30mm; }

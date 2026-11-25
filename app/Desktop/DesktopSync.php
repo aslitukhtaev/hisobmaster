@@ -391,6 +391,13 @@ final class DesktopSync
         return true;
     }
 
+    /** The shop row and settings in a server answer (e.g. after saving "Do'kon sozlamalari" there). */
+    public static function applyServerShopState(array $response): void
+    {
+        self::storeLicense($response);
+        self::applyShopState(Database::connect(), $response, Desktop::localShopId());
+    }
+
     /** The shop row and settings, as the server sent them. */
     private static function applyShopState(PDO $pdo, array $response, int $shopId): void
     {

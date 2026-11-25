@@ -247,6 +247,9 @@ return [
     'receipt_image_invalid' => "Rasm yuklanmadi. PNG yoki JPG tanlang (3 MB gacha).",
     'receipt_width_label' => 'Chek printer kengligi',
     'shop_settings_updated' => "Do'kon sozlamalari yangilandi",
+    'shop_settings_need_internet' => "Saqlanmadi: do'kon sozlamalari saytda saqlanadi, buning uchun internet kerak. Internetni tekshirib, qayta urinib ko'ring.",
+    'shop_settings_sync_failed' => "Saqlanmadi: server javob bermadi (:code). Birozdan keyin qayta urinib ko'ring.",
+    'shop_settings_desktop_hint' => "Bu sozlamalar saytga saqlanadi va barcha kassalarga (kompyuter, telefon) o'zi tarqaladi. Saqlash uchun internet kerak.",
 
     // Customers / debtors
     'add_customer' => 'Mijoz qo\'shish',

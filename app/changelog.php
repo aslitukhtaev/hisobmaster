@@ -8,6 +8,11 @@
 
 return [
     [
+        'date' => '2026-11-25',
+        'uz' => "Kompyuter dasturida Profil → Do'kon sozlamalari endi saqlanadi (logo, QR, nom, manzil, chek kengligi): saytga yoziladi va barcha kassalarga tarqaladi. Logo va QR printer uchun aniq oq-qora qilinadi. Brauzer orqali chop etilganda chek bo'linmaydi va cheti kesilmaydi.",
+        'ru' => 'В программе для компьютера Профиль → Настройки магазина теперь сохраняются (логотип, QR, название, адрес, ширина чека): записываются на сайт и расходятся по всем кассам. Логотип и QR делаются чётко чёрно-белыми для принтера. При печати через браузер чек не делится на части и не обрезается по краю.',
+    ],
+    [
         'date' => '2026-11-24',
         'uz' => "Chek: logo va QR (Profil → Do'kon sozlamalari), mahsulot nomlari qisqarmaydi, pastda do'kon manzili va telefoni; \"Fiskal chek emas\" yozuvi olib tashlandi; bo'sh chek chiqishi tuzatildi. Kassa POS rejimi: savat qayta tartiblandi — Chakana/Optom ro'yxat tepasida, Jami alohida, mahsulotlarga ko'proq joy.",
         'ru' => 'Чек: логотип и QR (Профиль → Настройки магазина), названия товаров не обрезаются, внизу адрес и телефон магазина; убрана надпись «Не фискальный чек»; исправлена печать пустого чека. POS-режим кассы: корзина переупорядочена — Розница/Опт над списком, итог отдельно, больше места для товаров.',

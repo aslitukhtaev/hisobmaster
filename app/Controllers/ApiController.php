@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\Request;
+use App\Models\Shop;
+use App\Models\ShopProfile;
 use App\Sync\CodePackage;
 use App\Sync\DeviceService;
 use App\Sync\License;
@@ -34,6 +36,10 @@ class ApiController
         'device_revoked' => 403,
         'shop_blocked' => 403,
         'code_invalid' => 401,
+        // "Do'kon sozlamalari" sent by the desktop app: the form's own messages.
+        'fill_required_fields' => 422,
+        'values_must_be_positive' => 422,
+        'receipt_image_invalid' => 422,
     ];
 
     public function activate(Request $request): void
@@ -81,6 +87,41 @@ class ApiController
 
             return SyncService::push($auth['device'], $changes)
                 + ['license' => License::issue($auth['shop'], $auth['device'])];
+        });
+    }
+
+    /**
+     * "Do'kon sozlamalari" saved in the desktop app: the same form as the
+     * website's (ShopProfile::save), pictures as base64 in "images". Answers
+     * with the shop's state, which the app puts in place of its copy.
+     */
+    public function shopSettings(Request $request): void
+    {
+        $this->handle(function () use ($request): array {
+            $auth = $this->device($request);
+            $body = $this->body();
+            $images = [];
+            foreach (array_keys(ShopProfile::IMAGES) as $key) {
+                $encoded = $body['images'][$key] ?? null;
+                if (!is_string($encoded) || $encoded === '') {
+                    continue;
+                }
+                $raw = base64_decode($encoded, true);
+                if ($raw === false || $raw === '' || strlen($raw) > ShopProfile::MAX_UPLOAD_BYTES) {
+                    throw new RuntimeException('receipt_image_invalid');
+                }
+                $images[$key] = $raw;
+            }
+
+            $shopId = (int) $auth['shop']['id'];
+            $error = ShopProfile::save($shopId, $body, $images);
+            if ($error !== null) {
+                throw new RuntimeException($error);
+            }
+
+            $shop = Shop::find($shopId) ?? $auth['shop'];
+
+            return SyncService::shopState($shop) + ['license' => License::issue($shop, $auth['device'])];
         });
     }
 

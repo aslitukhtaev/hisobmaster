@@ -132,6 +132,9 @@
 <section class="page-head" style="margin-top:24px;">
     <h1><?= e(t('shop_settings')) ?></h1>
     <p class="muted"><?= e(t('shop_settings_hint')) ?></p>
+    <?php if (App\Desktop\Desktop::enabled()): ?>
+        <p class="muted"><?= e(t('shop_settings_desktop_hint')) ?></p>
+    <?php endif; ?>
 </section>
 
 <div class="card form-card">
