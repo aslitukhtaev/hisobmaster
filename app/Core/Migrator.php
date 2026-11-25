@@ -22,7 +22,7 @@ use Throwable;
  */
 final class Migrator
 {
-    public const VERSION = 13;
+    public const VERSION = 14;
 
     public static function ensureUpToDate(PDO $pdo): void
     {
@@ -149,6 +149,12 @@ final class Migrator
         self::addColumns($pdo, $log, 'products', ['wholesale_price' => 'REAL']);
         self::addColumns($pdo, $log, 'product_variants', ['wholesale_price' => 'REAL']);
         self::addColumns($pdo, $log, 'sales', ['price_type' => "TEXT NOT NULL DEFAULT 'retail'"]);
+
+        // Which columns an update changed (",name,price"; NULL = the whole row,
+        // an insert): the desktop app sends only those, so a stale copy of the
+        // other columns (an optom price set meanwhile on the website) is never
+        // written back over the server's (see SyncSchema::installTriggers()).
+        self::addColumns($pdo, $log, 'sync_changes', ['cols' => 'TEXT']);
 
         // Last, so rows inserted by the steps above get their uuid too.
         self::addSyncIdentity($pdo, $log);

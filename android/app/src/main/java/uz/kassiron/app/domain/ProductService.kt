@@ -253,11 +253,11 @@ object ProductService {
             var i = 0
             for (uuid in products) {
                 update("products", uuid, mapOf("barcode" to codes[i++], "updated_at" to Time.now()))
-                Outbox.upsert(this, "products", uuid)
+                Outbox.upsert(this, "products", uuid, listOf("barcode", "updated_at"))
             }
             for (uuid in variants) {
                 update("product_variants", uuid, mapOf("barcode" to codes[i++]))
-                Outbox.upsert(this, "product_variants", uuid)
+                Outbox.upsert(this, "product_variants", uuid, listOf("barcode"))
             }
             activity(this, userUuid, "barcodes_generated", mapOf("count" to total.toString()))
             total
@@ -410,7 +410,7 @@ object ProductService {
                 newUuid
             } else {
                 update("products", existing.str("uuid"), values)
-                Outbox.upsert(this, "products", existing.str("uuid"))
+                Outbox.upsert(this, "products", existing.str("uuid"), Outbox.changed(existing, values))
                 existing.str("uuid")
             }
         }
@@ -422,7 +422,7 @@ object ProductService {
     fun setStatus(uuid: String, active: Boolean) {
         App.db.write {
             update("products", uuid, mapOf("status" to if (active) "active" else "inactive", "updated_at" to Time.now()))
-            Outbox.upsert(this, "products", uuid)
+            Outbox.upsert(this, "products", uuid, listOf("status", "updated_at"))
         }
         App.sync.requestSync()
     }
@@ -493,7 +493,7 @@ object ProductService {
                     // Once sold through variants, the product's own stock would be stranded.
                     addStock(this, "products", productUuid, -parentStock)
                     update("products", productUuid, mapOf("updated_at" to Time.now()))
-                    Outbox.upsert(this, "products", productUuid)
+                    Outbox.upsert(this, "products", productUuid, listOf("updated_at"))
                 }
                 activity(
                     this, userUuid, "product_created",
@@ -502,7 +502,7 @@ object ProductService {
                 newUuid
             } else {
                 update("product_variants", existing.str("uuid"), values)
-                Outbox.upsert(this, "product_variants", existing.str("uuid"))
+                Outbox.upsert(this, "product_variants", existing.str("uuid"), Outbox.changed(existing, values))
                 existing.str("uuid")
             }
         }
@@ -513,7 +513,7 @@ object ProductService {
     fun setVariantStatus(variantUuid: String, active: Boolean) {
         App.db.write {
             update("product_variants", variantUuid, mapOf("status" to if (active) "active" else "inactive"))
-            Outbox.upsert(this, "product_variants", variantUuid)
+            Outbox.upsert(this, "product_variants", variantUuid, listOf("status"))
         }
         App.sync.requestSync()
     }
@@ -648,8 +648,9 @@ object ProductService {
             for (table in listOf("products", "expenses")) {
                 val uuids = query("SELECT uuid FROM $table WHERE category_id = ?", fromUuid).map { it.str("uuid") }
                 for (u in uuids) {
-                    update(table, u, if (table == "products") mapOf("category_id" to intoUuid, "updated_at" to Time.now()) else mapOf("category_id" to intoUuid))
-                    Outbox.upsert(this, table, u)
+                    val moved = if (table == "products") mapOf("category_id" to intoUuid, "updated_at" to Time.now()) else mapOf("category_id" to intoUuid)
+                    update(table, u, moved)
+                    Outbox.upsert(this, table, u, moved.keys)
                 }
                 count += uuids.size
             }

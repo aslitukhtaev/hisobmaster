@@ -9,6 +9,11 @@
 return [
     [
         'date' => '2026-11-25',
+        'uz' => "Mahsulotlarning optom narxi o'zidan-o'zi o'chib qolishi tuzatildi: kompyuter va telefon endi mahsulotdagi faqat o'zgartirilgan maydonlarni yuboradi. Yorliqlar printerda yonboshlab chiqmaydi.",
+        'ru' => 'Исправлено: оптовая цена товаров больше не стирается сама — компьютеры и телефоны отправляют только изменённые поля товара. Этикетки больше не печатаются боком.',
+    ],
+    [
+        'date' => '2026-11-25',
         'uz' => "Kompyuter dasturida Profil → Do'kon sozlamalari endi saqlanadi (logo, QR, nom, manzil, chek kengligi): saytga yoziladi va barcha kassalarga tarqaladi. Logo va QR printer uchun aniq oq-qora qilinadi. Brauzer orqali chop etilganda chek bo'linmaydi va cheti kesilmaydi.",
         'ru' => 'В программе для компьютера Профиль → Настройки магазина теперь сохраняются (логотип, QR, название, адрес, ширина чека): записываются на сайт и расходятся по всем кассам. Логотип и QR делаются чётко чёрно-белыми для принтера. При печати через браузер чек не делится на части и не обрезается по краю.',
     ],

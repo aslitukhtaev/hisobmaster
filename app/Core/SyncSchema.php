@@ -198,9 +198,17 @@ final class SyncSchema
                     WHERE NEW.$column != OLD.$column;";
             }
 
+            $dataColumns = array_keys(self::dataColumns($pdo, $table));
             $changed = implode(' OR ', array_map(
                 static fn (string $column): string => "NEW.$column IS NOT OLD.$column",
-                array_keys(self::dataColumns($pdo, $table))
+                $dataColumns
+            ));
+            // ",name,sell_price": the columns this update changed, so a computer
+            // sends only those (DesktopSync::push) and never its stale copy of
+            // the rest.
+            $changedList = implode(' || ', array_map(
+                static fn (string $column): string => "(CASE WHEN NEW.$column IS NOT OLD.$column THEN ',$column' ELSE '' END)",
+                $dataColumns
             ));
 
             $pdo->exec("
@@ -213,8 +221,8 @@ final class SyncSchema
             $pdo->exec("
                 CREATE TRIGGER trg_{$table}_sync_au AFTER UPDATE ON $table WHEN $guard
                 BEGIN
-                    INSERT INTO sync_changes (shop_id, tbl, row_id, op, source)
-                    SELECT $shopNew, '$table', NEW.id, 'upsert', $source
+                    INSERT INTO sync_changes (shop_id, tbl, row_id, op, cols, source)
+                    SELECT $shopNew, '$table', NEW.id, 'upsert', $changedList, $source
                     -- OLD.uuid NULL: the insert trigger filling the uuid, already journaled by the insert.
                     WHERE OLD.uuid IS NOT NULL AND ($changed);$updateCounters
                 END");

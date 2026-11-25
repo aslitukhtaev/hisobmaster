@@ -398,6 +398,8 @@ CREATE TABLE IF NOT EXISTS sync_changes (
     op TEXT NOT NULL,
     delta_col TEXT,
     delta REAL,
+    -- For an update: the columns it changed (",name,price"); NULL = whole row.
+    cols TEXT,
     -- The computer (devices.id) the change came from; NULL = made here.
     source INTEGER,
     changed_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now'))

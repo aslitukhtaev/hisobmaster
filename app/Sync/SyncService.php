@@ -257,6 +257,22 @@ final class SyncService
             return;
         }
 
+        // An app from before "partial" rows sends the whole row as it has it,
+        // so editing a barcode, price or cost there wrote its stale empty optom
+        // price over one set meanwhile on the website. From those, an empty
+        // optom price never clears a set one (they can't clear it on purpose).
+        if (empty($change['partial']) && in_array($table, ['products', 'product_variants'], true)
+            && array_key_exists('wholesale_price', $values) && $values['wholesale_price'] === null) {
+            $current = $pdo->prepare("SELECT wholesale_price FROM $table WHERE id = ?");
+            $current->execute([$existingId]);
+            if ($current->fetchColumn() !== null) {
+                unset($values['wholesale_price']);
+            }
+            if ($values === []) {
+                return;
+            }
+        }
+
         $assignments = implode(', ', array_map(static fn (string $column): string => "$column = ?", array_keys($values)));
         $pdo->prepare("UPDATE $table SET $assignments WHERE id = ?")
             ->execute([...array_values($values), $existingId]);

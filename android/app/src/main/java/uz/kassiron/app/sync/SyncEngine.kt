@@ -54,8 +54,17 @@ internal class SyncEngine(private val db: Db, private val kv: Kv, private val ap
             // arrives before rows that point to it), stamped with the latest
             // change time for the server's last-write-wins.
             val latestUpsert = HashMap<String, String>()
+            // The columns those upserts changed, together; null = the whole row (a new
+            // row, or one queued before columns were recorded).
+            val changedCols = HashMap<String, MutableSet<String>?>()
             for (e in entries) {
-                if (e.str("op") == "upsert") latestUpsert[e.str("tbl") + ":" + e.str("uuid")] = e.str("changed_at")
+                if (e.str("op") != "upsert") continue
+                val key = e.str("tbl") + ":" + e.str("uuid")
+                latestUpsert[key] = e.str("changed_at")
+                val cols = e.strOrNull("cols")
+                if (!changedCols.containsKey(key)) changedCols[key] = if (cols == null) null else HashSet()
+                if (cols == null) changedCols[key] = null
+                else changedCols[key]?.addAll(cols.split(',').filter(String::isNotEmpty))
             }
 
             val changes = JSONArray()
@@ -74,8 +83,10 @@ internal class SyncEngine(private val db: Db, private val kv: Kv, private val ap
                     "upsert" -> {
                         val key = "$table:$uuid"
                         if (!sent.add(key)) continue
-                        val row = wireRow(table, uuid) ?: continue // gone since: nothing to send
+                        val only = changedCols[key]
+                        val row = wireRow(table, uuid, only) ?: continue // gone since, or nothing that travels
                         base.put("changed_at", latestUpsert[key] ?: e.str("changed_at"))
+                        if (only != null) base.put("partial", true)
                         changes.put(base.put("op", "upsert").put("row", row))
                     }
                     "delta" -> changes.put(
@@ -109,15 +120,17 @@ internal class SyncEngine(private val db: Db, private val kv: Kv, private val ap
     }
 
     /** All Schema columns of the row except counters (those travel as deltas), or null when it's gone. */
-    private fun wireRow(table: String, uuid: String): JSONObject? {
+    /** The row as sent; [only]: just these columns (an edit's changes), null = all. */
+    private fun wireRow(table: String, uuid: String, only: Set<String>? = null): JSONObject? {
         val t = Schema.table(table)
         val row = db.queryOne("SELECT * FROM $table WHERE uuid = ?", uuid) ?: return null
         val out = JSONObject()
         for (c in t.columns) {
             if (c.name in t.counters) continue
+            if (only != null && c.name !in only) continue
             out.put(c.name, row[c.name] ?: JSONObject.NULL)
         }
-        return out
+        return if (only != null && out.length() == 0) null else out
     }
 
     // ---------------------------------------------------------------- pull
@@ -226,7 +239,13 @@ internal class SyncEngine(private val db: Db, private val kv: Kv, private val ap
             return true
         }
 
-        val update = if (pending.hasUpsert(table, uuid)) counters else HashMap(values).apply { putAll(counters) }
+        // A local edit not pushed yet keeps its own columns; the server's values
+        // of the others (e.g. an optom price set on the website) still land here.
+        val update: HashMap<String, Any?> = when {
+            !pending.hasUpsert(table, uuid) -> HashMap(values)
+            else -> pending.upsertCols(table, uuid)?.let { mine -> HashMap(values.filterKeys { it !in mine }) } ?: HashMap()
+        }
+        update.putAll(counters)
         for (c in t.columns) {
             if (c.notNull && update.containsKey(c.name) && update[c.name] == null) update[c.name] = fallback(c)
         }
@@ -286,14 +305,22 @@ internal class SyncEngine(private val db: Db, private val kv: Kv, private val ap
     }
 
     /** Local changes not on the server yet, read once per page. */
-    private class PendingLocal(private val upserts: Set<String>, private val deltas: Map<String, Double>) {
-        fun hasUpsert(table: String, uuid: String) = "$table:$uuid" in upserts
+    private class PendingLocal(private val upserts: Map<String, Set<String>?>, private val deltas: Map<String, Double>) {
+        fun hasUpsert(table: String, uuid: String) = upserts.containsKey("$table:$uuid")
+        /** The columns a pending local edit changed; null = the whole row (a new row). */
+        fun upsertCols(table: String, uuid: String): Set<String>? = upserts["$table:$uuid"]
         fun delta(table: String, uuid: String, col: String) = deltas["$table:$uuid:$col"] ?: 0.0
 
         companion object {
             fun read(db: Db): PendingLocal {
-                val upserts = db.query("SELECT DISTINCT tbl, uuid FROM sync_outbox WHERE op = 'upsert'")
-                    .mapTo(HashSet()) { it.str("tbl") + ":" + it.str("uuid") }
+                val upserts = HashMap<String, MutableSet<String>?>()
+                for (r in db.query("SELECT tbl, uuid, cols FROM sync_outbox WHERE op = 'upsert'")) {
+                    val key = r.str("tbl") + ":" + r.str("uuid")
+                    val cols = r.strOrNull("cols")
+                    if (!upserts.containsKey(key)) upserts[key] = if (cols == null) null else HashSet()
+                    if (cols == null) upserts[key] = null
+                    else upserts[key]?.addAll(cols.split(',').filter(String::isNotEmpty))
+                }
                 val deltas = db.query(
                     "SELECT tbl, uuid, col, SUM(delta) AS d FROM sync_outbox WHERE op = 'delta' GROUP BY tbl, uuid, col",
                 ).associate { it.str("tbl") + ":" + it.str("uuid") + ":" + it.str("col") to it.dbl("d") }

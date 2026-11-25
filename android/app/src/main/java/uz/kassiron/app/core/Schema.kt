@@ -201,7 +201,8 @@ object Schema {
             uuid TEXT NOT NULL,
             col TEXT,
             delta REAL,
-            changed_at TEXT NOT NULL
+            changed_at TEXT NOT NULL,
+            cols TEXT
         )"""
         out += "CREATE INDEX IF NOT EXISTS idx_sync_outbox_row ON sync_outbox(tbl, uuid)"
         // Device state: credentials, cursor, shop info, settings, preferences.

@@ -45,7 +45,7 @@ class Db(context: Context) : SQLiteOpenHelper(context, "kassiron.db", null, VERS
 
     companion object {
         /** Bump with a migration in onUpgrade() whenever Schema changes. */
-        const val VERSION = 2
+        const val VERSION = 3
     }
 
     private val _changes = MutableStateFlow(0L)
@@ -84,6 +84,14 @@ class Db(context: Context) : SQLiteOpenHelper(context, "kassiron.db", null, VERS
                 added = true
             }
         }
+        // v3: which columns an edit changed (Outbox.upsert), so only those are pushed.
+        val outboxCols = db.rawQuery("PRAGMA table_info(sync_outbox)", null).use { c ->
+            val name = c.getColumnIndexOrThrow("name")
+            var found = false
+            while (c.moveToNext()) if (c.getString(name) == "cols") found = true
+            found
+        }
+        if (!outboxCols) db.execSQL("ALTER TABLE sync_outbox ADD COLUMN cols TEXT")
         // Earlier pulls dropped values of columns this device didn't have yet (an optom
         // price set on the website before this update): fetch everything once more.
         if (added) db.execSQL("DELETE FROM kv WHERE key IN ('pull_cursor', 'pull_snap')")

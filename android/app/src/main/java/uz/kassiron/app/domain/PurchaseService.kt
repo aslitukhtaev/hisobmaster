@@ -108,13 +108,13 @@ object PurchaseService {
                     ProductService.addStock(this, "product_variants", r.line.variantUuid, r.qty)
                     if (updateCostPrice) {
                         update("product_variants", r.line.variantUuid, mapOf("cost_price" to r.unitCost))
-                        Outbox.upsert(this, "product_variants", r.line.variantUuid)
+                        Outbox.upsert(this, "product_variants", r.line.variantUuid, listOf("cost_price"))
                     }
                 } else {
                     ProductService.addStock(this, "products", r.line.productUuid, r.qty)
                     if (updateCostPrice) {
                         update("products", r.line.productUuid, mapOf("cost_price" to r.unitCost, "updated_at" to Time.now()))
-                        Outbox.upsert(this, "products", r.line.productUuid)
+                        Outbox.upsert(this, "products", r.line.productUuid, listOf("cost_price", "updated_at"))
                     }
                 }
             }

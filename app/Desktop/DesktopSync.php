@@ -151,9 +151,26 @@ final class DesktopSync
             // it still arrives before rows that point to it, stamped with
             // its latest change time for last-write-wins.
             $latestUpsert = [];
+            // The columns those upserts changed, together; null = the whole row
+            // (an insert, or a change journaled before columns were recorded).
+            $changedCols = [];
             foreach ($entries as $entry) {
                 if ($entry['op'] === 'upsert') {
-                    $latestUpsert[$entry['tbl'] . ':' . $entry['row_id']] = $entry['changed_at'];
+                    $key = $entry['tbl'] . ':' . $entry['row_id'];
+                    $latestUpsert[$key] = $entry['changed_at'];
+                    $cols = $entry['cols'] ?? null;
+                    if (!array_key_exists($key, $changedCols)) {
+                        $changedCols[$key] = $cols === null ? null : [];
+                    }
+                    if ($cols === null) {
+                        $changedCols[$key] = null;
+                    } elseif ($changedCols[$key] !== null) {
+                        foreach (explode(',', (string) $cols) as $column) {
+                            if ($column !== '') {
+                                $changedCols[$key][$column] = true;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -169,7 +186,8 @@ final class DesktopSync
                     $entry['changed_at'] = $latestUpsert[$key];
                 }
 
-                $change = self::entryToChange($pdo, $entry);
+                $key = $entry['tbl'] . ':' . $entry['row_id'];
+                $change = self::entryToChange($pdo, $entry, $entry['op'] === 'upsert' && isset($changedCols[$key]) ? array_keys($changedCols[$key]) : null);
                 if ($change !== null) {
                     $changes[] = $change;
                 }
@@ -197,8 +215,16 @@ final class DesktopSync
         }
     }
 
-    /** A journal entry as the server expects it, or null when there's nothing to send. */
-    private static function entryToChange(PDO $pdo, array $entry): ?array
+    /**
+     * A journal entry as the server expects it, or null when there's nothing
+     * to send. $onlyCols: for an update, the columns it changed — only those
+     * are sent ("partial"), so this computer's possibly stale copy of the
+     * others (e.g. an optom price just set on the website) can't overwrite
+     * the server's. Null = the whole row.
+     *
+     * @param list<string>|null $onlyCols
+     */
+    private static function entryToChange(PDO $pdo, array $entry, ?array $onlyCols = null): ?array
     {
         $table = (string) $entry['tbl'];
         if (!in_array($table, SyncSchema::PUSHABLE, true)) {
@@ -226,6 +252,9 @@ final class DesktopSync
         $wire = [];
         $foreignKeys = SyncSchema::FOREIGN_KEYS[$table];
         foreach (self::columns($pdo, $table) as $column) {
+            if ($onlyCols !== null && !in_array($column, $onlyCols, true)) {
+                continue;
+            }
             $value = $row[$column];
             if (isset($foreignKeys[$column]) && $value !== null) {
                 $ref = $pdo->prepare("SELECT uuid FROM {$foreignKeys[$column]} WHERE id = ?");
@@ -235,7 +264,11 @@ final class DesktopSync
             $wire[$column] = $value;
         }
 
-        return $base + ['op' => 'upsert', 'uuid' => $row['uuid'], 'row' => $wire];
+        if ($onlyCols !== null && $wire === []) {
+            return null; // nothing that travels changed
+        }
+
+        return $base + ['op' => 'upsert', 'uuid' => $row['uuid'], 'row' => $wire] + ($onlyCols !== null ? ['partial' => true] : []);
     }
 
     private static function pull(): int
@@ -274,8 +307,8 @@ final class DesktopSync
      * Applies rows received from the server, with the change triggers
      * silenced. A counter (stock) becomes the server's value plus whatever
      * this computer changed that the server hasn't seen yet; a row this
-     * computer edited but hasn't sent yet keeps its local values (the server
-     * decides between the two edits when it arrives).
+     * computer edited but hasn't sent yet keeps its local values of the
+     * columns it changed, and takes the server's for the rest.
      */
     public static function applyChanges(PDO $pdo, array $changes): void
     {
@@ -379,9 +412,35 @@ final class DesktopSync
             return true;
         }
 
-        $localEdit = $pdo->prepare("SELECT 1 FROM sync_changes WHERE id > ? AND tbl = ? AND row_id = ? AND op = 'upsert' LIMIT 1");
+        // An edit here not sent yet keeps its own columns; the server's values
+        // of the others (e.g. an optom price set on the website) still land.
+        // An entry without columns (an insert, or journaled before they were
+        // recorded) keeps the whole local row.
+        $localEdit = $pdo->prepare("SELECT cols FROM sync_changes WHERE id > ? AND tbl = ? AND row_id = ? AND op = 'upsert'");
         $localEdit->execute([$pushedUpto, $table, (int) $id]);
-        $update = $localEdit->fetchColumn() !== false ? $counters : $values + $counters;
+        $mine = [];
+        $wholeRow = false;
+        $pendingEdit = false;
+        foreach ($localEdit->fetchAll(PDO::FETCH_COLUMN) as $cols) {
+            $pendingEdit = true;
+            if ($cols === null) {
+                $wholeRow = true;
+                break;
+            }
+            foreach (explode(',', (string) $cols) as $column) {
+                if ($column !== '') {
+                    $mine[$column] = true;
+                }
+            }
+        }
+        if (!$pendingEdit) {
+            $update = $values + $counters;
+        } elseif ($wholeRow) {
+            $update = $counters;
+        } else {
+            unset($values['uuid']);
+            $update = array_diff_key($values, $mine) + $counters;
+        }
 
         if ($update !== []) {
             $assignments = implode(', ', array_map(static fn (string $column): string => "$column = ?", array_keys($update)));
